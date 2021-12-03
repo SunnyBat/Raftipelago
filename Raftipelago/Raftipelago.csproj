@@ -4,6 +4,7 @@
   <PropertyGroup>
     <LangVersion>7.3</LangVersion>
     <ProjectGuid>{41D2BDD7-E52C-4470-AC81-5F4B496CC559}</ProjectGuid>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -13,7 +14,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Raftipelago</RootNamespace>
     <AssemblyName>Raftipelago</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -53,6 +54,9 @@
     <Reference Include="0Harmony, Version=2.1.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Lib.Harmony.2.1.1\lib\net45\0Harmony.dll</HintPath>
     </Reference>
+    <Reference Include="Archipelago.MultiClient.Net">
+      <HintPath>DLLs\Archipelago.MultiClient.Net.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp-firstpass.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
@@ -79,6 +83,10 @@
     </Reference>
     <Reference Include="NavMeshComponents.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\NavMeshComponents.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>DLLs\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PathCreator.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\PathCreator.dll</HintPath>
@@ -325,6 +333,9 @@
     </Reference>
     <Reference Include="HMLCoreLibrary.dll">
       <HintPath>C:\Users\SunnyBat\AppData\Roaming\RaftModLoader\binaries\HMLCoreLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="websocket-sharp">
+      <HintPath>DLLs\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <PropertyGroup>
