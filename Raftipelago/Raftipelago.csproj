@@ -36,6 +36,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Patches\Inventory_ResearchTable.cs" />
+    <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Patches\ResearchTable.cs" />
     <Compile Include="Raftipelago.cs" />
   </ItemGroup>
@@ -45,8 +47,12 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <None Include="modinfo.json" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="0Harmony, Version=2.1.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Lib.Harmony.2.1.1\lib\net45\0Harmony.dll</HintPath>
+    </Reference>
     <Reference Include="Assembly-CSharp-firstpass.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
