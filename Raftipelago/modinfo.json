@@ -1,0 +1,14 @@
+{
+  "name": "Raftipelago",
+  "author": "",
+  "description": "A Raft randomizer that is compatible with the Archipelago multi-world randomizer.",
+  "version": "0.0.1",
+  "license": "GNU AGPLv3",
+  "icon": "icon.png",
+  "banner": "banner.jpg",
+  "gameVersion": "1.0",
+  "requiredByAllPlayers": true,
+  "updateUrl": "https://www.raftmodding.com/api/v1/mods/raftipelago/version.txt",
+  "isModPermanent": false,
+  "excludedFiles": []
+}
