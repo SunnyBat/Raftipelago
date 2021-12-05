@@ -11,27 +11,50 @@ using UnityEngine.UI;
 
 namespace Raftipelago.Patches
 {
-    [HarmonyPatch(typeof(NotificationManager), "ShowNotification", typeof(string))]
-    public class HarmonyPatch_NotificationManager_ShowNotification
-    {
-        [HarmonyPostfix]
-        public static void ShowNotification_OptionalReplace(
-            string identifier,
-            ref List<Notification> ___notifications
-            )
-        {
-            Notification notification = ___notifications.Find((Notification n) => n.identifier == identifier);
-			if (notification == null && identifier == "ArchipelagoSent")
+	[HarmonyPatch(typeof(NotificationManager), "ShowNotification", typeof(string))]
+	public class HarmonyPatch_NotificationManager_ShowNotification
+	{
+		[HarmonyPrefix]
+		public static void ShowNotification_OptionalReplace(
+			string identifier,
+			ref List<Notification> ___notifications
+			)
+		{
+			if (identifier != "OnlyProcessThisIdentifier")
             {
-				___notifications.Add(new Notification_ArchipelagoSent());
+				return;
             }
+
+			Debug.Log($"Notifications valid = {___notifications != null}");
+			Debug.Log($"nC: {___notifications.Count} {___notifications.Where(not => string.IsNullOrWhiteSpace(not.identifier)).Count()}");
+			var notificationOld = ___notifications.Find(n => n.identifier == identifier); // This is false
+			var index = ___notifications.FindIndex(n => n.identifier == identifier); // But this is 4 -- WTF???
+			Debug.Log($"NotificationOld = {notificationOld != null}");
+			Debug.Log($"NI = {index}");
+			Debug.Log($"NAI = {___notifications[index] != null}");
+			if (index >= 0)
+            {
+                ___notifications.RemoveAt(index);
+            }
+            ___notifications.Add(new Notification_ArchipelagoSent());
+            if (identifier == "ArchipelagoSent")
+			{
+				var notification = ___notifications.Find(n => n.identifier == identifier);
+				Debug.Log($"ASNotificationValid = {notification != null}");
+			}
         }
     }
 
     public class Notification_ArchipelagoSent : Notification_Animated
 	{
+		public Notification_ArchipelagoSent()
+		{
+			this.identifier = "ArchipelagoSent";
+		}
+
 		public override void Show()
 		{
+			Debug.Log("Show1");
 			Notification_ArchipelagoSent_Info notification_Research_Info = this.archipelagoSentQueue.Dequeue();
 			LocalizationParameters.remoteSteamID = notification_Research_Info.researcher;
 			this.text_foundBy.text = "Found by"; // TODO Localize?

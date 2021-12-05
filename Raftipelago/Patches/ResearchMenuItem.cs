@@ -37,11 +37,6 @@ namespace Raftipelago.Patches
 				//___menuItems[i].Learn();
 				return false;
 			}
-			else if (ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(___item.UniqueIndex) == -1)
-			{
-				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-				return false;
-			}
 			return true;
 		}
 	}
