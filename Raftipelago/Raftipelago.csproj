@@ -39,8 +39,10 @@
   <ItemGroup>
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\ItemMapping.cs" />
+    <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="Network\ArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
+    <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Patches\ResearchTable.cs" />
     <Compile Include="Raftipelago.cs" />

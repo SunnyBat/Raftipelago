@@ -15,8 +15,6 @@ namespace Raftipelago.Patches
 	[HarmonyPatch(typeof(ResearchMenuItem), "LearnButton")]
 	public class HarmonyPatch_ResearchMenuItem_LearnButton
 	{
-		private static Sprite _archipelagoSprite;
-
 		[HarmonyPrefix]
 		public static bool LearnButton_OptionalReplace(
 			ref Network_Player ___localPlayer,
@@ -30,33 +28,21 @@ namespace Raftipelago.Patches
 			{
 				___localPlayer = ComponentManager<Network_Player>.Value;
 			}
-			Debug.Log("YEET1");
 			if (ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(___item.UniqueIndex) >= 0)
 			{
-				Debug.Log("YEET2");
 				//RuntimeManager.PlayOneShot(eventRef_Learn, default(Vector3));
 				// TODO Correct item image for notification
-				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, _getArchipelagoSprite()));
-				Debug.Log("YEET3");
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				// TODO Uncomment when ready to set as Learned in reasearch table list
 				//___menuItems[i].Learn();
 				return false;
 			}
-			return true;
-		}
-
-		private static Sprite _getArchipelagoSprite()
-		{
-			if (_archipelagoSprite == null)
+			else if (ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(___item.UniqueIndex) == -1)
 			{
-				var texture = new Texture2D(2, 2);
-				var allBytes = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile("Data", "Archipelago.png");
-				if (texture.LoadImage(allBytes))
-				{
-					_archipelagoSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0, 0), 100.0f);
-				}
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+				return false;
 			}
-			return _archipelagoSprite;
+			return true;
 		}
 	}
 }
