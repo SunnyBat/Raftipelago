@@ -32,13 +32,14 @@ namespace Raftipelago.Network
             //};
 
             // TODO Send ClientReady packet after connected
-            // TODO Send Sync packet to receive list of items for this world
-            // TODO Parse ReceivedItems packet and add to list
+            // TODO Send Sync packet to receive list of items for this world whenever (re)connecting to server
+            // TODO Send list of locations checked whenever (re)connecting to server
+            // TODO Parse ReceivedItems packet and add to list when update received
         }
 
         public void ItemUnlocked(Item_Base raftItem)
         {
-            var locationId = raftItem.UniqueIndex; // TODO Change to Archipelago location ID
+            var locationId = ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(raftItem.UniqueIndex);
             if (!_allCheckedLocations.Contains(locationId))
             {
                 _allCheckedLocations.Add(locationId);
@@ -64,16 +65,20 @@ namespace Raftipelago.Network
             //_session.SendPacket(locationListPacket);
         }
 
-        private void _updateReceivedItems(int[] archipelagoIds) // TODO this should actually be a NetworkItem array, but we don't have models atm :(
+        // TODO this should actually be a NetworkItem array, but we don't have models atm :(
+        // We'll boil that down to a List<int> or int[] anways, so this is fine
+        private void _updateReceivedItems(IEnumerable<int> archipelagoIds)
         {
+            var craftingManager = ComponentManager<CraftingMenu>.Value;
             foreach (var archipelagoId in archipelagoIds)
             {
                 // TODO Optimize AllRecipes search (probably shove archipelagoIds->Item into map)
                 var raftItemIndex = ComponentManager<ItemMapping>.Value.getRaftUniqueIndex(archipelagoId);
-                var raftItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(item => item.UniqueIndex == raftItemIndex);
+                var raftItem = craftingManager.AllRecipes.Find(item => item.UniqueIndex == raftItemIndex);
                 raftItem.settings_recipe.Learned = true;
+                craftingManager.ReselectCategory(); // TODO Check to see if this actually refreshes the inventory/crafting UI
             }
-            // TODO Set Learned to false for items not in archipelagoIds list if not default and not learned
+            // TODO Set Learned to false for items not in archipelagoIds list if not default and not learned?
         }
 
         public void CloseSession()
