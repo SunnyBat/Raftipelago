@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using static ResearchMenuItem;
 
 namespace Raftipelago.Patches
@@ -13,11 +14,12 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_ResearchMenuItem_LearnButton
 	{
 		[HarmonyPrefix]
-		public static bool ReplaceMethod(
+		public static bool LearnButton_OptionalReplace(
 			ref Network_Player ___localPlayer,
 			ref Item_Base ___item,
 			ref Inventory_ResearchTable ___inventoryRef,
 			ref OnLearnedRecipe ___OnLearnedRecipeEvent,
+			ref CraftingMenu ___craftingMenu,
 			ResearchMenuItem __instance)
 		{
 			if (___localPlayer == null)
@@ -38,6 +40,8 @@ namespace Raftipelago.Patches
 			{
 				___inventoryRef.network.SendP2P(___inventoryRef.network.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 			}
+			___craftingMenu.AllRecipes.Do(recipe => Debug.Log(recipe.name));
+			Debug.Log(ComponentManager<CraftingMenu>.Value != null);
 			return false;
 		}
 	}

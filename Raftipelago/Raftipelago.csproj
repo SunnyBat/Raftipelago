@@ -37,6 +37,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Network\ArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Patches\ResearchTable.cs" />
@@ -47,6 +48,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <None Include="Data\ItemData.json" />
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>

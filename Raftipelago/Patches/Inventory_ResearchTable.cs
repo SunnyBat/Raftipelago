@@ -101,7 +101,7 @@ namespace Raftipelago.Patches
 			{
 				if (!___menuItems[i].Learned && ___menuItems[i].GetItem().UniqueIndex == item.UniqueIndex)
 				{
-                    //RuntimeManager.PlayOneShot(___eventRef_Learn, default(Vector3));
+                    RuntimeManager.PlayOneShot(___eventRef_Learn, default(Vector3));
                     (___notificationManager.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, item.settings_Inventory.Sprite));
                     //___menuItems[i].Learn();
                     Debug.Log("Name: " + item.name);
@@ -119,6 +119,17 @@ namespace Raftipelago.Patches
 			}
 			__instance.SortMenuItems();
 			return false;
+		}
+	}
+
+	[HarmonyPatch(typeof(Inventory_ResearchTable), "CreateMenuItems", typeof(CraftingMenu))]
+	public class HarmonyPatch_Inventory_ResearchTable_CreateMenuItems
+	{
+		[HarmonyPrefix]
+		public static void PostMethod(CraftingMenu craftingMenu)
+		{
+			Debug.Log("PostCreateMenuItems");
+			craftingMenu.AllRecipes.Do(recipe => Debug.Log(recipe.name));
 		}
 	}
 }
