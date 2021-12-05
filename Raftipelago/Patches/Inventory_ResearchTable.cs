@@ -90,7 +90,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_Inventory_ResearchTable_LearnItem
 	{
 		[HarmonyPrefix]
-		public static bool ReplaceMethod(Item_Base item, CSteamID researcherID,
+		public static bool LearnItem_AlwaysReplace(Item_Base item, CSteamID researcherID,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			ref string ___eventRef_Learn,
@@ -102,11 +102,10 @@ namespace Raftipelago.Patches
 				if (!___menuItems[i].Learned && ___menuItems[i].GetItem().UniqueIndex == item.UniqueIndex)
 				{
                     RuntimeManager.PlayOneShot(___eventRef_Learn, default(Vector3));
+					// TODO Correct item image for notification
                     (___notificationManager.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, item.settings_Inventory.Sprite));
+					// TODO Uncomment when ready to set as Learned in reasearch table list
                     //___menuItems[i].Learn();
-                    Debug.Log("Name: " + item.name);
-					Debug.Log("UName: " + item.UniqueName);
-					item.settings_recipe.Learned = !item.settings_recipe.Learned;
 					__result = true;
 					break;
 				}

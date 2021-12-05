@@ -40,8 +40,6 @@ namespace Raftipelago.Patches
 			{
 				___inventoryRef.network.SendP2P(___inventoryRef.network.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 			}
-			___craftingMenu.AllRecipes.Do(recipe => Debug.Log(recipe.name));
-			Debug.Log(ComponentManager<CraftingMenu>.Value != null);
 			return false;
 		}
 	}
