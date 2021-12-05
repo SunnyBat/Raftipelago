@@ -50,8 +50,12 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="Data\ItemMapping.json" />
-    <None Include="Data\HardcodedItemData.json" />
+    <None Include="Data\ItemMapping.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Data\HardcodedItemData.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -338,6 +342,11 @@
     <Reference Include="websocket-sharp">
       <HintPath>DLLs\websocket-sharp.dll</HintPath>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Data\Archipelago.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <PropertyGroup>
     <PreBuildEvent>

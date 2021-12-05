@@ -1,5 +1,6 @@
 ﻿using FMODUnity;
 using HarmonyLib;
+using Raftipelago.Data;
 using Steamworks;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,8 @@ namespace Raftipelago.Patches
 	[HarmonyPatch(typeof(ResearchMenuItem), "LearnButton")]
 	public class HarmonyPatch_ResearchMenuItem_LearnButton
 	{
+		private static Sprite _archipelagoSprite;
+
 		[HarmonyPrefix]
 		public static bool LearnButton_OptionalReplace(
 			ref Network_Player ___localPlayer,
@@ -27,32 +30,33 @@ namespace Raftipelago.Patches
 			{
 				___localPlayer = ComponentManager<Network_Player>.Value;
 			}
-			Message_ResearchTable_ResearchOrLearn message = new Message_ResearchTable_ResearchOrLearn(Messages.ResearchTable_Learn, ___localPlayer, ___localPlayer.steamID, ___item.UniqueIndex);
-			if (Semih_Network.IsHost)
+			Debug.Log("YEET1");
+			if (ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(___item.UniqueIndex) >= 0)
 			{
-				___inventoryRef.network.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-				if (true) // TODO Check if we want to override with Archipelago
+				Debug.Log("YEET2");
+				//RuntimeManager.PlayOneShot(eventRef_Learn, default(Vector3));
+				// TODO Correct item image for notification
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, _getArchipelagoSprite()));
+				Debug.Log("YEET3");
+				// TODO Uncomment when ready to set as Learned in reasearch table list
+				//___menuItems[i].Learn();
+				return false;
+			}
+			return true;
+		}
+
+		private static Sprite _getArchipelagoSprite()
+		{
+			if (_archipelagoSprite == null)
+			{
+				var texture = new Texture2D(2, 2);
+				var allBytes = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile("Data", "Archipelago.png");
+				if (texture.LoadImage(allBytes))
 				{
-					//RuntimeManager.PlayOneShot(eventRef_Learn, default(Vector3));
-					// TODO Correct item image for notification
-					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, ___item.settings_Inventory.Sprite));
-					// TODO Uncomment when ready to set as Learned in reasearch table list
-					//___menuItems[i].Learn();
-				}
-				else
-				{
-					___inventoryRef.LearnItem(___item, ___localPlayer.steamID);
-					if (___OnLearnedRecipeEvent != null)
-					{
-						___OnLearnedRecipeEvent();
-					}
+					_archipelagoSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0, 0), 100.0f);
 				}
 			}
-			else
-			{
-				___inventoryRef.network.SendP2P(___inventoryRef.network.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-			}
-			return false;
+			return _archipelagoSprite;
 		}
 	}
 }

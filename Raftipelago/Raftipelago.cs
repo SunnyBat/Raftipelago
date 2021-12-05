@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using Raftipelago.Network;
 using System.Reflection;
 using System.Text;
@@ -17,6 +18,8 @@ public class RaftipelagoTwo : Mod
         {
             Debug.LogError("ArchipelagoLink still active, cannot connect");
         }
+        ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
+        ComponentManager<ItemMapping>.Value = ComponentManager<ItemMapping>.Value ?? new ItemMapping();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         DebugStuff();
