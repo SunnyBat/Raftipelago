@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using FMODUnity;
+using HarmonyLib;
 using Steamworks;
 using System;
 using System.Collections.Generic;
@@ -30,10 +31,21 @@ namespace Raftipelago.Patches
 			if (Semih_Network.IsHost)
 			{
 				___inventoryRef.network.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-				___inventoryRef.LearnItem(___item, ___localPlayer.steamID);
-				if (___OnLearnedRecipeEvent != null)
+				if (true) // TODO Check if we want to override with Archipelago
 				{
-					___OnLearnedRecipeEvent();
+					//RuntimeManager.PlayOneShot(eventRef_Learn, default(Vector3));
+					// TODO Correct item image for notification
+					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(___item.settings_Inventory.DisplayName, ___localPlayer.steamID, ___item.settings_Inventory.Sprite));
+					// TODO Uncomment when ready to set as Learned in reasearch table list
+					//___menuItems[i].Learn();
+				}
+				else
+				{
+					___inventoryRef.LearnItem(___item, ___localPlayer.steamID);
+					if (___OnLearnedRecipeEvent != null)
+					{
+						___OnLearnedRecipeEvent();
+					}
 				}
 			}
 			else

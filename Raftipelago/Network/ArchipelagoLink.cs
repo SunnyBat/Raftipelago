@@ -1,5 +1,6 @@
 ﻿//using Archipelago.MultiClient.Net;
 //using Archipelago.MultiClient.Net.Packets;
+using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -63,16 +64,16 @@ namespace Raftipelago.Network
             //_session.SendPacket(locationListPacket);
         }
 
-        private void _updateReceivedItems(int[] archipelagoIds)
+        private void _updateReceivedItems(int[] archipelagoIds) // TODO this should actually be a NetworkItem array, but we don't have models atm :(
         {
             foreach (var archipelagoId in archipelagoIds)
             {
                 // TODO Optimize AllRecipes search (probably shove archipelagoIds->Item into map)
-                var raftItemIndex = archipelagoId; // TODO Get Raft UniqueIndex
+                var raftItemIndex = ComponentManager<ItemMapping>.Value.getRaftUniqueIndex(archipelagoId);
                 var raftItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(item => item.UniqueIndex == raftItemIndex);
                 raftItem.settings_recipe.Learned = true;
-                // TODO Set Learned to false if not default and not learned
             }
+            // TODO Set Learned to false for items not in archipelagoIds list if not default and not learned
         }
 
         public void CloseSession()

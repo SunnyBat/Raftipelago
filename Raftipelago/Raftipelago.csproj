@@ -37,6 +37,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Data\EmbeddedFileUtils.cs" />
+    <Compile Include="Data\ItemMapping.cs" />
     <Compile Include="Network\ArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
@@ -48,7 +50,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="Data\ItemData.json" />
+    <None Include="Data\ItemMapping.json" />
+    <None Include="Data\HardcodedItemData.json" />
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -85,10 +88,6 @@
     </Reference>
     <Reference Include="NavMeshComponents.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\NavMeshComponents.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>DLLs\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="PathCreator.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\PathCreator.dll</HintPath>
