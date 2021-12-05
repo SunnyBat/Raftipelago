@@ -39,41 +39,6 @@
   <ItemGroup>
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\ItemMapping.cs" />
-    <Compile Include="MultiClient.Net\ArchipelagoPacketBase.cs" />
-    <Compile Include="MultiClient.Net\ArchipelagoSession.cs" />
-    <Compile Include="MultiClient.Net\Converters\ArchipelagoPacketConverter.cs" />
-    <Compile Include="MultiClient.Net\Converters\NamedTupleInterchangeConverter.cs" />
-    <Compile Include="MultiClient.Net\Enums\ArchipelagoClientState.cs" />
-    <Compile Include="MultiClient.Net\Enums\ArchipelagoPacketType.cs" />
-    <Compile Include="MultiClient.Net\Enums\ForfeitModeType.cs" />
-    <Compile Include="MultiClient.Net\Enums\JsonMessagePartColor.cs" />
-    <Compile Include="MultiClient.Net\Enums\JsonMessagePartType.cs" />
-    <Compile Include="MultiClient.Net\Enums\JsonMessageType.cs" />
-    <Compile Include="MultiClient.Net\Enums\RemainingModeType.cs" />
-    <Compile Include="MultiClient.Net\Models\DataPackage.cs" />
-    <Compile Include="MultiClient.Net\Models\GameData.cs" />
-    <Compile Include="MultiClient.Net\Models\JsonMessagePart.cs" />
-    <Compile Include="MultiClient.Net\Models\NetworkItem.cs" />
-    <Compile Include="MultiClient.Net\Models\NetworkPlayer.cs" />
-    <Compile Include="MultiClient.Net\Packets\BouncedPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\BouncePacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\ConnectedPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\ConnectionRefusedPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\ConnectPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\DataPackagePacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\GetDataPackagePacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\LocationChecksPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\LocationInfoPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\LocationScoutsPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\PrintJsonPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\PrintPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\ReceivedItemsPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\RoomInfoPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\RoomUpdatePacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\SayPacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\StatusUpdatePacket.cs" />
-    <Compile Include="MultiClient.Net\Packets\SyncPacket.cs" />
-    <Compile Include="MultiClient.Net\Properties\AssemblyInfo.cs" />
     <Compile Include="Network\ArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
@@ -93,6 +58,9 @@
   <ItemGroup>
     <Reference Include="0Harmony, Version=2.1.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Lib.Harmony.2.1.1\lib\net45\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Archipelago.MultiClient.Net">
+      <HintPath>DLLs\Archipelago.MultiClient.Net.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass.dll">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Raft\Raft_Data/Managed\Assembly-CSharp-firstpass.dll</HintPath>
@@ -366,6 +334,9 @@
     </Reference>
     <Reference Include="HMLCoreLibrary.dll">
       <HintPath>C:\Users\SunnyBat\AppData\Roaming\RaftModLoader\binaries\HMLCoreLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="websocket-sharp">
+      <HintPath>DLLs\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <PropertyGroup>

@@ -1,5 +1,5 @@
-﻿using Archipelago.MultiClient.Net;
-using Archipelago.MultiClient.Net.Packets;
+﻿//using Archipelago.MultiClient.Net;
+//using Archipelago.MultiClient.Net.Packets;
 using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,7 @@ namespace Raftipelago.Network
 {
     public class ArchipelagoLink
     {
-        private readonly ArchipelagoSession _session;
+        //private readonly ArchipelagoSession _session;
         private readonly List<int> _allCheckedLocations = new List<int>();
         public ArchipelagoLink()
         {
@@ -18,19 +18,18 @@ namespace Raftipelago.Network
 
         public ArchipelagoLink(string urlToHost, string username, string password)
         {
-            _session = new ArchipelagoSession(urlToHost);
-            _session.Connect(); // TODO How2connect async (it doesn't return a Task wtf)
-            var connectPacket = new ConnectPacket();
-            connectPacket.Name = username;
-            connectPacket.Password = password;
-            connectPacket.Uuid = new Guid().ToString(); // TODO Unique ID per session, per user, per world?
-            connectPacket.Game = "Raft";
-            connectPacket.Version = new Version(0, 2, 0);
-            _session.SendPacket(connectPacket);
-            _session.PacketReceived += packet =>
-            {
-                Debug.Log($"Packet received: {packet} ({packet.PacketType})");
-            };
+            //_session = new ArchipelagoSession(urlToHost);
+            //_session.Connect(); // TODO How2connect async (it doesn't return a Task wtf)
+            //var connectPacket = new ConnectPacket();
+            //connectPacket.Name = username;
+            //connectPacket.Password = password;
+            //connectPacket.Uuid = new Guid().ToString(); // TODO Unique ID per session, per user, per world?
+            //connectPacket.Game = "Raft";
+            //connectPacket.Version = new Version(0, 2, 0);
+            //_session.SendPacket(connectPacket);
+            //_session.PacketReceived += packet => {
+            //    Debug.Log($"Packet received: {packet} ({packet.PacketType})");
+            //};
 
             // TODO Send ClientReady packet after connected
             // TODO Send Sync packet to receive list of items for this world whenever (re)connecting to server
@@ -56,14 +55,14 @@ namespace Raftipelago.Network
 
         private void _UpdateLocationsChecked()
         {
-            if (_session == null)
-            {
-                return;
-            }
+            //if (_session == null)
+            //{
+            //    return;
+            //}
 
-            var locationListPacket = new LocationChecksPacket();
-            locationListPacket.Locations = _allCheckedLocations;
-            _session.SendPacket(locationListPacket);
+            //var locationListPacket = new LocationChecksPacket();
+            //locationListPacket.Locations = checkedLocations;
+            //_session.SendPacket(locationListPacket);
         }
 
         // TODO this should actually be a NetworkItem array, but we don't have models atm :(
@@ -84,7 +83,7 @@ namespace Raftipelago.Network
 
         public void CloseSession()
         {
-            _session?.Disconnect();
+            //_session.Disconnect();
         }
     }
 }
