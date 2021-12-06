@@ -1,6 +1,4 @@
-﻿//using Archipelago.MultiClient.Net;
-//using Archipelago.MultiClient.Net.Packets;
-using Raftipelago.Data;
+﻿using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,9 +35,9 @@ namespace Raftipelago.Network
             // TODO Parse ReceivedItems packet and add to list when update received
         }
 
-        public void ItemUnlocked(Item_Base raftItem)
+        public void LocationUnlocked(Item_Base locationDefaultRaftItem)
         {
-            var locationId = ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(raftItem.UniqueIndex);
+            var locationId = ComponentManager<ItemMapping>.Value.getArchipelagoLocationId(locationDefaultRaftItem.UniqueIndex);
             if (!_allCheckedLocations.Contains(locationId))
             {
                 _allCheckedLocations.Add(locationId);
@@ -47,10 +45,10 @@ namespace Raftipelago.Network
             }
         }
 
-        public void ItemUnlocked(int raftItemUniqueIndex)
+        public void LocationUnlocked(int locationDefaultRaftItemUniqueIndex)
         {
-            var raftItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(item => item.UniqueIndex == raftItemUniqueIndex);
-            ItemUnlocked(raftItem);
+            var raftItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(item => item.UniqueIndex == locationDefaultRaftItemUniqueIndex);
+            LocationUnlocked(raftItem);
         }
 
         private void _UpdateLocationsChecked()

@@ -51,6 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ArchipelagoProxy.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Models\BasePacket.cs" />
     <Compile Include="Program.cs" />
