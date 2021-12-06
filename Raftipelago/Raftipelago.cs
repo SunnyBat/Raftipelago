@@ -1,8 +1,12 @@
 ﻿using HarmonyLib;
+using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
+using System;
+using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using UnityEngine;
 
 public class RaftipelagoTwo : Mod
@@ -21,9 +25,10 @@ public class RaftipelagoTwo : Mod
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<ItemMapping>.Value = ComponentManager<ItemMapping>.Value ?? new ItemMapping();
+        startProxyServer();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
-        DebugStuff();
+        //DebugStuff();
         Debug.Log("Mod Raftipelago has been loaded!");
     }
 
@@ -33,7 +38,28 @@ public class RaftipelagoTwo : Mod
         patcher.UnpatchAll("com.github.sunnybat.raftipelago");
         ComponentManager<ArchipelagoLink>.Value?.CloseSession();
         ComponentManager<ArchipelagoLink>.Value = null;
+        ComponentManager<ProxyServerDIOnly>.Value?.Disconnect();
+        ComponentManager<ProxyServerDIOnly>.Value = null;
         Debug.Log("Mod Raftipelago has been unloaded!");
+    }
+
+
+    [ConsoleCommand("proxymsg", "Send a message through the Raft proxy")]
+    private static void SendRawMessage(string[] arguments)
+    {
+        if (arguments.Length == 2)
+        {
+            ComponentManager<ProxyServerDIOnly>.Value?.sendMessage(arguments[0], arguments[1]);
+        }
+        else
+        {
+            Debug.LogError("Usage: <i>proxymsg (messageType) (message)</i>");
+        }
+    }
+
+    private void startProxyServer()
+    {
+        ComponentManager<ProxyServerDIOnly>.Value = ComponentManager<ProxyServerDIOnly>.Value ?? new ProxyServerDIOnly();
     }
 
     private void DebugStuff()

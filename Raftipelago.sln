@@ -4,6 +4,8 @@ VisualStudioVersion = 16.0.29411.108
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raftipelago", "Raftipelago\Raftipelago.csproj", "{41D2BDD7-E52C-4470-AC81-5F4B496CC559}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArchipelagoProxy", "ArchipelagoProxy\ArchipelagoProxy.csproj", "{E099280D-5D7B-4471-84B0-F14B87DD67E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
 		{41D2BDD7-E52C-4470-AC81-5F4B496CC559}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41D2BDD7-E52C-4470-AC81-5F4B496CC559}.Release|Any CPU.ActiveCfg = Debug|Any CPU
 		{41D2BDD7-E52C-4470-AC81-5F4B496CC559}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{E099280D-5D7B-4471-84B0-F14B87DD67E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E099280D-5D7B-4471-84B0-F14B87DD67E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E099280D-5D7B-4471-84B0-F14B87DD67E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E099280D-5D7B-4471-84B0-F14B87DD67E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

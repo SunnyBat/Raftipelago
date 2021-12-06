@@ -45,6 +45,7 @@
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Patches\ResearchTable.cs" />
+    <Compile Include="ProxyServerDIOnly.cs" />
     <Compile Include="Raftipelago.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -340,9 +341,6 @@
     </Reference>
     <Reference Include="HMLCoreLibrary.dll">
       <HintPath>C:\Users\SunnyBat\AppData\Roaming\RaftModLoader\binaries\HMLCoreLibrary.dll</HintPath>
-    </Reference>
-    <Reference Include="websocket-sharp">
-      <HintPath>DLLs\websocket-sharp.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
