@@ -9,48 +9,48 @@ namespace ArchipelagoProxy
 {
     public class SocketInteractor
     {
-        private event Action<string> _sendPacket;
+        private readonly object _onPacketReceivedLock = new object();
         private event Action<string, string> _onPacketReceived;
 
-        private Queue<string> messageQueue = new Queue<string>();
+        private ManualResetEvent writeEvent = new ManualResetEvent(false);
+        private Queue<MessageData> messageQueue = new Queue<MessageData>();
 
         public void AddPacketReceivedEvent(Action<string, string> evt)
         {
-            lock (_onPacketReceived)
+            if (evt != null)
             {
-                _onPacketReceived += evt;
+                lock (_onPacketReceivedLock)
+                {
+                    _onPacketReceived += evt;
+                }
+            }
+            else
+            {
+                Console.WriteLine("evt is null! Cannot add");
             }
         }
 
-        public void SendPacket(string message)
+        public void SendPacket(string messageType, string message)
         {
-            lock (_sendPacket)
+            Console.WriteLine($"Queuing message ({messageType}): {message}");
+            lock (writeEvent)
             {
-                _sendPacket(message);
+                messageQueue.Enqueue(new MessageData()
+                {
+                    MessageType = messageType,
+                    Message = message
+                });
+                writeEvent.Set();
             }
         }
 
         public void InteractUntilConnectionClosed(Socket handler)
         {
             var readEvent = new ManualResetEvent(false);
-            var writeEvent = new ManualResetEvent(false);
             var allNetworkEvents = new List<WaitHandle>();
             allNetworkEvents.Add(readEvent);
             allNetworkEvents.Add(writeEvent);
             var allNetworkEventsArr = allNetworkEvents.ToArray();
-            Action<string> sendMsg = message =>
-            {
-                Console.WriteLine("Message to send: " + message);
-                lock (writeEvent)
-                {
-                    messageQueue.Enqueue(message);
-                    writeEvent.Set();
-                }
-            };
-            lock (_sendPacket)
-            {
-                _sendPacket += sendMsg;
-            }
             Action waitForNetworkEvent = () =>
             {
                 var waitedIndex = WaitHandle.WaitAny(allNetworkEventsArr);
@@ -59,7 +59,8 @@ namespace ArchipelagoProxy
                     lock (writeEvent)
                     {
                         var messageToSend = messageQueue.Dequeue();
-                        handler.Send(Encoding.UTF8.GetBytes(messageToSend));
+                        var fullValueStr = $"{Constants.MessageTypeStartStr}{messageToSend.MessageType}{Constants.MessageTypeEndStr}{messageToSend.Message}{Constants.MessageEndStr}";
+                        handler.Send(Encoding.UTF8.GetBytes(fullValueStr));
                     }
                 }
                 else if (waitedIndex != 1) // 1 is read (just release execution), anything else is unknown
@@ -129,7 +130,7 @@ namespace ArchipelagoProxy
                                     message.Remove(message.Length - Constants.MessageEndBytes.Length, Constants.MessageEndBytes.Length);
                                     message.Clear();
                                     isReceivingMessage = false;
-                                    lock (_onPacketReceived)
+                                    lock (_onPacketReceivedLock)
                                     {
                                         _onPacketReceived(messageType.ToString(), message.ToString());
                                     }
@@ -152,8 +153,11 @@ namespace ArchipelagoProxy
             {
                 Console.WriteLine(e);
             }
-
-            _sendPacket -= sendMsg;
+        }
+        private class MessageData
+        {
+            public string MessageType { get; set; }
+            public string Message { get; set; }
         }
     }
 }

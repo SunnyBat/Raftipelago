@@ -54,6 +54,7 @@ public class RaftipelagoTwo : Mod
         else
         {
             Debug.LogError("Usage: <i>proxymsg (messageType) (message)</i>");
+            arguments?.Do(arg => Debug.Log(arg));
         }
     }
 
