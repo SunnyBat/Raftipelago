@@ -24,6 +24,7 @@ namespace ArchipelagoProxy
         /// </summary>
         private Dictionary<string, string> _playerIdToNameMap = new Dictionary<string, string>();
         private int _currentTeamNumber;
+        private int _currentPlayerSlot;
         private readonly ArchipelagoSession _session;
         public ArchipelagoProxy(string urlToHost)
         {
@@ -92,6 +93,8 @@ namespace ArchipelagoProxy
                         _playerIdToNameMap.Add(playerKey, player.Alias);
                     });
                     _currentTeamNumber = connectedPacket.Team;
+                    _currentPlayerSlot = connectedPacket.Slot;
+                    // TODO what to do with things like slotData
                     break;
                 case ArchipelagoPacketType.ReceivedItems:
                     var riPacket = (ReceivedItemsPacket)packet;

@@ -49,7 +49,7 @@ public class RaftipelagoTwo : Mod
     {
         if (arguments.Length == 2)
         {
-            ComponentManager<ProxyServerDIOnly>.Value?.sendMessage(arguments[0], arguments[1]);
+            ComponentManager<ProxyServerDIOnly>.Value?.SendChatMessage(arguments[0], arguments[1]);
         }
         else
         {
