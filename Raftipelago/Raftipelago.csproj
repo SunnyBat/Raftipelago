@@ -41,11 +41,12 @@
     <Compile Include="Data\ItemMapping.cs" />
     <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="Network\ArchipelagoLink.cs" />
+    <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Patches\ResearchTable.cs" />
-    <Compile Include="ProxyServerDIOnly.cs" />
+    <Compile Include="Network\ProxiedArchipelago.cs" />
     <Compile Include="Raftipelago.cs" />
   </ItemGroup>
   <ItemGroup>

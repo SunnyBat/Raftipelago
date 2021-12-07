@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
 using System.Reflection;
@@ -11,14 +10,6 @@ public class RaftipelagoThree : Mod
     private Harmony patcher;
     public void Start()
     {
-        if (ComponentManager<ArchipelagoLink>.Value == null)
-        {
-            ComponentManager<ArchipelagoLink>.Value = new ArchipelagoLink(); // TODO Get URL, username, password from user
-        }
-        else
-        {
-            Debug.LogError("ArchipelagoLink still active, cannot connect");
-        }
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<ItemMapping>.Value = ComponentManager<ItemMapping>.Value ?? new ItemMapping();
@@ -33,10 +24,8 @@ public class RaftipelagoThree : Mod
     {
         // TODO Any additional cleanup
         patcher.UnpatchAll("com.github.sunnybat.raftipelago");
-        ComponentManager<ArchipelagoLink>.Value?.CloseSession();
-        ComponentManager<ArchipelagoLink>.Value = null;
-        ComponentManager<ProxyServerDIOnly>.Value?.Disconnect();
-        ComponentManager<ProxyServerDIOnly>.Value = null;
+        ComponentManager<IArchipelagoLink>.Value?.Disconnect();
+        ComponentManager<IArchipelagoLink>.Value = null;
         Debug.Log("Mod Raftipelago has been unloaded!");
     }
 
@@ -46,7 +35,7 @@ public class RaftipelagoThree : Mod
     {
         if (arguments.Length == 1)
         {
-            ComponentManager<ProxyServerDIOnly>.Value?.SendChatMessage(arguments[0]);
+            ComponentManager<IArchipelagoLink>.Value?.SendChatMessage(arguments[0]);
         }
         else
         {
@@ -57,7 +46,14 @@ public class RaftipelagoThree : Mod
 
     private void startProxyServer()
     {
-        ComponentManager<ProxyServerDIOnly>.Value = ComponentManager<ProxyServerDIOnly>.Value ?? new ProxyServerDIOnly();
+        if (ComponentManager<IArchipelagoLink>.Value == null)
+        {
+            ComponentManager<IArchipelagoLink>.Value = new ProxiedArchipelago(); // TODO Get URL, username, password from user
+        }
+        else
+        {
+            Debug.LogError("ArchipelagoLink still active, cannot connect");
+        }
     }
 
     private void DebugStuff()

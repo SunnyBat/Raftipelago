@@ -1,14 +1,12 @@
 ﻿using Raftipelago.Data;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Threading;
 using UnityEngine;
 
-namespace Raftipelago
+namespace Raftipelago.Network
 {
-    public class ProxyServerDIOnly
+    public class ProxiedArchipelago : IArchipelagoLink
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
         private const string AppDataFolderName = "Raftipelago";
@@ -24,7 +22,7 @@ namespace Raftipelago
         private MethodInfo _setPlayerIsInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
-        public ProxyServerDIOnly()
+        public ProxiedArchipelago()
         {
             _initDllData();
         }
