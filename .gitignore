@@ -33,3 +33,4 @@ packages/
 
 # Raft Modding
 *.rmod
+Raftipelago/Data/*.dll
