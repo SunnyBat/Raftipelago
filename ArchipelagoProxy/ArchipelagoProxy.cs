@@ -100,6 +100,7 @@ namespace ArchipelagoProxy
                     var riPacket = (ReceivedItemsPacket)packet;
                     riPacket.Items.ForEach(rItem =>
                     {
+                        // TODO Filter to just ones we care about
                         var foundByPlayer = _playerIdToNameMap.TryGetValue($"{_currentTeamNumber}-{rItem.Player}", out string playName)
                             ? playName
                             : "<UnknownPlayer>";

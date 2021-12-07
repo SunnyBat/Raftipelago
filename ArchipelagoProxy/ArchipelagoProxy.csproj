@@ -30,6 +30,9 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Archipelago.MultiClient.Net">
       <HintPath>DLLs\Archipelago.MultiClient.Net.dll</HintPath>
@@ -62,4 +65,7 @@
     <Compile Include="SocketInteractor.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>call "$(SolutionDir)copyProxyDLLs.bat" "$(ProjectDir)$(OutDir)" "$(SolutionDir)Raftipelago\Data\"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
