@@ -39,7 +39,7 @@ public class RaftipelagoThree : Mod
         }
         else
         {
-            Debug.LogError("Usage: <i>proxymsg (message)</i>");
+            Debug.LogError("Usage: <i>chatMessage (message)</i>");
             arguments?.Do(arg => Debug.Log(arg));
         }
     }

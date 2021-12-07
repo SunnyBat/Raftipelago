@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("ArchipelagoProxy")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("A proxy that can be used when the Archipelago DLL is unable to be automatically included in a mod. This can be dynamically loaded and reflected into at runtime.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("com.github.sunnybat")]
 [assembly: AssemblyProduct("ArchipelagoProxy")]
 [assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
