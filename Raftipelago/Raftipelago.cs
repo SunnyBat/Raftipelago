@@ -2,14 +2,11 @@
 using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
-using System;
-using System.IO;
 using System.Reflection;
 using System.Text;
-using System.Threading;
 using UnityEngine;
 
-public class RaftipelagoTwo : Mod
+public class RaftipelagoThree : Mod
 {
     private Harmony patcher;
     public void Start()
@@ -44,16 +41,16 @@ public class RaftipelagoTwo : Mod
     }
 
 
-    [ConsoleCommand("proxymsg", "Send a message through the Raft proxy")]
-    private static void SendRawMessage(string[] arguments)
+    [ConsoleCommand("chatMessage", "Send a message through the Raft proxy")]
+    private static void Command_chatMessage(string[] arguments)
     {
-        if (arguments.Length == 2)
+        if (arguments.Length == 1)
         {
-            ComponentManager<ProxyServerDIOnly>.Value?.SendChatMessage(arguments[0], arguments[1]);
+            ComponentManager<ProxyServerDIOnly>.Value?.SendChatMessage(arguments[0]);
         }
         else
         {
-            Debug.LogError("Usage: <i>proxymsg (messageType) (message)</i>");
+            Debug.LogError("Usage: <i>proxymsg (message)</i>");
             arguments?.Do(arg => Debug.Log(arg));
         }
     }

@@ -12,15 +12,14 @@ namespace Raftipelago
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
         private const string AppDataFolderName = "Raftipelago";
-        private const string LibraryFileName = "ArchipelagoProxy.dll";
-        private readonly string EmbeddedFilePath = Path.Combine("Data", LibraryFileName);
+        private const string EmbeddedFileDirectory = "Data";
+        /// <summary>
+        /// Index 0 is the ArchipelagoProxy DLL that we want to actually run code from
+        /// </summary>
+        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll" };
 
-        private string proxyServerDirectory;
-        private string archipelagoProxyFile;
-
+        private Assembly _proxyAssembly;
         private object _proxyServer;
-        private MethodInfo _sendMessage;
-        private string _disconnectMessageType;
 
         private MethodInfo _setPlayerIsInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
@@ -28,13 +27,11 @@ namespace Raftipelago
         public ProxyServerDIOnly()
         {
             _initDllData();
-            _copyDllIfNecessary();
         }
 
         public void Connect(string URL, string username, string password)
         {
-            var assemblyReference = Assembly.LoadFrom(archipelagoProxyFile);
-            var proxyServerRef = assemblyReference.GetType(ArchipelagoProxyClassNamespaceIdentifier);
+            var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
             _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
             _hookUpEvents(proxyServerRef);
             _connectToArchipelago(proxyServerRef, username, password);
@@ -62,20 +59,26 @@ namespace Raftipelago
         private void _initDllData()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName); // TODO Change to Path.Format or whatever instead of using / directly
-            archipelagoProxyFile = Path.Combine(proxyServerDirectory, LibraryFileName);
-        }
-
-        private void _copyDllIfNecessary()
-        {
+            var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName); // TODO Change to Path.Format or whatever instead of using / directly
             if (!Directory.Exists(proxyServerDirectory))
             {
                 Directory.CreateDirectory(proxyServerDirectory);
             }
-            var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(EmbeddedFilePath);
+            foreach (var fileName in LibraryFileNames)
+            {
+                var embeddedFilePath = Path.Combine(EmbeddedFileDirectory, fileName);
+                var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
+                _copyDllIfNecessary(embeddedFilePath, outputFilePath);
+                _proxyAssembly = _proxyAssembly ?? Assembly.LoadFrom(outputFilePath); // Only take first one
+            }
+        }
+
+        private void _copyDllIfNecessary(string embeddedFilePath, string outputFilePath)
+        {
+            var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(embeddedFilePath);
             try
             {
-                File.WriteAllBytes(archipelagoProxyFile, assemblyData);
+                File.WriteAllBytes(outputFilePath, assemblyData);
             }
             catch (Exception)
             {
