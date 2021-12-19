@@ -67,7 +67,14 @@ namespace Raftipelago.Network
                 var embeddedFilePath = Path.Combine(EmbeddedFileDirectory, fileName);
                 var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
                 _copyDllIfNecessary(embeddedFilePath, outputFilePath);
-                _proxyAssembly = _proxyAssembly ?? Assembly.LoadFrom(outputFilePath); // Only take first one
+                if (_proxyAssembly == null) // Only take first one
+                {
+                    _proxyAssembly = Assembly.LoadFrom(outputFilePath);
+                }
+                else
+                {
+                    Assembly.LoadFrom(outputFilePath);
+                }
             }
         }
 
