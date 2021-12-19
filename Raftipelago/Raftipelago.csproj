@@ -40,7 +40,6 @@
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\ItemMapping.cs" />
     <Compile Include="Data\SpriteManager.cs" />
-    <Compile Include="Network\ArchipelagoLink.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\NotificationManager.cs" />

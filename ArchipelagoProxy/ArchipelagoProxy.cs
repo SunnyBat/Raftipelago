@@ -5,74 +5,112 @@ using Archipelago.MultiClient.Net.Packets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace ArchipelagoProxy
 {
     public class ArchipelagoProxy
     {
-        // Events FROM Raft
-        public event Action<bool> SetPlayerIsInWorld;
-        public event Action<string> SendChatMessage;
-        public event Action<int, string> LocationFromCurrentWorldUnlocked;
+        /*
+         * Current Thoughts on What to Do Here
+         * - Do not sync data TO Raft until a Raft world is loaded
+         * - Keep track of all items unlocked by Archipelago, even if not loaded into world yet
+         * - When Raft world is loaded, have Raft world synchronize all location unlocks to ArchipelagoProxy
+         * - After Raft world is loaded and items are synchronized from Archipelago and Raft, synchronize all unlocks from Archipelago and not from Raft, with Raft
+         * -- This means that once synchronized, the server and client are up to date
+         * 
+         * Open Questions
+         * - Is the StatusUpdate packet's ClientState.ClientGoal (which is documented as "Goal Completion") expected to be set by us automatically, or is this a "Complete"/"Forfeit" command thing?
+         * -- Maybe depends on configuration of run?
+         */
 
         // Events TO Raft
-        public event Action<string> ChatMessageReceived;
-        public event Action<int, string> RaftItemUnlockedForCurrentWorld;
-
         /// <summary>
-        /// Mapped as (teamNumber)-(playerId) :: (playerAlias)
+        /// Called when a new Raft item is unlocked for the current world.
         /// </summary>
-        private Dictionary<string, string> _playerIdToNameMap = new Dictionary<string, string>();
-        private int _currentTeamNumber;
-        private int _currentPlayerSlot;
-        private readonly ArchipelagoSession _session;
+        public event Action<int, string> RaftItemUnlockedForCurrentWorld;
+        /// <summary>
+        /// Called when a message is received. This can be a chat message, an item received message, etc
+        /// </summary>
+        public event Action<string> PrintMessage;
+
+        public readonly ArchipelagoSession _session; // TODO Make private
+
+        // Tracking between Archipelago Server <-> Proxy <-> Raft
+        private bool isRaftWorldLoaded = false;
+        private int hintCost = 0;
+        private int currentHintPoints = 0;
         public ArchipelagoProxy(string urlToHost)
         {
-            SetPlayerIsInWorld += isInWorld =>
-            {
-                _session.Socket.SendPacket(new StatusUpdatePacket()
-                {
-                    Status = isInWorld
-                        ? ArchipelagoClientState.ClientPlaying
-                        : ArchipelagoClientState.ClientReady
-                });
-            };
-            SendChatMessage += message =>
-            {
-                _session.Socket.SendPacket(new SayPacket()
-                {
-                    Text = message
-                });
-            };
-            LocationFromCurrentWorldUnlocked += (locationId, playerName) =>
-            {
-                Console.WriteLine($"Player {playerName} unlocked location {locationId}");
-            };
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
+            _session.Items.ItemReceived += itemHelper => // Called once per new item, don't loop dequeue (though it only enqueus one item at a time anyways)
+            {
+                var nextItem = itemHelper.DequeueItem();
+                // TODO Don't crash on invalid index
+                RaftItemUnlockedForCurrentWorld(nextItem.Item, _session.Players.GetPlayerName(nextItem.Player));
+            };
             _session.Socket.PacketReceived += packet =>
             {
                 HandlePacket(packet);
             };
         }
 
+        public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
+        {
+            _session.Locations.CompleteLocationChecks(locationIds);
+        }
+
+        public void SetIsPlayerInWorld(bool isInWorld)
+        {
+            _session.Socket.SendPacket(new StatusUpdatePacket()
+            {
+                Status = isInWorld
+                    ? ArchipelagoClientState.ClientPlaying
+                    : ArchipelagoClientState.ClientReady
+            });
+            isRaftWorldLoaded = isInWorld;
+        }
+
+        public void SendChatMessage(string message)
+        {
+            _session.Socket.SendPacket(new SayPacket()
+            {
+                Text = message
+            });
+        }
+
+        public void HintForItem(string itemText)
+        {
+            // TODO How2hint, it's not anywhere in protocol =/ Probably read spoiler log in code and find item? Or something...
+            Console.WriteLine(itemText);
+        }
+
         public void Connect(string username, string password)
         {
-            if (ChatMessageReceived == null
-                || RaftItemUnlockedForCurrentWorld == null)
+            var invalidMethodNames = new List<string>();
+            _addNameIfInvalid(RaftItemUnlockedForCurrentWorld, "RaftItemUnlockedForCurrentWorld", invalidMethodNames);
+            _addNameIfInvalid(PrintMessage, "PrintMessage", invalidMethodNames);
+            if (invalidMethodNames.Count > 0)
             {
-                throw new InvalidOperationException("Not all Proxy -> Raft events are set up. Set those up before connecting.");
+                throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            _session.Socket.Connect(); // TODO How2connect async (it doesn't return a Task wtf)
-            var connectPacket = new ConnectPacket();
-            connectPacket.Name = username;
-            connectPacket.Password = password;
-            connectPacket.Uuid = new Guid().ToString(); // TODO Unique ID per session, per user, per world?
-            connectPacket.Game = "Raft";
-            connectPacket.Version = new Version(0, 2, 0);
-            _session.Socket.SendPacket(connectPacket);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 0), password: password);
+            if (loginResult.Successful)
+            {
+                Console.WriteLine("Connected");
+            }
+            else
+            {
+                Console.WriteLine("Failed to connect");
+            }
+        }
 
-            // TODO Send ClientReady packet after connected
-            // TODO Parse ReceivedItems packet and add to list when update received
+        private void _addNameIfInvalid(dynamic action, string name, List<string> addTo)
+        {
+            if (action == null)
+            {
+                addTo.Add(name);
+            }
         }
 
         private void HandlePacket(ArchipelagoPacketBase packet)
@@ -80,45 +118,67 @@ namespace ArchipelagoProxy
             Console.WriteLine($"Packet received: {packet.PacketType}");
             switch (packet.PacketType)
             {
+                case ArchipelagoPacketType.RoomInfo:
+                    var roomInfoPacket = (RoomInfoPacket)packet;
+                    hintCost = roomInfoPacket.HintCost;
+                    // TODO Handle forfeit, hint, etc logic? Or does Archipelago server handle it for us and throw errors at us?
+                    break;
                 case ArchipelagoPacketType.Say:
-                    ChatMessageReceived(((SayPacket)packet).Text);
+                    PrintMessage(((SayPacket)packet).Text);
                     break;
                 case ArchipelagoPacketType.Connected:
-                    var connectedPacket = (ConnectedPacket)packet;
-                    _session.Socket.SendPacket(new SyncPacket());
-                    connectedPacket.Players.ForEach(player =>
-                    {
-                        var playerKey = GetPlayerIdString(player);
-                        _playerIdToNameMap.Remove(playerKey);
-                        _playerIdToNameMap.Add(playerKey, player.Alias);
-                    });
-                    _currentTeamNumber = connectedPacket.Team;
-                    _currentPlayerSlot = connectedPacket.Slot;
+                    SetIsPlayerInWorld(isRaftWorldLoaded); // TODO should we optimize this out, eg SendMultiplePackets() and a manual packet creation?
                     // TODO what to do with things like slotData
                     break;
                 case ArchipelagoPacketType.ReceivedItems:
-                    var riPacket = (ReceivedItemsPacket)packet;
-                    riPacket.Items.ForEach(rItem =>
+                    // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
+                    break;
+                case ArchipelagoPacketType.Print:
+                    var printPacket = (PrintPacket)packet;
+                    PrintMessage(printPacket.Text);
+                    break;
+                case ArchipelagoPacketType.PrintJSON:
+                    var printJsonPacket = (PrintJsonPacket)packet;
+                    StringBuilder build = new StringBuilder();
+                    foreach (var messagePart in printJsonPacket.Data)
                     {
-                        // TODO Filter to just ones we care about
-                        var foundByPlayer = _playerIdToNameMap.TryGetValue($"{_currentTeamNumber}-{rItem.Player}", out string playName)
-                            ? playName
-                            : "<UnknownPlayer>";
-                        RaftItemUnlockedForCurrentWorld(rItem.Item, foundByPlayer);
-                    });
+                        build.Append(GetStringForJsonPartData(messagePart));
+                    }
+                    PrintMessage(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
+                    break;
+                case ArchipelagoPacketType.RoomUpdate:
+                    var roomUpdatePacket = (RoomUpdatePacket)packet;
+                    hintCost = roomUpdatePacket.HintCost;
+                    currentHintPoints = roomUpdatePacket.HintPoints;
                     break;
                 default:
                     var pktTxt = $"Unknown packet: {JsonConvert.SerializeObject(packet)}";
-                    ChatMessageReceived(pktTxt); // TODO Separate message? Maybe have it print in red or something? =/
+                    PrintMessage(pktTxt);
                     Console.WriteLine(pktTxt);
                     break;
             }
             // TODO Implement other packets
         }
-        
-        private string GetPlayerIdString(NetworkPlayer player)
+
+        private string GetStringForJsonPartData(JsonMessagePart data)
         {
-            return $"{player.Team}-{player.Slot}";
+            switch (data.Type)
+            {
+                case JsonMessagePartType.PlayerId:
+                    return _session.Players.GetPlayerName(int.Parse(data.Text)); // TODO Error handling
+                case JsonMessagePartType.ItemId:
+                    return _session.Items.GetItemName(int.Parse(data.Text)); // TODO Error handling
+                case JsonMessagePartType.LocationId:
+                    return _session.Locations.GetLocationNameFromId(int.Parse(data.Text));
+                case JsonMessagePartType.Color:
+                    return ""; // TODO Color? Ignoring for now
+                case JsonMessagePartType.PlayerName: // Explicitly calling out expected strings to just return data for
+                case JsonMessagePartType.ItemName:
+                case JsonMessagePartType.LocationName:
+                case JsonMessagePartType.EntranceName:
+                default:
+                    return data.Text;
+            }
         }
     }
 }

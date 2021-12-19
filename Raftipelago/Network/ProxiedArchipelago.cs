@@ -14,7 +14,7 @@ namespace Raftipelago.Network
         /// <summary>
         /// Index 0 is the ArchipelagoProxy DLL that we want to actually run code from
         /// </summary>
-        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Newtonsoft.Json.dll", "Archipelago.MultiClient.Net.dll", "websocket-sharp.dll" };
+        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Newtonsoft.Json.dll", "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll" };
 
         private Assembly _proxyAssembly;
         private object _proxyServer;
@@ -22,6 +22,7 @@ namespace Raftipelago.Network
         private MethodInfo _setPlayerIsInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
+        private MethodInfo _disconnectMethodInfo;
         public ProxiedArchipelago()
         {
             _initDllData();
@@ -45,13 +46,14 @@ namespace Raftipelago.Network
             _sendChatMessageMethodInfo.Invoke(_proxyServer, new object[] { message });
         }
 
-        public void LocationUnlocked(int locationId)
+        public void LocationUnlocked(params int[] locationIds)
         {
-            _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { });
+            _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
         }
 
         public void Disconnect()
         {
+            _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
         }
 
         private void _initDllData()
@@ -69,10 +71,12 @@ namespace Raftipelago.Network
                 _copyDllIfNecessary(embeddedFilePath, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
+                    Debug.Log("Loading proxy assembly " + outputFilePath);
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
                 }
                 else
                 {
+                    Debug.Log("Loading library assembly " + outputFilePath);
                     Assembly.LoadFrom(outputFilePath);
                 }
             }
@@ -99,23 +103,35 @@ namespace Raftipelago.Network
         private void _hookUpEvents(Type proxyServerRef)
         {
             // Events for data sent to us
-            _attachEvent(proxyServerRef, "ChatMessageReceived", (string message) => {
-                Debug.Log(message); // TODO Display to user in friendly way
+            _attachEvent(proxyServerRef, "PrintMessage", (message) => {
+                Debug.Log(message);
             });
             _attachEvent(proxyServerRef, "RaftItemUnlockedForCurrentWorld", (int itemId, string player) => {
                 Debug.Log($"{player} found {itemId}"); // TODO Make item available
             });
 
             // Events for data that we send to proxy
-            _setPlayerIsInWorldMethodInfo = proxyServerRef.GetEvent("SetPlayerIsInWorld").GetRaiseMethod();
-            _sendChatMessageMethodInfo = proxyServerRef.GetEvent("SendChatMessage").GetRaiseMethod();
-            _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetEvent("LocationFromCurrentWorldUnlocked").GetRaiseMethod();
+            _setPlayerIsInWorldMethodInfo = proxyServerRef.GetMethod("SetPlayerIsInWorld");
+            _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
+            _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
+            _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
         private void _connectToArchipelago(Type proxyServerRef, string username, string password)
         {
-            var proxyServerStartMethodInfo = proxyServerRef.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
-            proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
+            try
+            {
+                Debug.Log("CTA_1");
+                var proxyServerStartMethodInfo = proxyServerRef.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
+                Debug.Log("CTA_2");
+                proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
+                Debug.Log("CTA_3");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw e;
+            }
         }
 
         private void _attachEvent(Type proxyServerRef, string eventName, Action<string> callback)

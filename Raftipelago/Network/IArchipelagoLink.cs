@@ -14,7 +14,7 @@ namespace Raftipelago.Network
 
         void SendChatMessage(string message);
 
-        void LocationUnlocked(int locationId);
+        void LocationUnlocked(params int[] locationId);
 
         void Disconnect();
     }
