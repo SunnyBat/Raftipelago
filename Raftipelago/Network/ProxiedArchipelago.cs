@@ -14,7 +14,7 @@ namespace Raftipelago.Network
         /// <summary>
         /// Index 0 is the ArchipelagoProxy DLL that we want to actually run code from
         /// </summary>
-        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Archipelago.MultiClient.Net.dll", "websocket-sharp.dll" };
+        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Newtonsoft.Json.dll", "Archipelago.MultiClient.Net.dll", "websocket-sharp.dll" };
 
         private Assembly _proxyAssembly;
         private object _proxyServer;
