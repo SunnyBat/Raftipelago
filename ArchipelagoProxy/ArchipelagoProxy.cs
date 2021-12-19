@@ -30,7 +30,7 @@ namespace ArchipelagoProxy
         {
             SetPlayerIsInWorld += isInWorld =>
             {
-                _session.SendPacket(new StatusUpdatePacket()
+                _session.Socket.SendPacket(new StatusUpdatePacket()
                 {
                     Status = isInWorld
                         ? ArchipelagoClientState.ClientPlaying
@@ -39,7 +39,7 @@ namespace ArchipelagoProxy
             };
             SendChatMessage += message =>
             {
-                _session.SendPacket(new SayPacket()
+                _session.Socket.SendPacket(new SayPacket()
                 {
                     Text = message
                 });
@@ -48,8 +48,8 @@ namespace ArchipelagoProxy
             {
                 Console.WriteLine($"Player {playerName} unlocked location {locationId}");
             };
-            _session = new ArchipelagoSession(urlToHost);
-            _session.PacketReceived += packet =>
+            _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
+            _session.Socket.PacketReceived += packet =>
             {
                 HandlePacket(packet);
             };
@@ -62,14 +62,14 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException("Not all Proxy -> Raft events are set up. Set those up before connecting.");
             }
-            _session.Connect(); // TODO How2connect async (it doesn't return a Task wtf)
+            _session.Socket.Connect(); // TODO How2connect async (it doesn't return a Task wtf)
             var connectPacket = new ConnectPacket();
             connectPacket.Name = username;
             connectPacket.Password = password;
             connectPacket.Uuid = new Guid().ToString(); // TODO Unique ID per session, per user, per world?
             connectPacket.Game = "Raft";
             connectPacket.Version = new Version(0, 2, 0);
-            _session.SendPacket(connectPacket);
+            _session.Socket.SendPacket(connectPacket);
 
             // TODO Send ClientReady packet after connected
             // TODO Parse ReceivedItems packet and add to list when update received
@@ -85,7 +85,7 @@ namespace ArchipelagoProxy
                     break;
                 case ArchipelagoPacketType.Connected:
                     var connectedPacket = (ConnectedPacket)packet;
-                    _session.SendPacket(new SyncPacket());
+                    _session.Socket.SendPacket(new SyncPacket());
                     connectedPacket.Players.ForEach(player =>
                     {
                         var playerKey = GetPlayerIdString(player);

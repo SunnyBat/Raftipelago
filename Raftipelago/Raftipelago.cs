@@ -23,9 +23,9 @@ public class RaftipelagoThree : Mod
     public void OnModUnload()
     {
         // TODO Any additional cleanup
-        patcher.UnpatchAll("com.github.sunnybat.raftipelago");
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         ComponentManager<IArchipelagoLink>.Value = null;
+        patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
         Debug.Log("Mod Raftipelago has been unloaded!");
     }
 
@@ -52,8 +52,9 @@ public class RaftipelagoThree : Mod
         }
         else
         {
-            Debug.LogError("ArchipelagoLink still active, cannot connect");
+            Debug.LogError("ArchipelagoLink still active");
         }
+        ComponentManager<IArchipelagoLink>.Value.Connect("localhost", "SunnyBat-Raft", "");
     }
 
     private void DebugStuff()

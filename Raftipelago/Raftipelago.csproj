@@ -347,11 +347,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Data\Archipelago.MultiClient.Net.dll" />
+    <Content Include="Data\Archipelago.MultiClient.Net.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Data\ArchipelagoProxy.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\websocket-sharp.dll" />
+    <Content Include="Data\websocket-sharp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <PropertyGroup>
     <PreBuildEvent>
