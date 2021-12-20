@@ -53,7 +53,15 @@ namespace Raftipelago.Network
 
         public void Disconnect()
         {
-            _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
+            try
+            {
+                _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
+            }
+            catch (Exception e)
+            {
+                // At this point all we can do is clean up everything else -- don't throw exception up or we'll fail to unload everything
+                Debug.LogError(e);
+            }
         }
 
         private void _initDllData()
