@@ -30,7 +30,11 @@ namespace Raftipelago.Patches
 			__instance.SortMenuItems();
 			return false;
 		}
+	}
 
+	[HarmonyPatch(typeof(Inventory_ResearchTable), "Research", typeof(Item_Base), typeof(bool))]
+	public class HarmonyPatch_Inventory_ResearchTable_Research
+	{
 		[HarmonyPrefix]
 		public static bool Research_AlwaysReplace(Item_Base item, bool autoLearnRecipe,
 			ref bool __result,
@@ -39,8 +43,8 @@ namespace Raftipelago.Patches
 			string ___eventRef_Research,
 			ref List<ResearchMenuItem> ___menuItems,
 			Dictionary<Item_Base, AvaialableResearchItem> ___availableResearchItems)
-        {
-			if (__instance.CanResearchItem(item))
+		{
+			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
 				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
 				___researchedItems.Add(item);
@@ -51,7 +55,11 @@ namespace Raftipelago.Patches
 						ResearchMenuItem researchMenuItem = ___menuItems[i];
 						if (researchMenuItem.GetItem().UniqueIndex == item.settings_recipe.BlueprintItem.UniqueIndex)
 						{
-							researchMenuItem.gameObject.SetActive(true);
+							// TODO How to handle? Separate unlock or just ignore? If ignoring, just override CanResearchBlueprint() to always false.
+							// Alternatively, we could make blueprints NOT auto-unlock items, and require they be put into the research table. If we
+							// do this, we'll want to add the item with a custom recipe to the research table itself in case the blueprint is lost
+							// (to prevent softlocks).
+							//researchMenuItem.gameObject.SetActive(true);
 							break;
 						}
 					}
@@ -61,24 +69,6 @@ namespace Raftipelago.Patches
 					if (___availableResearchItems.ContainsKey(item))
 					{
 						___availableResearchItems[item].SetResearchedState(true);
-					}
-					int num = 0;
-					for (int j = 0; j < ___menuItems.Count; j++)
-					{
-						___menuItems[j].Research(item);
-						float sortBingoPercent = ___menuItems[j].SortBingoPercent;
-						if (sortBingoPercent == 1f && autoLearnRecipe)
-						{
-							___menuItems[j].LearnInstantly();
-						}
-						if (sortBingoPercent == 1f || ___menuItems[j].Learned)
-						{
-							num++;
-						}
-					}
-					if (num == ___menuItems.Count && GameModeValueManager.GetCurrentGameModeValue().achievementVariables.trackAchievments)
-					{
-						AchievementHandler.UnlockAchievement(AchievementType.ach_researcher);
 					}
 				}
 				__instance.SortMenuItems();
