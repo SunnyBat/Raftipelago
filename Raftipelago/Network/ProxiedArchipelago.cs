@@ -22,6 +22,7 @@ namespace Raftipelago.Network
         private MethodInfo _setPlayerIsInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
+        private MethodInfo _getLocationIdFromName;
         private MethodInfo _disconnectMethodInfo;
         public ProxiedArchipelago()
         {
@@ -48,6 +49,16 @@ namespace Raftipelago.Network
 
         public void LocationUnlocked(params int[] locationIds)
         {
+            _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
+        }
+
+        public void LocationUnlocked(params string[] locationNames)
+        {
+            int[] locationIds = new int[locationNames.Length];
+            for (var i = 0; i < locationNames.Length; i++)
+            {
+                locationIds[i] = (int) _getLocationIdFromName.Invoke(_proxyServer, new object[] { locationNames[i] });
+            }
             _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
         }
 
@@ -119,9 +130,11 @@ namespace Raftipelago.Network
             });
 
             // Events for data that we send to proxy
+            // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
             _setPlayerIsInWorldMethodInfo = proxyServerRef.GetMethod("SetPlayerIsInWorld");
             _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
+            _getLocationIdFromName = proxyServerRef.GetMethod("GetLocationIdFromName");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 

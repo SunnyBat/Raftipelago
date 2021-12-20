@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
 using static ResearchMenuItem;
 
 namespace Raftipelago.Patches
@@ -38,6 +39,43 @@ namespace Raftipelago.Patches
 				return false;
 			}
 			return true;
+		}
+	}
+
+	[HarmonyPatch(typeof(ResearchMenuItem), "Learn")]
+	public class HarmonyPatch_ResearchMenuItem_Learn
+	{
+		[HarmonyPrefix]
+		public static bool Learn_AlwaysReplace(
+			ref bool ___learned,
+			ref CanvasGroup ___canvasgroup,
+			ref Button ___learnButton,
+			ref Text ___learnedText,
+			ref CraftingMenu ___craftingMenu,
+			ref List<BingoMenuItem> ___bingoMenuItems,
+			Inventory_ResearchTable ___inventoryRef)
+		{
+			// Original function with item learn omission
+			___learned = true;
+			___canvasgroup.alpha = 0.5f;
+			___learnButton.gameObject.SetActive(false);
+			___learnedText.gameObject.SetActive(true);
+			if (CanvasHelper.ActiveMenu == MenuType.Inventory)
+			{
+				___craftingMenu.ReselectCategory();
+			}
+
+			// Addition by Raftipelago
+			var ari = (Dictionary<Item_Base, AvaialableResearchItem>)typeof(Inventory_ResearchTable).GetField("availableResearchItems").GetValue(___inventoryRef);
+			// This will remove the items from the research list. If they are not researched (theoretically this will never happen),
+			// this will just shrug and move on.
+			var researchedItems = ___inventoryRef.GetResearchedItems(); // Pulls direct reference to list, which we can modify
+			___bingoMenuItems.ForEach(itm =>
+			{
+				ari[itm.BingoItem].SetResearchedState(false);
+				researchedItems.Remove(itm.BingoItem);
+			});
+			return false;
 		}
 	}
 }

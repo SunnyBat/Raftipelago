@@ -1,6 +1,7 @@
 ﻿using FMODUnity;
 using HarmonyLib;
 using Raftipelago.Data;
+using Raftipelago.Network;
 using Steamworks;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace Raftipelago.Patches
 				{
 					// Specifically skip researching so we can spam this as necessary
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+					Debug.Log("Learned item from research table: " + ___menuItems[i].name);
+					//ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(___menuItems[i].name); // TODO Verify this is correct name
 					break;
 				}
 			}

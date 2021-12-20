@@ -16,6 +16,8 @@ namespace Raftipelago.Network
 
         void LocationUnlocked(params int[] locationId);
 
+        void LocationUnlocked(params string[] locationName);
+
         void Disconnect();
     }
 }

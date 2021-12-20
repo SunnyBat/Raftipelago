@@ -44,7 +44,6 @@
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
-    <Compile Include="Patches\ResearchTable.cs" />
     <Compile Include="Network\ProxiedArchipelago.cs" />
     <Compile Include="Raftipelago.cs" />
   </ItemGroup>
