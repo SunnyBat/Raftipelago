@@ -12,13 +12,13 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_Inventory_ResearchTable_LearnItem
 	{
 		[HarmonyPrefix]
-		public static bool LearnItem_OptionallyReplace(Item_Base item, CSteamID researcherID,
+		public static bool LearnItem_AlwaysReplace(Item_Base item, CSteamID researcherID,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			ref string ___eventRef_Learn,
-			ref NotificationManager ___notificationManager,
 			ref List<ResearchMenuItem> ___menuItems)
 		{
+			Debug.Log("LearnItem_AlwaysReplace: " + item.UniqueName);
 			for (int i = 0; i < ___menuItems.Count; i++)
 			{
 				if (!___menuItems[i].Learned && ___menuItems[i].GetItem().UniqueIndex == item.UniqueIndex)
@@ -26,7 +26,8 @@ namespace Raftipelago.Patches
 					// Specifically skip researching so we can spam this as necessary
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 					Debug.Log("Learned item from research table: " + ___menuItems[i].name);
-					//ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(___menuItems[i].name); // TODO Verify this is correct name
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(___menuItems[i].name); // TODO Verify this is correct name
+					___menuItems[i].Learn();
 					break;
 				}
 			}
@@ -47,10 +48,12 @@ namespace Raftipelago.Patches
 			ref List<ResearchMenuItem> ___menuItems,
 			Dictionary<Item_Base, AvaialableResearchItem> ___availableResearchItems)
 		{
+			Debug.Log("Research_AlwaysReplace: " + item.UniqueName);
 			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
 				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
 				___researchedItems.Add(item);
+				Debug.Log("NL: " + ___researchedItems.Count);
 				if (item.settings_recipe.IsBlueprint)
 				{
 					for (int i = 0; i < ___menuItems.Count; i++)
@@ -63,6 +66,7 @@ namespace Raftipelago.Patches
 							// do this, we'll want to add the item with a custom recipe to the research table itself in case the blueprint is lost
 							// (to prevent softlocks).
 							//researchMenuItem.gameObject.SetActive(true);
+							Debug.Log("Skipping blueprint " + item.UniqueName);
 							break;
 						}
 					}
@@ -71,14 +75,24 @@ namespace Raftipelago.Patches
 				{
 					if (___availableResearchItems.ContainsKey(item))
 					{
+						Debug.Log("Successfully researched " + item.UniqueName);
 						___availableResearchItems[item].SetResearchedState(true);
+						for (int j = 0; j < ___menuItems.Count; j++)
+						{
+							___menuItems[j].Research(item);
+						}
 					}
+					else
+                    {
+						Debug.Log("Unable to find research item " + item.UniqueName);
+                    }
 				}
 				__instance.SortMenuItems();
 				__result = true;
 			}
 			else
 			{
+				Debug.Log("Can't research " + item.UniqueName);
 				__result = false;
 			}
 			return false;

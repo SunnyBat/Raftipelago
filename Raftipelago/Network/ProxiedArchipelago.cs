@@ -1,5 +1,6 @@
 ﻿using Raftipelago.Data;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace Raftipelago.Network
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
         private MethodInfo _getLocationIdFromName;
+        private MethodInfo _getItemNameFromId;
         private MethodInfo _disconnectMethodInfo;
         public ProxiedArchipelago()
         {
@@ -54,12 +56,28 @@ namespace Raftipelago.Network
 
         public void LocationUnlocked(params string[] locationNames)
         {
-            int[] locationIds = new int[locationNames.Length];
-            for (var i = 0; i < locationNames.Length; i++)
+            List<int> locationIds = new List<int>();
+            foreach (var locName in locationNames)
             {
-                locationIds[i] = (int) _getLocationIdFromName.Invoke(_proxyServer, new object[] { locationNames[i] });
+                var locationId = (int)_getLocationIdFromName.Invoke(_proxyServer, new object[] { locName });
+                if (locationId != -1)
+                {
+                    locationIds.Add(locationId);
+                }
+                else
+                {
+                    Debug.Log("Error finding ID for location " + locName + ", event will be swallowed");
+                }
             }
-            _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
+            if (locationIds.Count > 0)
+            {
+                LocationUnlocked(locationIds.ToArray());
+            }
+        }
+
+        public string GetItemNameFromId(int itemId)
+        {
+            return (string)_getItemNameFromId.Invoke(_proxyServer, new object[] { itemId });
         }
 
         public void Disconnect()
@@ -126,7 +144,29 @@ namespace Raftipelago.Network
                 Debug.Log(message);
             });
             _attachEvent(proxyServerRef, "RaftItemUnlockedForCurrentWorld", (int itemId, string player) => {
-                Debug.Log($"{player} found {itemId}"); // TODO Make item available
+                var componentManager = ComponentManager<ItemMapping>.Value;
+                if (componentManager != null)
+                {
+                    var sentItemName = GetItemNameFromId(itemId);
+                    // TODO Verify that these aren't overwritten when a world is loaded
+                    var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
+                    if (foundItem)
+                    {
+                        // TODO How to get SteamID of remote player or otherwise display different player name
+                        //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                        //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+                        foundItem.settings_recipe.Learned = true;
+                    }
+                    else
+                    {
+                        Debug.Log($"Unable to find {sentItemName} ({itemId})");
+                    }
+                }
+                else
+                {
+                    Debug.Log("Unable to research item " + itemId + "; componentManager is null");
+                    // TODO Cache and then recall cache when world loaded? Assuming this is due to the world not being loaded of course.
+                }
             });
 
             // Events for data that we send to proxy
@@ -135,6 +175,7 @@ namespace Raftipelago.Network
             _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
             _getLocationIdFromName = proxyServerRef.GetMethod("GetLocationIdFromName");
+            _getItemNameFromId = proxyServerRef.GetMethod("GetItemNameFromId");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 

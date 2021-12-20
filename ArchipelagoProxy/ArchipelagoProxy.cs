@@ -110,6 +110,11 @@ namespace ArchipelagoProxy
             return _session.Locations.GetLocationIdFromName("Raft", locationName);
         }
 
+        public string GetItemNameFromId(int itemId)
+        {
+            return _session.Items.GetItemName(itemId);
+        }
+
         public void Disconnect()
         {
             _session.Socket.Disconnect();

@@ -18,6 +18,8 @@ namespace Raftipelago.Network
 
         void LocationUnlocked(params string[] locationName);
 
+        string GetItemNameFromId(int itemId);
+
         void Disconnect();
     }
 }
