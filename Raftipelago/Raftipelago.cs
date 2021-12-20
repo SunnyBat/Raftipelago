@@ -12,7 +12,6 @@ public class RaftipelagoThree : Mod
     {
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
-        ComponentManager<ItemMapping>.Value = ComponentManager<ItemMapping>.Value ?? new ItemMapping();
         startProxyServer();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
@@ -43,6 +42,12 @@ public class RaftipelagoThree : Mod
             Debug.LogError("Usage: <i>chatMessage (message)</i>");
             arguments?.Do(arg => Debug.Log(arg));
         }
+    }
+
+    [ConsoleCommand("dq", "Test item dequeuing")]
+    private static void dq(string[] arguments)
+    {
+        ((ProxiedArchipelago)ComponentManager<IArchipelagoLink>.Value)?.dq();
     }
 
     private void startProxyServer()

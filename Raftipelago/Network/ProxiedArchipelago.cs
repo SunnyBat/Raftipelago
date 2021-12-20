@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -28,7 +29,9 @@ namespace Raftipelago.Network
         private MethodInfo _disconnectMethodInfo;
         public ProxiedArchipelago()
         {
+            Debug.Log(Assembly.GetAssembly(typeof(Newtonsoft.Json.JsonConvert)));
             _initDllData();
+            Debug.Log(Assembly.GetAssembly(typeof(Newtonsoft.Json.JsonConvert)));
         }
 
         public void Connect(string URL, string username, string password)
@@ -37,6 +40,15 @@ namespace Raftipelago.Network
             _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
             _hookUpEvents(proxyServerRef);
             _connectToArchipelago(proxyServerRef, username, password);
+        }
+
+        public void dq()
+        {
+            // TEST
+            var ips = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier).GetField("_session").GetValue(_proxyServer);
+            var iH = ips.GetType().GetProperty("Items").GetValue(ips);
+            var irC = iH.GetType().GetField("ItemReceived", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(iH);
+            irC.GetType().GetMethod("Invoke").Invoke(irC, new object[] { iH });
         }
 
         public void SetIsInWorld(bool inWorld)
@@ -71,6 +83,7 @@ namespace Raftipelago.Network
             }
             if (locationIds.Count > 0)
             {
+                Debug.Log("Unlocking locations " + string.Join(",", locationIds));
                 LocationUnlocked(locationIds.ToArray());
             }
         }
@@ -96,7 +109,7 @@ namespace Raftipelago.Network
         private void _initDllData()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName); // TODO Change to Path.Format or whatever instead of using / directly
+            var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
             if (!Directory.Exists(proxyServerDirectory))
             {
                 Directory.CreateDirectory(proxyServerDirectory);
@@ -140,34 +153,8 @@ namespace Raftipelago.Network
         private void _hookUpEvents(Type proxyServerRef)
         {
             // Events for data sent to us
-            _attachEvent(proxyServerRef, "PrintMessage", (message) => {
-                Debug.Log(message);
-            });
-            _attachEvent(proxyServerRef, "RaftItemUnlockedForCurrentWorld", (int itemId, string player) => {
-                var componentManager = ComponentManager<ItemMapping>.Value;
-                if (componentManager != null)
-                {
-                    var sentItemName = GetItemNameFromId(itemId);
-                    // TODO Verify that these aren't overwritten when a world is loaded
-                    var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
-                    if (foundItem)
-                    {
-                        // TODO How to get SteamID of remote player or otherwise display different player name
-                        //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
-                        //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-                        foundItem.settings_recipe.Learned = true;
-                    }
-                    else
-                    {
-                        Debug.Log($"Unable to find {sentItemName} ({itemId})");
-                    }
-                }
-                else
-                {
-                    Debug.Log("Unable to research item " + itemId + "; componentManager is null");
-                    // TODO Cache and then recall cache when world loaded? Assuming this is due to the world not being loaded of course.
-                }
-            });
+            _attachEvent(proxyServerRef, "PrintMessage", PrintMessage);
+            _attachEvent(proxyServerRef, "RaftItemUnlockedForCurrentWorld", RaftItemLockedForCurrentWorld);
 
             // Events for data that we send to proxy
             // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
@@ -184,20 +171,37 @@ namespace Raftipelago.Network
             try
             {
                 var proxyServerStartMethodInfo = proxyServerRef.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
-                try
-                {
-                    proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
-                }
-                catch (Exception e)
-                {
-                    Debug.Log(e);
-                    Debug.Log(e.InnerException);
-                }
+                proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Debug.Log(e);
                 throw e;
+            }
+        }
+
+        private void PrintMessage(string msg)
+        {
+            Debug.Log(msg);
+        }
+
+        private void RaftItemLockedForCurrentWorld(int itemId, string player)
+        {
+            Debug.Log("RIUFCW: " + itemId + ", " + player);
+            var sentItemName = GetItemNameFromId(itemId);
+            // TODO Verify that these aren't overwritten when a world is loaded
+            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
+            if (foundItem)
+            {
+                // TODO How to get SteamID of remote player or otherwise display different player name
+                //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+                Debug.Log("Unlocking " + foundItem.UniqueName);
+                foundItem.settings_recipe.Learned = true;
+            }
+            else
+            {
+                Debug.Log($"Unable to find {sentItemName} ({itemId})");
             }
         }
 

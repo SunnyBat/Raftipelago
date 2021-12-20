@@ -12,16 +12,10 @@ namespace ArchipelagoProxy
     public class ArchipelagoProxy
     {
         /*
-         * Current Thoughts on What to Do Here
-         * - Do not sync data TO Raft until a Raft world is loaded
-         * - Keep track of all items unlocked by Archipelago, even if not loaded into world yet
-         * - When Raft world is loaded, have Raft world synchronize all location unlocks to ArchipelagoProxy
-         * - After Raft world is loaded and items are synchronized from Archipelago and Raft, synchronize all unlocks from Archipelago and not from Raft, with Raft
-         * -- This means that once synchronized, the server and client are up to date
-         * 
          * Open Questions
          * - Is the StatusUpdate packet's ClientState.ClientGoal (which is documented as "Goal Completion") expected to be set by us automatically, or is this a "Complete"/"Forfeit" command thing?
          * -- Maybe depends on configuration of run?
+         * -- Does MultiClient.Net do this for us?
          */
 
         // Events TO Raft
@@ -45,9 +39,21 @@ namespace ArchipelagoProxy
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
             _session.Items.ItemReceived += itemHelper => // Called once per new item, don't loop dequeue (though it only enqueus one item at a time anyways)
             {
-                var nextItem = itemHelper.DequeueItem();
-                // TODO Don't crash on invalid index
-                RaftItemUnlockedForCurrentWorld(nextItem.Item, _session.Players.GetPlayerName(nextItem.Player));
+                try
+                {
+                    PrintMessage("IR1");
+                    var nextItem = itemHelper.DequeueItem();
+                    PrintMessage("IR2");
+                    RaftItemUnlockedForCurrentWorld(nextItem.Item, _session.Players.GetPlayerName(nextItem.Player));
+                    PrintMessage("IR3");
+                }
+                catch (Exception e)
+                {
+                    if (PrintMessage != null)
+                    {
+                        PrintMessage(e.Message);
+                    }
+                }
             };
             _session.Socket.PacketReceived += packet =>
             {
@@ -94,14 +100,14 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 3, 0), password: password);
             if (loginResult.Successful)
             {
-                Console.WriteLine("Connected");
+                PrintMessage("Connected");
             }
             else
             {
-                Console.WriteLine("Failed to connect");
+                PrintMessage("Failed to connect");
             }
         }
 
@@ -130,7 +136,7 @@ namespace ArchipelagoProxy
 
         private void HandlePacket(ArchipelagoPacketBase packet)
         {
-            Console.WriteLine($"Packet received: {packet.PacketType}");
+            PrintMessage($"Packet received: {packet.PacketType}");
             switch (packet.PacketType)
             {
                 case ArchipelagoPacketType.RoomInfo:
@@ -169,7 +175,6 @@ namespace ArchipelagoProxy
                 default:
                     var pktTxt = $"Unknown packet: {JsonConvert.SerializeObject(packet)}";
                     PrintMessage(pktTxt);
-                    Console.WriteLine(pktTxt);
                     break;
             }
             // TODO Implement other packets

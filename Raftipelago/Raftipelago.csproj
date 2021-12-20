@@ -38,7 +38,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Data\EmbeddedFileUtils.cs" />
-    <Compile Include="Data\ItemMapping.cs" />
     <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
@@ -52,12 +51,6 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <None Include="Data\ItemMapping.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="Data\HardcodedItemData.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>
