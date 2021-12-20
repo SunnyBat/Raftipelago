@@ -16,6 +16,7 @@ public class RaftipelagoThree : Mod
         startProxyServer();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
+        //DebugStuff2();
         //DebugStuff();
         Debug.Log("Mod Raftipelago has been loaded!");
     }
@@ -55,6 +56,28 @@ public class RaftipelagoThree : Mod
             Debug.LogError("ArchipelagoLink still active");
         }
         ComponentManager<IArchipelagoLink>.Value.Connect("localhost", "SunnyBat-Raft", "");
+    }
+
+    private void DebugStuff2()
+    {
+        var i_rT = ComponentManager<Inventory_ResearchTable>.Value;
+        var hsb = new StringBuilder();
+        var sb = new StringBuilder();
+        i_rT.GetMenuItems().ForEach(rmi =>
+        {
+            var baseItem = rmi.GetItem();
+            if (!baseItem.settings_recipe.HiddenInResearchTable && !baseItem.settings_recipe.LearnedViaBlueprint)
+            {
+                sb.Append(baseItem.UniqueName + ",");
+            }
+            else
+            {
+                hsb.Append(baseItem.UniqueName + ",");
+            }
+        });
+        Debug.Log(hsb);
+        Debug.Log("==============");
+        Debug.Log(sb);
     }
 
     private void DebugStuff()

@@ -54,6 +54,11 @@ namespace CommandLineTester
                 {
                     tst._session.Socket.SendPacket(new LocationChecksPacket() { Locations = locChecks });
                 }
+                else if (nextLine.StartsWith("GLFN"))
+                {
+                    var locationName = nextLine.Substring(4).Trim();
+                    Console.WriteLine(locationName + " = " + tst._session.Locations.GetLocationIdFromName("Raft", locationName));
+                }
                 else
                 {
                     Console.WriteLine(nextLine);
