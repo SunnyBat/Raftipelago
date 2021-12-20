@@ -121,11 +121,16 @@ namespace Raftipelago.Network
         {
             try
             {
-                Debug.Log("CTA_1");
                 var proxyServerStartMethodInfo = proxyServerRef.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
-                Debug.Log("CTA_2");
-                proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
-                Debug.Log("CTA_3");
+                try
+                {
+                    proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                    Debug.Log(e.InnerException);
+                }
             }
             catch (Exception e)
             {

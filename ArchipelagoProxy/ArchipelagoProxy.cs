@@ -105,7 +105,12 @@ namespace ArchipelagoProxy
             }
         }
 
-        private void _addNameIfInvalid(dynamic action, string name, List<string> addTo)
+        public void Disconnect()
+        {
+            _session.Socket.Disconnect();
+        }
+
+        private void _addNameIfInvalid(object action, string name, List<string> addTo)
         {
             if (action == null)
             {
