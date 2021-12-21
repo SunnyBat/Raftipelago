@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 
 namespace ArchipelagoProxy
 {
@@ -39,6 +40,7 @@ namespace ArchipelagoProxy
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
             _session.Items.ItemReceived += itemHelper => // Called once per new item, don't loop dequeue (though it only enqueus one item at a time anyways)
             {
+                Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
                 try
                 {
                     PrintMessage("IR1");

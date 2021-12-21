@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CommandLineTester
@@ -13,6 +14,9 @@ namespace CommandLineTester
         private static List<int> locChecks = new List<int>();
         public static void Main(string[] args)
         {
+            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
+            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
             var tst = new ArchipelagoProxy.ArchipelagoProxy("localhost");
             tst.RaftItemUnlockedForCurrentWorld += Tst_RaftItemUnlockedForCurrentWorld;
             tst.PrintMessage += Tst_PrintMessage;
@@ -68,6 +72,7 @@ namespace CommandLineTester
 
         private static void Tst_PrintMessage(string obj)
         {
+            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
             Console.WriteLine("PM: " + obj);
         }
 
