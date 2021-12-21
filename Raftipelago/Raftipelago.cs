@@ -20,9 +20,9 @@ public class RaftipelagoThree : Mod
         startProxyServer();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
-        serverHeartbeat = IArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
+        serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         //DebugStuff2();
-        Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
+        //Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
         if (isInWorld())
         {
             ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(true);

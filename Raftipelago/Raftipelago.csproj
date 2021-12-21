@@ -46,7 +46,7 @@
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Network\ProxiedArchipelago.cs" />
     <Compile Include="Raftipelago.cs" />
-    <Compile Include="UnityScripts\IArchipelagoLinkHeartbeat.cs" />
+    <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

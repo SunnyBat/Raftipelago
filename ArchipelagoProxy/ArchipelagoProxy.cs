@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -41,8 +42,6 @@ namespace ArchipelagoProxy
 
         // Tracking between Archipelago Server <-> Proxy <-> Raft
         private bool isRaftWorldLoaded = false;
-        private int hintCost = 0;
-        private int currentHintPoints = 0;
         public ArchipelagoProxy(string urlToHost)
         {
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
@@ -87,6 +86,11 @@ namespace ArchipelagoProxy
         public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
         {
             _session.Locations.CompleteLocationChecks(locationIds);
+        }
+
+        public int[] GetAllLocationIdsUnlockedForCurrentWorld()
+        {
+            return _session.Locations.AllLocationsChecked.ToArray();
         }
 
         public void SetIsPlayerInWorld(bool isInWorld)
@@ -162,42 +166,28 @@ namespace ArchipelagoProxy
             _messageQueue.Enqueue($"Packet received: {packet.PacketType}");
             switch (packet.PacketType)
             {
-                case ArchipelagoPacketType.RoomInfo:
-                    var roomInfoPacket = (RoomInfoPacket)packet;
-                    hintCost = roomInfoPacket.HintCost;
-                    // TODO Handle forfeit, hint, etc logic? Or does Archipelago server handle it for us and throw errors at us?
-                    break;
                 case ArchipelagoPacketType.Say:
                     _messageQueue.Enqueue(((SayPacket)packet).Text);
                     break;
-                case ArchipelagoPacketType.Connected:
-                    SetIsPlayerInWorld(isRaftWorldLoaded); // TODO should we optimize this out, eg SendMultiplePackets() and a manual packet creation?
-                    // TODO what to do with things like slotData
-                    break;
-                case ArchipelagoPacketType.ReceivedItems:
-                    // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
-                    break;
                 case ArchipelagoPacketType.Print:
-                    var printPacket = (PrintPacket)packet;
-                    _messageQueue.Enqueue(printPacket.Text);
+                    _messageQueue.Enqueue(((PrintPacket)packet).Text);
                     break;
                 case ArchipelagoPacketType.PrintJSON:
-                    var printJsonPacket = (PrintJsonPacket)packet;
                     StringBuilder build = new StringBuilder();
-                    foreach (var messagePart in printJsonPacket.Data)
+                    foreach (var messagePart in ((PrintJsonPacket)packet).Data)
                     {
                         build.Append(GetStringForJsonPartData(messagePart));
                     }
                     _messageQueue.Enqueue(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
                     break;
+                case ArchipelagoPacketType.RoomInfo:
                 case ArchipelagoPacketType.RoomUpdate:
-                    var roomUpdatePacket = (RoomUpdatePacket)packet;
-                    hintCost = roomUpdatePacket.HintCost;
-                    currentHintPoints = roomUpdatePacket.HintPoints;
+                case ArchipelagoPacketType.Connected:
+                case ArchipelagoPacketType.ReceivedItems:
+                    // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
                     break;
                 default:
-                    var pktTxt = $"Unknown packet: {JsonConvert.SerializeObject(packet)}";
-                    _messageQueue.Enqueue(pktTxt);
+                    _messageQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
                     break;
             }
             // TODO Implement other packets

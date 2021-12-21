@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Raftipelago.UnityScripts
 {
-    public class IArchipelagoLinkHeartbeat
+    public class ArchipelagoLinkHeartbeat
     {
         public static IEnumerator CreateNewHeartbeat(IArchipelagoLink proxy, float delayInSeconds = 1f)
         {
