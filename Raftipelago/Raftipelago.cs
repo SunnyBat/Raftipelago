@@ -1,6 +1,10 @@
 ﻿using HarmonyLib;
+using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
+using Raftipelago.UnityScripts;
+using System.Collections;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
@@ -8,6 +12,7 @@ using UnityEngine;
 public class RaftipelagoThree : Mod
 {
     private Harmony patcher;
+    private IEnumerator serverHeartbeat;
     public void Start()
     {
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
@@ -15,8 +20,14 @@ public class RaftipelagoThree : Mod
         startProxyServer();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
+        serverHeartbeat = IArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         //DebugStuff2();
-        //DebugStuff();
+        Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
+        if (isInWorld())
+        {
+            ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(true);
+        }
+        StartCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been loaded!");
     }
 
@@ -26,7 +37,18 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         ComponentManager<IArchipelagoLink>.Value = null;
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
+        StopCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been unloaded!");
+    }
+
+    public override void WorldEvent_WorldLoaded()
+    {
+        ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(true);
+    }
+
+    public override void WorldEvent_WorldUnloaded()
+    {
+        ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(false);
     }
 
 
@@ -44,12 +66,6 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("dq", "Test item dequeuing")]
-    private static void dq(string[] arguments)
-    {
-        ((ProxiedArchipelago)ComponentManager<IArchipelagoLink>.Value)?.dq();
-    }
-
     private void startProxyServer()
     {
         if (ComponentManager<IArchipelagoLink>.Value == null)
@@ -61,6 +77,11 @@ public class RaftipelagoThree : Mod
             Debug.LogError("ArchipelagoLink still active");
         }
         ComponentManager<IArchipelagoLink>.Value.Connect("localhost", "SunnyBat-Raft", "");
+    }
+
+    private bool isInWorld()
+    {
+        return ComponentManager<CraftingMenu>.Value != null; // TODO Better way to determine?
     }
 
     private void DebugStuff2()
@@ -106,7 +127,8 @@ public class RaftipelagoThree : Mod
             if (recipe.settings_recipe.CraftingCategory != CraftingCategory.Hidden
                 && recipe.settings_recipe.CraftingCategory != CraftingCategory.Decorations
                 && recipe.settings_recipe.CraftingCategory != CraftingCategory.CreativeMode
-                && recipe.settings_recipe.CraftingCategory != CraftingCategory.Skin)
+                && recipe.settings_recipe.CraftingCategory != CraftingCategory.Skin
+                && !recipe.settings_recipe.LearnedFromBeginning)
             {
                 if (allItemData.Length > 1)
                 {

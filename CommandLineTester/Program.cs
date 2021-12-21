@@ -14,9 +14,6 @@ namespace CommandLineTester
         private static List<int> locChecks = new List<int>();
         public static void Main(string[] args)
         {
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
             var tst = new ArchipelagoProxy.ArchipelagoProxy("localhost");
             tst.RaftItemUnlockedForCurrentWorld += Tst_RaftItemUnlockedForCurrentWorld;
             tst.PrintMessage += Tst_PrintMessage;

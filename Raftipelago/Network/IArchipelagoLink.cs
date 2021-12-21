@@ -21,5 +21,7 @@ namespace Raftipelago.Network
         string GetItemNameFromId(int itemId);
 
         void Disconnect();
+
+        void Heartbeat();
     }
 }

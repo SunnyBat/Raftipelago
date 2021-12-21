@@ -4,6 +4,7 @@ using Archipelago.MultiClient.Net.Models;
 using Archipelago.MultiClient.Net.Packets;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -29,6 +30,13 @@ namespace ArchipelagoProxy
         /// </summary>
         public event Action<string> PrintMessage;
 
+        // Queues for events
+        // Events should be run on the main Unity thread. Thus, we queue up a heartbeat that runs on the
+        // main Unity thread that will dequeue these objects and trigger the appropriate events. Because
+        // of this, these queues need to be thread-safe.
+        private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
+        private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+
         public readonly ArchipelagoSession _session; // TODO Make private
 
         // Tracking between Archipelago Server <-> Proxy <-> Raft
@@ -40,27 +48,40 @@ namespace ArchipelagoProxy
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
             _session.Items.ItemReceived += itemHelper => // Called once per new item, don't loop dequeue (though it only enqueus one item at a time anyways)
             {
-                Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
                 try
                 {
-                    PrintMessage("IR1");
-                    var nextItem = itemHelper.DequeueItem();
-                    PrintMessage("IR2");
-                    RaftItemUnlockedForCurrentWorld(nextItem.Item, _session.Players.GetPlayerName(nextItem.Player));
-                    PrintMessage("IR3");
+                    _itemReceivedQueue.Enqueue(itemHelper.DequeueItem());
                 }
                 catch (Exception e)
                 {
-                    if (PrintMessage != null)
-                    {
-                        PrintMessage(e.Message);
-                    }
+                    _messageQueue.Enqueue(e.Message);
                 }
             };
             _session.Socket.PacketReceived += packet =>
             {
                 HandlePacket(packet);
             };
+        }
+
+        public void Heartbeat()
+        {
+            if (PrintMessage != null)
+            {
+                while (_messageQueue.TryDequeue(out string nextMessage))
+                {
+                    PrintMessage(nextMessage);
+                }
+            }
+            if (RaftItemUnlockedForCurrentWorld != null)
+            {
+                if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                {
+                    while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
+                    {
+                        RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
+                    }
+                }
+            }
         }
 
         public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
@@ -102,14 +123,14 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 3, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 5, 0), password: password);
             if (loginResult.Successful)
             {
-                PrintMessage("Connected");
+                _messageQueue.Enqueue("Connected");
             }
             else
             {
-                PrintMessage("Failed to connect");
+                _messageQueue.Enqueue("Failed to connect");
             }
         }
 
@@ -138,7 +159,7 @@ namespace ArchipelagoProxy
 
         private void HandlePacket(ArchipelagoPacketBase packet)
         {
-            PrintMessage($"Packet received: {packet.PacketType}");
+            _messageQueue.Enqueue($"Packet received: {packet.PacketType}");
             switch (packet.PacketType)
             {
                 case ArchipelagoPacketType.RoomInfo:
@@ -147,7 +168,7 @@ namespace ArchipelagoProxy
                     // TODO Handle forfeit, hint, etc logic? Or does Archipelago server handle it for us and throw errors at us?
                     break;
                 case ArchipelagoPacketType.Say:
-                    PrintMessage(((SayPacket)packet).Text);
+                    _messageQueue.Enqueue(((SayPacket)packet).Text);
                     break;
                 case ArchipelagoPacketType.Connected:
                     SetIsPlayerInWorld(isRaftWorldLoaded); // TODO should we optimize this out, eg SendMultiplePackets() and a manual packet creation?
@@ -158,7 +179,7 @@ namespace ArchipelagoProxy
                     break;
                 case ArchipelagoPacketType.Print:
                     var printPacket = (PrintPacket)packet;
-                    PrintMessage(printPacket.Text);
+                    _messageQueue.Enqueue(printPacket.Text);
                     break;
                 case ArchipelagoPacketType.PrintJSON:
                     var printJsonPacket = (PrintJsonPacket)packet;
@@ -167,7 +188,7 @@ namespace ArchipelagoProxy
                     {
                         build.Append(GetStringForJsonPartData(messagePart));
                     }
-                    PrintMessage(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
+                    _messageQueue.Enqueue(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
                     break;
                 case ArchipelagoPacketType.RoomUpdate:
                     var roomUpdatePacket = (RoomUpdatePacket)packet;
@@ -176,7 +197,7 @@ namespace ArchipelagoProxy
                     break;
                 default:
                     var pktTxt = $"Unknown packet: {JsonConvert.SerializeObject(packet)}";
-                    PrintMessage(pktTxt);
+                    _messageQueue.Enqueue(pktTxt);
                     break;
             }
             // TODO Implement other packets

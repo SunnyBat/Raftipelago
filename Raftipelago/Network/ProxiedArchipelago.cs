@@ -21,17 +21,16 @@ namespace Raftipelago.Network
         private Assembly _proxyAssembly;
         private object _proxyServer;
 
-        private MethodInfo _setPlayerIsInWorldMethodInfo;
+        private MethodInfo _setIsPlayerInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
-        private MethodInfo _getLocationIdFromName;
-        private MethodInfo _getItemNameFromId;
+        private MethodInfo _getLocationIdFromNameMethodInfo;
+        private MethodInfo _getItemNameFromIdMethodInfo;
+        private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
         public ProxiedArchipelago()
         {
-            Debug.Log(Assembly.GetAssembly(typeof(Newtonsoft.Json.JsonConvert)));
             _initDllData();
-            Debug.Log(Assembly.GetAssembly(typeof(Newtonsoft.Json.JsonConvert)));
         }
 
         public void Connect(string URL, string username, string password)
@@ -42,18 +41,15 @@ namespace Raftipelago.Network
             _connectToArchipelago(proxyServerRef, username, password);
         }
 
-        public void dq()
+        public void Heartbeat()
         {
-            // TEST
-            var ips = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier).GetField("_session").GetValue(_proxyServer);
-            var iH = ips.GetType().GetProperty("Items").GetValue(ips);
-            var irC = iH.GetType().GetField("ItemReceived", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(iH);
-            irC.GetType().GetMethod("Invoke").Invoke(irC, new object[] { iH });
+            _heartbeatMethodInfo.Invoke(_proxyServer, null);
         }
 
         public void SetIsInWorld(bool inWorld)
         {
-            _setPlayerIsInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld });
+            Debug.Log(_setIsPlayerInWorldMethodInfo);
+            _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld });
         }
 
         public void SendChatMessage(string message)
@@ -71,7 +67,7 @@ namespace Raftipelago.Network
             List<int> locationIds = new List<int>();
             foreach (var locName in locationNames)
             {
-                var locationId = (int)_getLocationIdFromName.Invoke(_proxyServer, new object[] { locName });
+                var locationId = (int)_getLocationIdFromNameMethodInfo.Invoke(_proxyServer, new object[] { locName });
                 if (locationId != -1)
                 {
                     locationIds.Add(locationId);
@@ -90,7 +86,7 @@ namespace Raftipelago.Network
 
         public string GetItemNameFromId(int itemId)
         {
-            return (string)_getItemNameFromId.Invoke(_proxyServer, new object[] { itemId });
+            return (string)_getItemNameFromIdMethodInfo.Invoke(_proxyServer, new object[] { itemId });
         }
 
         public void Disconnect()
@@ -121,12 +117,10 @@ namespace Raftipelago.Network
                 _copyDllIfNecessary(embeddedFilePath, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
-                    Debug.Log("Loading proxy assembly " + outputFilePath);
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
                 }
                 else
                 {
-                    Debug.Log("Loading library assembly " + outputFilePath);
                     Assembly.LoadFrom(outputFilePath);
                 }
             }
@@ -158,11 +152,12 @@ namespace Raftipelago.Network
 
             // Events for data that we send to proxy
             // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
-            _setPlayerIsInWorldMethodInfo = proxyServerRef.GetMethod("SetPlayerIsInWorld");
+            _setIsPlayerInWorldMethodInfo = proxyServerRef.GetMethod("SetIsPlayerInWorld");
             _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
-            _getLocationIdFromName = proxyServerRef.GetMethod("GetLocationIdFromName");
-            _getItemNameFromId = proxyServerRef.GetMethod("GetItemNameFromId");
+            _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
+            _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
+            _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
@@ -187,11 +182,10 @@ namespace Raftipelago.Network
 
         private void RaftItemLockedForCurrentWorld(int itemId, string player)
         {
-            Debug.Log("RIUFCW: " + itemId + ", " + player);
             var sentItemName = GetItemNameFromId(itemId);
             // TODO Verify that these aren't overwritten when a world is loaded
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
-            if (foundItem)
+            if (foundItem != null)
             {
                 // TODO How to get SteamID of remote player or otherwise display different player name
                 //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
