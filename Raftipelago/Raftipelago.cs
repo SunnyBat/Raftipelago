@@ -24,7 +24,6 @@ public class RaftipelagoThree : Mod
         if (isInWorld())
         {
             WorldEvent_WorldLoaded();
-            Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
         }
         StartCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been loaded!");
@@ -97,6 +96,58 @@ public class RaftipelagoThree : Mod
         else
         {
             Debug.LogError("Usage: <i>disconnect confirmDisconnect</i>");
+        }
+    }
+
+    [ConsoleCommand("/generateItems", "Generates the JSON for Archipelago's Raft item list. Must be loaded into a world to use.")]
+    private static void Command_GenerateItems(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateRawArchipelagoItemList());
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
+        }
+    }
+
+    [ConsoleCommand("/generateHiddenItems", "Generates the JSON for Archipelago's Raft item list, but it only gives you items that are not supposed to be included in the Archipelago item list. Must be loaded into a world to use.")]
+    private static void Command_GenerateHiddenItems(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateRawArchipelagoItemList(true));
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
+        }
+    }
+
+    [ConsoleCommand("/generateLocations", "Generates the JSON for Archipelago's Raft location list. Must be loaded into a world to use.")]
+    private static void Command_GenerateLocations(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateLocationList());
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
+        }
+    }
+
+    [ConsoleCommand("/generateHiddenLocations", "Generates the JSON for Archipelago's Raft location list, but it only gives you inaccessible researches in the Research Table. Must be loaded into a world to use.")]
+    private static void Command_GenerateHiddenLocations(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateLocationList(true));
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
         }
     }
 

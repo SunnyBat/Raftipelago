@@ -37,9 +37,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\SpriteManager.cs" />
-    <Compile Include="ItemGenerator.cs" />
+    <Compile Include="DataGenerator.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\NotificationManager.cs" />

@@ -84,11 +84,11 @@ namespace Raftipelago.Network
                         // TODO Should I filter by story island?
                         // Can get IDs from SceneLoader debug prints.
                         // In theory notes will only be on story islands, so non-story islands will be fine.
-                        foreach (var lmi in landmark.landmarkItems)
+                        foreach (var landmarkItem in landmark.landmarkItems)
                         {
-                            if (lmi.name.Contains("NoteBookPickup") || lmi.name.Contains("Blueprint") && !lmi.gameObject.activeSelf)
+                            if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf)
                             {
-                                locationList.Add(lmi.name);
+                                locationList.Add(landmarkItem.name);
                             }
                         }
                     });
