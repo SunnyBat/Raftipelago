@@ -17,10 +17,6 @@ namespace Raftipelago
             "Placeable_FuelTank", "Placeable_Pipe_Fuel",
             "Placeable_ZiplineBase"
         };
-        private static string[] PsuedoItems = new string[]
-        {
-            "RadioTowerRadioTranscription" // TODO Add all coordinates
-        };
 
         public static string GenerateRawArchipelagoItemList()
         {
@@ -51,20 +47,28 @@ namespace Raftipelago
                     allItemData.Append("}");
                 }
             });
-            PsuedoItems.Do(itm => {
-                if (allItemData.Length > 1)
+
+            WorldManager.AllLandmarks.ForEach(landmark =>
+            {
+                foreach (var lmi in landmark.landmarkItems)
                 {
-                    allItemData.Append(",");
+                    if (lmi.name.Contains("NoteBookPickup"))
+                    {
+                        if (allItemData.Length > 1)
+                        {
+                            allItemData.Append(",");
+                        }
+                        allItemData.Append("{");
+                        allItemData.Append($"\"id\":{currentId++}");
+                        allItemData.Append(",");
+                        allItemData.Append($"\"count\":1");
+                        allItemData.Append(",");
+                        allItemData.Append($"\"progression\":{ProgressionItemList.Any(progName => progName == lmi.name).ToString().ToLowerInvariant()}");
+                        allItemData.Append(",");
+                        allItemData.Append($"\"name\":\"{lmi.name}\"");
+                        allItemData.Append("}");
+                    }
                 }
-                allItemData.Append("{");
-                allItemData.Append($"\"id\":{currentId++}");
-                allItemData.Append(",");
-                allItemData.Append($"\"count\":1");
-                allItemData.Append(",");
-                allItemData.Append($"\"progression\":true");
-                allItemData.Append(",");
-                allItemData.Append($"\"name\":\"{itm}\"");
-                allItemData.Append("}");
             });
             allItemData.Append("]");
             return allItemData.ToString();
