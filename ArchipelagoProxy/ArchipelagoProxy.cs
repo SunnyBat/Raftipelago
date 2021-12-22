@@ -23,25 +23,35 @@ namespace ArchipelagoProxy
 
         // Events TO Raft
         /// <summary>
+        /// Called when successfully connected to server
+        /// </summary>
+        private event Action ConnectedToServer;
+        /// <summary>
         /// Called when a new Raft item is unlocked for the current world.
         /// </summary>
-        public event Action<int, string> RaftItemUnlockedForCurrentWorld;
+        private event Action<int, string> RaftItemUnlockedForCurrentWorld;
         /// <summary>
         /// Called when a message is received. This can be a chat message, an item received message, etc
         /// </summary>
-        public event Action<string> PrintMessage;
+        private event Action<string> PrintMessage;
 
         // Queues for events
         // Events should be run on the main Unity thread. Thus, we queue up a heartbeat that runs on the
         // main Unity thread that will dequeue these objects and trigger the appropriate events. Because
         // of this, these queues need to be thread-safe.
+        private ConcurrentQueue<int> _locationUnlockQueue = new ConcurrentQueue<int>();
         private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
         private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
 
-        public readonly ArchipelagoSession _session; // TODO Make private
+        // Lock for all non-thread-safe objects
+        private readonly object LockForClass = new object();
+
+        // Everything here should be gated behind the LockForClass, and should never spin on it
+        private readonly ArchipelagoSession _session;
 
         // Tracking between Archipelago Server <-> Proxy <-> Raft
         private bool isRaftWorldLoaded = false;
+        private bool isSuccessfullyConnected = false;
         public ArchipelagoProxy(string urlToHost)
         {
             _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
@@ -60,25 +70,75 @@ namespace ArchipelagoProxy
             {
                 HandlePacket(packet);
             };
+            _session.Socket.SocketClosed += closedEventArgs =>
+            {
+                lock (LockForClass)
+                {
+                    isSuccessfullyConnected = false;
+                }
+                if (PrintMessage != null)
+                {
+                    PrintMessage($"Disconnected from server with reason {closedEventArgs.Reason} ({closedEventArgs.Code})");
+                }
+            };
         }
 
         public void Heartbeat()
         {
-            if (PrintMessage != null)
+            lock (LockForClass)
             {
-                while (_messageQueue.TryDequeue(out string nextMessage))
+                if (isSuccessfullyConnected) // Don't process anything if we're not properly connected -- we don't want to accidentally send invalid data
                 {
-                    PrintMessage(nextMessage);
+                    if (PrintMessage != null)
+                    {
+                        while (_messageQueue.TryDequeue(out string nextMessage))
+                        {
+                            PrintMessage(nextMessage);
+                        }
+                    }
+                    if (RaftItemUnlockedForCurrentWorld != null)
+                    {
+                        if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                        {
+                            while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
+                            {
+                                RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
+                            }
+                        }
+                    }
                 }
             }
-            if (RaftItemUnlockedForCurrentWorld != null)
+        }
+
+        public void AddConnectedToServerEvent(Action newEvent)
+        {
+            if (newEvent != null)
             {
-                if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                lock (LockForClass)
                 {
-                    while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
-                    {
-                        RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
-                    }
+                    ConnectedToServer += newEvent;
+                }
+            }
+        }
+
+        public void AddRaftItemUnlockedForCurrentWorldEvent(Action<int, string> newEvent)
+        {
+            if (newEvent != null)
+            {
+                lock (LockForClass)
+                {
+                    RaftItemUnlockedForCurrentWorld += newEvent;
+                }
+            }
+        }
+
+        public void AddPrintMessageEvent(Action<string> newEvent)
+        {
+            if (newEvent != null)
+            {
+                lock (LockForClass)
+                {
+                    PrintMessage += newEvent;
                 }
             }
         }
@@ -101,7 +161,10 @@ namespace ArchipelagoProxy
                     ? ArchipelagoClientState.ClientPlaying
                     : ArchipelagoClientState.ClientReady
             });
-            isRaftWorldLoaded = isInWorld;
+            lock (LockForClass)
+            {
+                isRaftWorldLoaded = isInWorld;
+            }
         }
 
         public void SendChatMessage(string message)
@@ -121,13 +184,14 @@ namespace ArchipelagoProxy
         public void Connect(string username, string password)
         {
             var invalidMethodNames = new List<string>();
+            _addNameIfInvalid(ConnectedToServer, "ConnectedToServer", invalidMethodNames);
             _addNameIfInvalid(RaftItemUnlockedForCurrentWorld, "RaftItemUnlockedForCurrentWorld", invalidMethodNames);
             _addNameIfInvalid(PrintMessage, "PrintMessage", invalidMethodNames);
             if (invalidMethodNames.Count > 0)
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 5, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 6, 0), password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Connected");
@@ -180,9 +244,23 @@ namespace ArchipelagoProxy
                     }
                     _messageQueue.Enqueue(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
                     break;
+                case ArchipelagoPacketType.Connected:
+                    lock (LockForClass)
+                    {
+                        isSuccessfullyConnected = true;
+                    }
+                    List<int> allLocations = new List<int>();
+                    while (_locationUnlockQueue.TryDequeue(out int nextLocation))
+                    {
+                        allLocations.Add(nextLocation);
+                    }
+                    if (allLocations.Count > 0)
+                    {
+                        LocationFromCurrentWorldUnlocked(allLocations.ToArray());
+                    }
+                    break;
                 case ArchipelagoPacketType.RoomInfo:
                 case ArchipelagoPacketType.RoomUpdate:
-                case ArchipelagoPacketType.Connected:
                 case ArchipelagoPacketType.ReceivedItems:
                     // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
                     break;

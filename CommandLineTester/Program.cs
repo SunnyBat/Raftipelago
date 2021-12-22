@@ -15,8 +15,9 @@ namespace CommandLineTester
         public static void Main(string[] args)
         {
             var tst = new ArchipelagoProxy.ArchipelagoProxy("localhost");
-            tst.RaftItemUnlockedForCurrentWorld += Tst_RaftItemUnlockedForCurrentWorld;
-            tst.PrintMessage += Tst_PrintMessage;
+            tst.AddConnectedToServerEvent(() => { });
+            tst.AddRaftItemUnlockedForCurrentWorldEvent(Tst_RaftItemUnlockedForCurrentWorld);
+            tst.AddPrintMessageEvent(Tst_PrintMessage);
             tst.Connect("SunnyBat-Raft", "");
             while (true)
             {
@@ -35,34 +36,26 @@ namespace CommandLineTester
                         Console.WriteLine("Invalid input");
                     }
                 }
-                else if (nextLine == "S")
-                {
-                    tst._session.Socket.SendPacket(new SyncPacket());
-                }
                 else if (nextLine == "CR")
                 {
-                    tst._session.Socket.SendPacket(new StatusUpdatePacket() { Status = Archipelago.MultiClient.Net.Enums.ArchipelagoClientState.ClientReady });
+                    tst.SetIsPlayerInWorld(false);
                 }
                 else if (nextLine == "CP")
                 {
-                    tst._session.Socket.SendPacket(new StatusUpdatePacket() { Status = Archipelago.MultiClient.Net.Enums.ArchipelagoClientState.ClientPlaying });
-                }
-                else if (nextLine == "GDP")
-                {
-                    tst._session.Socket.SendPacket(new GetDataPackagePacket());
+                    tst.SetIsPlayerInWorld(true);
                 }
                 else if (nextLine == "LC")
                 {
-                    tst._session.Socket.SendPacket(new LocationChecksPacket() { Locations = locChecks });
+                    tst.LocationFromCurrentWorldUnlocked(locChecks.ToArray());
                 }
                 else if (nextLine.StartsWith("GLFN"))
                 {
                     var locationName = nextLine.Substring(4).Trim();
-                    Console.WriteLine(locationName + " = " + tst._session.Locations.GetLocationIdFromName("Raft", locationName));
+                    Console.WriteLine(locationName + " = " + tst.GetLocationIdFromName(locationName));
                 }
                 else
                 {
-                    Console.WriteLine(nextLine);
+                    Console.WriteLine("Unknown command: " + nextLine);
                 }
             }
         }

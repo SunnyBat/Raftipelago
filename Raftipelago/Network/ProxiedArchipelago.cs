@@ -147,8 +147,9 @@ namespace Raftipelago.Network
         private void _hookUpEvents(Type proxyServerRef)
         {
             // Events for data sent to us
-            _attachEvent(proxyServerRef, "PrintMessage", PrintMessage);
-            _attachEvent(proxyServerRef, "RaftItemUnlockedForCurrentWorld", RaftItemLockedForCurrentWorld);
+            proxyServerRef.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
+            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, string>)RaftItemLockedForCurrentWorld });
+            proxyServerRef.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
 
             // Events for data that we send to proxy
             // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
@@ -175,6 +176,11 @@ namespace Raftipelago.Network
             }
         }
 
+        private void ConnnectedToServer()
+        {
+
+        }
+
         private void PrintMessage(string msg)
         {
             Debug.Log(msg);
@@ -197,18 +203,6 @@ namespace Raftipelago.Network
             {
                 Debug.Log($"Unable to find {sentItemName} ({itemId})");
             }
-        }
-
-        private void _attachEvent(Type proxyServerRef, string eventName, Action<string> callback)
-        {
-            var eventRef = proxyServerRef.GetEvent(eventName);
-            eventRef.AddEventHandler(_proxyServer, callback);
-        }
-
-        private void _attachEvent(Type proxyServerRef, string eventName, Action<int, string> callback)
-        {
-            var eventRef = proxyServerRef.GetEvent(eventName);
-            eventRef.AddEventHandler(_proxyServer, callback);
         }
     }
 }
