@@ -258,8 +258,15 @@ namespace Raftipelago.Network
         private void RaftItemUnLockedForCurrentWorld(int itemId, string player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            // TODO Verify that these aren't overwritten when a world is loaded
-            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
+            if (!_unlockRecipe(sentItemName) && !_unlockNote(sentItemName))
+            {
+                Debug.LogError($"Unable to find {sentItemName} ({itemId})");
+            }
+        }
+
+        private bool _unlockRecipe(string itemName)
+        {
+            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == itemName);
             if (foundItem != null)
             {
                 if (!foundItem.settings_recipe.Learned)
@@ -270,11 +277,25 @@ namespace Raftipelago.Network
                     Debug.Log("Unlocking " + foundItem.UniqueName);
                     foundItem.settings_recipe.Learned = true;
                 }
+                return true;
             }
-            else
+            return false;
+        }
+
+        private bool _unlockNote(string noteName)
+        {
+            var notebook = ComponentManager<NoteBook>.Value;
+            var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
+            foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
             {
-                Debug.LogError($"Unable to find {sentItemName} ({itemId})");
+                if (nbNote.name == noteName)
+                {
+                    notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false);
+                    // TODO Notification
+                    return true;
+                }
             }
+            return false;
         }
     }
 }

@@ -9,13 +9,13 @@ namespace Raftipelago
 {
     public class ItemGenerator
     {
-        private static string[] ProgressionItemList = new string[] { "ZiplineTool",
+        private static string[] ProgressionItemList = new string[] {
+            "ZiplineTool",
             "Battery", "Bolt", "CircuitBoard", "Hinge",
-            "Placeable_EngineControls", "Placeable_MotorWheel",
+            "Placeable_MotorWheel", "Placeable_SteeringWheel", // TODO Verify these are the engine and steering wheel items we need
             "Placeable_Reciever", "Placeable_Reciever_Antenna",
             "Placeable_SteeringWheel", "Placeable_CookingStand_Smelter", // TODO Is Placeable_CookingStand_Smelter actually the smelter?
-            "Placeable_FuelTank", "Placeable_Pipe_Fuel",
-            "Placeable_ZiplineBase"
+            "Machete"
         };
 
         public static string GenerateRawArchipelagoItemList()
