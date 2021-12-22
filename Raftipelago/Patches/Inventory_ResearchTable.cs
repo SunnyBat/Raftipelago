@@ -27,7 +27,7 @@ namespace Raftipelago.Patches
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 					var itemLearned = ___menuItems[i].GetItem();
 					Debug.Log("Learned item from research table: " + itemLearned.UniqueName);
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(itemLearned.UniqueName); // TODO Verify this is correct name
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(itemLearned.UniqueName);
 					___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
 					break;
 				}

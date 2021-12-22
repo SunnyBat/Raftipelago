@@ -1,4 +1,5 @@
-﻿using Raftipelago.Data;
+﻿using Newtonsoft.Json;
+using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -74,9 +75,24 @@ namespace Raftipelago.Network
                 _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
                 if (inWorld)
                 {
-                    LocationUnlocked(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
+                    var locationList = new List<string>();
+                    locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned)
-                        .Select(itm => itm.GetItem().UniqueName).ToArray());
+                        .Select(itm => itm.GetItem().UniqueName));
+                    WorldManager.AllLandmarks.ForEach(landmark =>
+                    {
+                        // TODO Should I filter by story island?
+                        // Can get IDs from SceneLoader debug prints.
+                        // In theory notes will only be on story islands, so non-story islands will be fine.
+                        foreach (var lmi in landmark.landmarkItems)
+                        {
+                            if (lmi.name.Contains("NoteBookPickup") && !lmi.isActiveAndEnabled)
+                            {
+                                locationList.Add(lmi.name);
+                            }
+                        }
+                    });
+                    LocationUnlocked(locationList.ToArray());
                 }
             }
         }
