@@ -52,7 +52,7 @@ namespace Raftipelago
             {
                 foreach (var lmi in landmark.landmarkItems)
                 {
-                    if (lmi.name.Contains("NoteBookPickup"))
+                    if (lmi.name.Contains("NoteBookPickup") || lmi.name.Contains("Blueprint"))
                     {
                         if (allItemData.Length > 1)
                         {

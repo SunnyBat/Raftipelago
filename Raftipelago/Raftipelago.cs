@@ -25,19 +25,6 @@ public class RaftipelagoThree : Mod
         {
             WorldEvent_WorldLoaded();
             Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
-            WorldManager.AllLandmarks.ForEach(landmark =>
-            {
-                // TODO Should I filter by story island?
-                // Can get IDs from SceneLoader debug prints.
-                // In theory notes will only be on story islands, so non-story islands will be fine.
-                foreach (var lmi in landmark.landmarkItems)
-                {
-                    if (lmi.name.Contains("NoteBookPickup") && !lmi.gameObject.activeSelf)
-                    {
-                        Debug.Log(lmi.name);
-                    }
-                }
-            });
         }
         StartCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been loaded!");

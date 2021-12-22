@@ -86,7 +86,7 @@ namespace Raftipelago.Network
                         // In theory notes will only be on story islands, so non-story islands will be fine.
                         foreach (var lmi in landmark.landmarkItems)
                         {
-                            if (lmi.name.Contains("NoteBookPickup") && !lmi.gameObject.activeSelf)
+                            if (lmi.name.Contains("NoteBookPickup") || lmi.name.Contains("Blueprint") && !lmi.gameObject.activeSelf)
                             {
                                 locationList.Add(lmi.name);
                             }
