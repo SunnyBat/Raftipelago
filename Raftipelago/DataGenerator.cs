@@ -22,6 +22,45 @@ namespace Raftipelago
             "NoteBookNote_Index43_Landmark_CaravanIsland_FrequencyToTangaroa" // At Caravan Island
             // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
         };
+        private static Dictionary<string, string> RegionCorrections = new Dictionary<string, string>()
+        {
+            {
+                "19#Landmark_Radar#Big radio tower", "RadioTower"
+            },
+            {
+                "44#Landmark_Vasagatan", "Vasagatan"
+            },
+            {
+                "45#Landmark_BalboaIsland", "BalboaIsland"
+            },
+            {
+                "49#Landmark_CaravanIsland#RealDeal", "CaravanIsland"
+            },
+            {
+                "50#Landmark_Tangaroa#", "Tangaroa"
+            }
+        };
+        // Some location checks cannot be accessed until after specific islands are able to be
+        // completed. For example, some notes on Balboa Island are locked behind the machete, which
+        // is not necessary to reach the island but is necessary to complete it.
+        private static Dictionary<string, string> LocationRegionFixes = new Dictionary<string, string>()
+        {
+            {
+                "Pickup_Landmark_Blueprint_BiofuelExtractor", "BalboaIslandCompletion"
+            },
+            {
+                "Pickup_Landmark_Blueprint_Fueltank", "BalboaIslandCompletion"
+            },
+            {
+                "Pickup_Landmark_Blueprint_Pipes", "BalboaIslandCompletion"
+            },
+            {
+                "Pickup_Landmark_Blueprint_EngineControls", "CaravanIslandCompletion"
+            },
+            {
+                "Pickup_Landmark_Blueprint_MetalDetector", "CaravanIslandCompletion"
+            } // TODO Balboa Island notes, Caravan Island notes
+        };
 
         public static string GenerateRawArchipelagoItemList(bool invert = false)
         {
@@ -106,11 +145,13 @@ namespace Raftipelago
                 });
                 WorldManager.AllLandmarks.ForEach(landmark =>
                 {
-                    foreach (var lmi in landmark.landmarkItems)
+                    foreach (var landmarkItem in landmark.landmarkItems)
                     {
-                        if (CommonUtils.IsNoteOrBlueprint(lmi))
+                        if (CommonUtils.IsNoteOrBlueprint(landmarkItem))
                         {
-                            _addLocation(ref currentId, lmi.name, landmark.name, allLocationData);
+                            LocationRegionFixes.TryGetValue(landmarkItem.name, out string forcedRegionName);
+                            var regionName = forcedRegionName ?? (RegionCorrections.TryGetValue(landmark.name, out string correctedRegion) ? correctedRegion : landmark.name);
+                            _addLocation(ref currentId, landmarkItem.name, regionName, allLocationData);
                         }
                     }
                 });
