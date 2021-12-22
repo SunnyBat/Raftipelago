@@ -17,15 +17,13 @@ public class RaftipelagoThree : Mod
     {
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
-        startProxyServer();
+        ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
-        //DebugStuff2();
-        //Debug.Log(ItemGenerator.GenerateRawArchipelagoItemList());
         if (isInWorld())
         {
-            ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(true);
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
         }
         StartCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been loaded!");
@@ -33,50 +31,69 @@ public class RaftipelagoThree : Mod
 
     public void OnModUnload()
     {
-        // TODO Any additional cleanup
+        StopCoroutine(serverHeartbeat);
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         ComponentManager<IArchipelagoLink>.Value = null;
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
-        StopCoroutine(serverHeartbeat);
-        Debug.Log("Mod Raftipelago has been unloaded!");
+        Debug.Log("Raftipelago has been stopped. You may reconnect at any time.");
     }
 
     public override void WorldEvent_WorldLoaded()
     {
-        ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(true);
+        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
     }
 
     public override void WorldEvent_WorldUnloaded()
     {
-        ComponentManager<IArchipelagoLink>.Value?.SetIsInWorld(false);
+        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(false);
     }
 
-
-    [ConsoleCommand("chatMessage", "Send a message through the Raft proxy")]
+    // TODO Move to in-game chat instead of console
+    [ConsoleCommand("/chatMessage", "Send a message through the Raft proxy")]
     private static void Command_chatMessage(string[] arguments)
     {
-        if (arguments.Length == 1)
+        if (arguments.Length >= 1)
         {
-            ComponentManager<IArchipelagoLink>.Value?.SendChatMessage(arguments[0]);
+            ComponentManager<IArchipelagoLink>.Value.SendChatMessage(string.Join(" ", arguments));
         }
         else
         {
-            Debug.LogError("Usage: <i>chatMessage (message)</i>");
-            arguments?.Do(arg => Debug.Log(arg));
+            Debug.LogError("Usage: <i>/chatMessage (message)</i>");
         }
     }
 
-    private void startProxyServer()
+    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
+    [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
+    private static void Command_Connect(string[] arguments)
     {
-        if (ComponentManager<IArchipelagoLink>.Value == null)
+        if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() == true)
         {
-            ComponentManager<IArchipelagoLink>.Value = new ProxiedArchipelago(); // TODO Get URL, username, password from user
+            Debug.Log("Already connected to Archipelago. Disconnect before attempting to connect to a different server.");
+        }
+        else if (arguments.Length >= 2)
+        {
+            ComponentManager<IArchipelagoLink>.Value.Disconnect();
+            ComponentManager<IArchipelagoLink>.Value.Connect(arguments[0], arguments[1], arguments.Length > 2 ? arguments[2] : null);
         }
         else
         {
-            Debug.LogError("ArchipelagoLink still active");
+            Debug.LogError("Usage: <i>/connect (URL) (Username) (Password)</i> -- Password is optional. Parenthesis should be omitted unless part of URL or username. If a value has spaces, use \"\" around it, eg \"My Unique Username\".");
         }
-        ComponentManager<IArchipelagoLink>.Value.Connect("localhost", "SunnyBat-Raft", "");
+    }
+
+    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
+    [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]
+    private static void Command_Disconnect(string[] arguments)
+    {
+        if (arguments.Length == 1 && arguments[1].Equals("confirmDisconnect", System.StringComparison.InvariantCultureIgnoreCase))
+        {
+            ComponentManager<IArchipelagoLink>.Value.Disconnect();
+        }
+        else
+        {
+            Debug.LogError("Usage: <i>disconnect confirmDisconnect</i>");
+            arguments?.Do(arg => Debug.Log(arg));
+        }
     }
 
     private bool isInWorld()

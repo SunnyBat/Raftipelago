@@ -10,6 +10,8 @@ namespace Raftipelago.Network
     {
         void Connect(string URL, string username, string password);
 
+        bool IsSuccessfullyConnected();
+
         void SetIsInWorld(bool inWorld);
 
         void SendChatMessage(string message);

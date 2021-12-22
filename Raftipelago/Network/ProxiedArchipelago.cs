@@ -8,6 +8,9 @@ using UnityEngine;
 
 namespace Raftipelago.Network
 {
+    /// <summary>
+    /// A communication layer for Archipelago that uses dynamically-loaded libraries.
+    /// </summary>
     public class ProxiedArchipelago : IArchipelagoLink
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
@@ -21,6 +24,7 @@ namespace Raftipelago.Network
         private Assembly _proxyAssembly;
         private object _proxyServer;
 
+        private MethodInfo _isSuccessfullyConnectedMethodInfo;
         private MethodInfo _setIsPlayerInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
@@ -31,74 +35,114 @@ namespace Raftipelago.Network
         public ProxiedArchipelago()
         {
             _initDllData();
+            var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
+            _initMethodInfo(proxyServerRef);
         }
 
         public void Connect(string URL, string username, string password)
         {
-            var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
-            _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
-            _hookUpEvents(proxyServerRef);
-            _connectToArchipelago(proxyServerRef, username, password);
+            if (IsSuccessfullyConnected())
+            {
+                throw new InvalidOperationException("Already connected to server");
+            }
+            else
+            {
+                var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
+                _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
+                _hookUpEvents(proxyServerRef);
+                _connectToArchipelago(proxyServerRef, username, password);
+            }
+        }
+
+        public bool IsSuccessfullyConnected()
+        {
+            return _proxyServer != null && (bool) _isSuccessfullyConnectedMethodInfo.Invoke(_proxyServer, null);
         }
 
         public void Heartbeat()
         {
-            _heartbeatMethodInfo.Invoke(_proxyServer, null);
+            if (_proxyServer != null)
+            {
+                _heartbeatMethodInfo.Invoke(_proxyServer, null);
+            }
         }
 
         public void SetIsInWorld(bool inWorld)
         {
-            Debug.Log(_setIsPlayerInWorldMethodInfo);
-            _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld });
+            if (_proxyServer != null)
+            {
+                _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld });
+            }
         }
 
         public void SendChatMessage(string message)
         {
-            _sendChatMessageMethodInfo.Invoke(_proxyServer, new object[] { message });
+            if (_proxyServer != null)
+            {
+                _sendChatMessageMethodInfo.Invoke(_proxyServer, new object[] { message });
+            }
         }
 
         public void LocationUnlocked(params int[] locationIds)
         {
-            _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
+            if (_proxyServer != null)
+            {
+                _locationFromCurrentWorldUnlockedMethodInfo.Invoke(_proxyServer, new object[] { locationIds });
+            }
         }
 
         public void LocationUnlocked(params string[] locationNames)
         {
-            List<int> locationIds = new List<int>();
-            foreach (var locName in locationNames)
+            if (_proxyServer != null)
             {
-                var locationId = (int)_getLocationIdFromNameMethodInfo.Invoke(_proxyServer, new object[] { locName });
-                if (locationId != -1)
+                List<int> locationIds = new List<int>();
+                foreach (var locName in locationNames)
                 {
-                    locationIds.Add(locationId);
+                    var locationId = (int)_getLocationIdFromNameMethodInfo.Invoke(_proxyServer, new object[] { locName });
+                    if (locationId != -1)
+                    {
+                        locationIds.Add(locationId);
+                    }
+                    else
+                    {
+                        Debug.Log("Error finding ID for location " + locName + ", event will be swallowed");
+                    }
                 }
-                else
+                if (locationIds.Count > 0)
                 {
-                    Debug.Log("Error finding ID for location " + locName + ", event will be swallowed");
+                    Debug.Log("Unlocking locations " + string.Join(",", locationIds));
+                    LocationUnlocked(locationIds.ToArray());
                 }
-            }
-            if (locationIds.Count > 0)
-            {
-                Debug.Log("Unlocking locations " + string.Join(",", locationIds));
-                LocationUnlocked(locationIds.ToArray());
             }
         }
 
         public string GetItemNameFromId(int itemId)
         {
-            return (string)_getItemNameFromIdMethodInfo.Invoke(_proxyServer, new object[] { itemId });
+            if (IsSuccessfullyConnected())
+            {
+                return (string)_getItemNameFromIdMethodInfo.Invoke(_proxyServer, new object[] { itemId });
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public void Disconnect()
         {
-            try
+            if (_proxyServer != null)
             {
-                _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
-            }
-            catch (Exception e)
-            {
-                // At this point all we can do is clean up everything else -- don't throw exception up or we'll fail to unload everything
-                Debug.LogError(e);
+                try
+                {
+                    _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
+                    _proxyServer = null; // Reset since we will make a new one to reconnect
+                }
+                catch (Exception e)
+                {
+                    // At this point all we can do is clean up and try again later
+                    _proxyServer = null;
+                    Debug.LogError(e);
+                }
             }
         }
 
@@ -135,8 +179,22 @@ namespace Raftipelago.Network
             }
             catch (Exception)
             {
-                // TODO Check exception type and print if error occurs
+                // TODO Check exception type and print if unexpected error occurs
             }
+        }
+
+        private void _initMethodInfo(Type proxyServerRef)
+        {
+            // Events for data that we send to proxy
+            // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
+            _isSuccessfullyConnectedMethodInfo = proxyServerRef.GetMethod("IsSuccessfullyConnected");
+            _setIsPlayerInWorldMethodInfo = proxyServerRef.GetMethod("SetIsPlayerInWorld");
+            _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
+            _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
+            _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
+            _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
+            _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
+            _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
         private object _createNewArchipelagoProxy(Type proxyServerRef, string hostUrl)
@@ -150,16 +208,6 @@ namespace Raftipelago.Network
             proxyServerRef.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
             proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, string>)RaftItemLockedForCurrentWorld });
             proxyServerRef.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
-
-            // Events for data that we send to proxy
-            // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
-            _setIsPlayerInWorldMethodInfo = proxyServerRef.GetMethod("SetIsPlayerInWorld");
-            _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
-            _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
-            _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
-            _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
-            _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
-            _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
         private void _connectToArchipelago(Type proxyServerRef, string username, string password)

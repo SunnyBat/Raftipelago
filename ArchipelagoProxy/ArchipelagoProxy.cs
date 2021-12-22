@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace ArchipelagoProxy
@@ -20,6 +21,8 @@ namespace ArchipelagoProxy
          * -- Maybe depends on configuration of run?
          * -- Does MultiClient.Net do this for us?
          */
+
+        private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
         // Events TO Raft
         /// <summary>
@@ -54,12 +57,32 @@ namespace ArchipelagoProxy
         private bool isSuccessfullyConnected = false;
         public ArchipelagoProxy(string urlToHost)
         {
-            _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
-            _session.Items.ItemReceived += itemHelper => // Called once per new item, don't loop dequeue (though it only enqueus one item at a time anyways)
+            if (urlToHost.Contains(":"))
+            {
+                var indexOfColon = urlToHost.IndexOf(":");
+                var hostAddress = urlToHost.Substring(0, indexOfColon); // Assumes no additional path is required in URL; if there is, we need to slice :port out instead
+                var portStr = PortFinderRegex.Match(urlToHost).Groups[1].Value;
+                if (int.TryParse(portStr, out int port))
+                {
+                    _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
+                }
+                else
+                {
+                    throw new ArgumentException("Invalid URL for Archipelago: " + urlToHost);
+                }
+            }
+            else
+            {
+                _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
+            }
+            _session.Items.ItemReceived += itemHelper =>
             {
                 try
                 {
-                    _itemReceivedQueue.Enqueue(itemHelper.DequeueItem());
+                    while (itemHelper.Any()) // Generally will only be one but might as well loop
+                    {
+                        _itemReceivedQueue.Enqueue(itemHelper.DequeueItem());
+                    }
                 }
                 catch (Exception e)
                 {
@@ -83,27 +106,29 @@ namespace ArchipelagoProxy
             };
         }
 
+        public bool IsSuccessfullyConnected()
+        {
+            lock (LockForClass)
+            {
+                return isSuccessfullyConnected;
+            }
+        }
+
         public void Heartbeat()
         {
             lock (LockForClass)
             {
-                if (isSuccessfullyConnected) // Don't process anything if we're not properly connected -- we don't want to accidentally send invalid data
+                if (IsSuccessfullyConnected()) // Don't process anything if we're not properly connected -- we don't want to accidentally send invalid data
                 {
-                    if (PrintMessage != null)
+                    while (_messageQueue.TryDequeue(out string nextMessage))
                     {
-                        while (_messageQueue.TryDequeue(out string nextMessage))
-                        {
-                            PrintMessage(nextMessage);
-                        }
+                        PrintMessage(nextMessage);
                     }
-                    if (RaftItemUnlockedForCurrentWorld != null)
+                    if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
                     {
-                        if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                        while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                         {
-                            while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
-                            {
-                                RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
-                            }
+                            RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
                         }
                     }
                 }
@@ -155,12 +180,15 @@ namespace ArchipelagoProxy
 
         public void SetIsPlayerInWorld(bool isInWorld)
         {
-            _session.Socket.SendPacket(new StatusUpdatePacket()
+            if (IsSuccessfullyConnected())
             {
-                Status = isInWorld
-                    ? ArchipelagoClientState.ClientPlaying
-                    : ArchipelagoClientState.ClientReady
-            });
+                _session.Socket.SendPacket(new StatusUpdatePacket()
+                {
+                    Status = isInWorld
+                        ? ArchipelagoClientState.ClientPlaying
+                        : ArchipelagoClientState.ClientReady
+                });
+            }
             lock (LockForClass)
             {
                 isRaftWorldLoaded = isInWorld;
@@ -214,7 +242,13 @@ namespace ArchipelagoProxy
 
         public void Disconnect()
         {
-            _session.Socket.Disconnect();
+            try
+            {
+                _session.Socket.Disconnect();
+            }
+            catch (Exception)
+            {
+            }
         }
 
         private void _addNameIfInvalid(object action, string name, List<string> addTo)
@@ -248,6 +282,7 @@ namespace ArchipelagoProxy
                     lock (LockForClass)
                     {
                         isSuccessfullyConnected = true;
+                        SetIsPlayerInWorld(isRaftWorldLoaded);
                     }
                     List<int> allLocations = new List<int>();
                     while (_locationUnlockQueue.TryDequeue(out int nextLocation))
