@@ -11,10 +11,24 @@ namespace Raftipelago
     // in our code. Because of this, extensions should not be used for Raft classes.
     public class CommonUtils
     {
-        public static bool IsNoteOrBlueprint(LandmarkItem item)
+        public static bool IsNote(LandmarkItem item)
         {
             var name = item?.name ?? "";
-            return name.Contains("NoteBookPickup") || name.Contains("Blueprint");
+            return name.Contains("NoteBookPickup");
+        }
+        public static bool IsBlueprint(LandmarkItem item)
+        {
+            var name = item?.name ?? "";
+            return name.Contains("Blueprint");
+        }
+        public static bool IsNoteOrBlueprint(LandmarkItem item)
+        {
+            return IsNote(item) || IsBlueprint(item);
+        }
+
+        public static bool IsValidNote(NoteBookNote note)
+        {
+            return note?.name?.Contains("NoteBookNote") ?? false;
         }
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,12 +11,16 @@ namespace Raftipelago
     public class DataGenerator
     {
         private static string[] ProgressionItemList = new string[] {
-            "ZiplineTool",
-            "Battery", "Bolt", "CircuitBoard", "Hinge",
-            "Placeable_MotorWheel", "Placeable_SteeringWheel", // TODO Verify these are the engine and steering wheel items we need
-            "Placeable_Reciever", "Placeable_Reciever_Antenna",
-            "Placeable_SteeringWheel", "Placeable_CookingStand_Smelter", // TODO Is Placeable_CookingStand_Smelter actually the smelter?
-            "Machete"
+            "Battery", "Bolt", "CircuitBoard", "Hinge", "Placeable_Reciever", "Placeable_Reciever_Antenna", "Placeable_CookingStand_Smelter", // Radio Tower requirements
+            "Placeable_MotorWheel", "Placeable_SteeringWheel", // Balboa requirements
+            "Machete", // Balboa completion requirement
+            "ZiplineTool", // Caravan Island completion requirement
+
+            "NoteBookNote_Index2_Post-it", // At Radio Tower
+            "NoteBookNote_Index17_Vasagatan_PostItNote_FrequencyToBalboa", // At Vasagatan
+            // Balboa does not have a note
+            "NoteBookNote_Index43_Landmark_CaravanIsland_FrequencyToTangaroa" // At Caravan Island
+            // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
         };
 
         public static string GenerateRawArchipelagoItemList(bool invert = false)
@@ -38,16 +43,15 @@ namespace Raftipelago
                     }
                 });
 
-                WorldManager.AllLandmarks.ForEach(landmark =>
+                var notebook = ComponentManager<NoteBook>.Value;
+                var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
+                foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
-                    foreach (var lmi in landmark.landmarkItems)
+                    if (CommonUtils.IsValidNote(nbNote))
                     {
-                        if (CommonUtils.IsNoteOrBlueprint(lmi))
-                        {
-                            _addItem(ref currentId, lmi.name, allItemData);
-                        }
+                        _addItem(ref currentId, nbNote.name, allItemData);
                     }
-                });
+                }
             }
             else
             {
