@@ -55,6 +55,7 @@ namespace ArchipelagoProxy
         // Tracking between Archipelago Server <-> Proxy <-> Raft
         private bool isRaftWorldLoaded = false;
         private bool isSuccessfullyConnected = false;
+        private bool triggeredConnectedAction = false;
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -98,6 +99,7 @@ namespace ArchipelagoProxy
                 lock (LockForClass)
                 {
                     isSuccessfullyConnected = false;
+                    triggeredConnectedAction = false;
                 }
                 if (PrintMessage != null)
                 {
@@ -130,6 +132,11 @@ namespace ArchipelagoProxy
                         {
                             RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
                         }
+                    }
+                    if (!triggeredConnectedAction)
+                    {
+                        triggeredConnectedAction = true; // Set first in case ConnectedToServer() blows up
+                        ConnectedToServer();
                     }
                 }
             }
@@ -178,20 +185,32 @@ namespace ArchipelagoProxy
             return _session.Locations.AllLocationsChecked.ToArray();
         }
 
-        public void SetIsPlayerInWorld(bool isInWorld)
+        public void SetIsPlayerInWorld(bool isInWorld, bool forceResync = false)
         {
+            bool resendItems = false;
+            lock (LockForClass)
+            {
+                if (!isRaftWorldLoaded || forceResync)
+                {
+                    resendItems = isInWorld;
+                }
+                isRaftWorldLoaded = isInWorld;
+            }
+
             if (IsSuccessfullyConnected())
             {
+                if (resendItems) // TODO Figure out how to not double-up on sending items when initially connecting
+                {
+                    // Resend all unlocks every time we reload into world
+                    _session.Items.AllItemsReceived.ToList().ForEach(ni => _itemReceivedQueue.Enqueue(ni));
+                }
+
                 _session.Socket.SendPacket(new StatusUpdatePacket()
                 {
                     Status = isInWorld
                         ? ArchipelagoClientState.ClientPlaying
                         : ArchipelagoClientState.ClientReady
                 });
-            }
-            lock (LockForClass)
-            {
-                isRaftWorldLoaded = isInWorld;
             }
         }
 
@@ -282,7 +301,7 @@ namespace ArchipelagoProxy
                     lock (LockForClass)
                     {
                         isSuccessfullyConnected = true;
-                        SetIsPlayerInWorld(isRaftWorldLoaded);
+                        SetIsPlayerInWorld(isRaftWorldLoaded, true); // Call so we trigger all required processes
                     }
                     List<int> allLocations = new List<int>();
                     while (_locationUnlockQueue.TryDequeue(out int nextLocation))

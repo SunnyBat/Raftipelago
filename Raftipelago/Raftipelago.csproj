@@ -45,6 +45,7 @@
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Network\ProxiedArchipelago.cs" />
+    <Compile Include="Patches\RGD_ResearchTableWorld.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
   </ItemGroup>

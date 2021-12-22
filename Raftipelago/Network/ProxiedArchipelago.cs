@@ -71,7 +71,13 @@ namespace Raftipelago.Network
         {
             if (_proxyServer != null)
             {
-                _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld });
+                _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
+                if (inWorld)
+                {
+                    LocationUnlocked(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
+                        .FindAll(itm => itm.Learned)
+                        .Select(itm => itm.GetItem().UniqueName).ToArray());
+                }
             }
         }
 
@@ -206,7 +212,7 @@ namespace Raftipelago.Network
         {
             // Events for data sent to us
             proxyServerRef.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, string>)RaftItemLockedForCurrentWorld });
+            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, string>)RaftItemUnLockedForCurrentWorld });
             proxyServerRef.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
         }
 
@@ -226,7 +232,6 @@ namespace Raftipelago.Network
 
         private void ConnnectedToServer()
         {
-
         }
 
         private void PrintMessage(string msg)
@@ -234,22 +239,25 @@ namespace Raftipelago.Network
             Debug.Log(msg);
         }
 
-        private void RaftItemLockedForCurrentWorld(int itemId, string player)
+        private void RaftItemUnLockedForCurrentWorld(int itemId, string player)
         {
             var sentItemName = GetItemNameFromId(itemId);
             // TODO Verify that these aren't overwritten when a world is loaded
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == sentItemName);
             if (foundItem != null)
             {
-                // TODO How to get SteamID of remote player or otherwise display different player name
-                //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
-                //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-                Debug.Log("Unlocking " + foundItem.UniqueName);
-                foundItem.settings_recipe.Learned = true;
+                if (!foundItem.settings_recipe.Learned)
+                {
+                    // TODO How to get SteamID of remote player or otherwise display different player name
+                    //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                    //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+                    Debug.Log("Unlocking " + foundItem.UniqueName);
+                    foundItem.settings_recipe.Learned = true;
+                }
             }
             else
             {
-                Debug.Log($"Unable to find {sentItemName} ({itemId})");
+                Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
         }
     }

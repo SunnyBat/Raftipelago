@@ -23,7 +23,7 @@ public class RaftipelagoThree : Mod
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         if (isInWorld())
         {
-            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+            WorldEvent_WorldLoaded();
         }
         StartCoroutine(serverHeartbeat);
         Debug.Log("Mod Raftipelago has been loaded!");
@@ -35,12 +35,15 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         ComponentManager<IArchipelagoLink>.Value = null;
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
-        Debug.Log("Raftipelago has been stopped. You may reconnect at any time.");
+        Debug.Log("Raftipelago has been stopped.");
     }
 
+    // This should ONLY be used for Archipelago-related setup; this is called even after
+    // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
     {
-        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+        var archipelagoLink = ComponentManager<IArchipelagoLink>.Value;
+        archipelagoLink.SetIsInWorld(true);
     }
 
     public override void WorldEvent_WorldUnloaded()
@@ -74,6 +77,7 @@ public class RaftipelagoThree : Mod
         {
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
             ComponentManager<IArchipelagoLink>.Value.Connect(arguments[0], arguments[1], arguments.Length > 2 ? arguments[2] : null);
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(isInWorld());
         }
         else
         {
@@ -85,95 +89,18 @@ public class RaftipelagoThree : Mod
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]
     private static void Command_Disconnect(string[] arguments)
     {
-        if (arguments.Length == 1 && arguments[1].Equals("confirmDisconnect", System.StringComparison.InvariantCultureIgnoreCase))
+        if (arguments.Length == 1 && arguments[0].Equals("confirmDisconnect", System.StringComparison.InvariantCultureIgnoreCase))
         {
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
         }
         else
         {
             Debug.LogError("Usage: <i>disconnect confirmDisconnect</i>");
-            arguments?.Do(arg => Debug.Log(arg));
         }
     }
 
-    private bool isInWorld()
+    private static bool isInWorld()
     {
         return ComponentManager<CraftingMenu>.Value != null; // TODO Better way to determine?
-    }
-
-    private void DebugStuff2()
-    {
-        var i_rT = ComponentManager<Inventory_ResearchTable>.Value;
-        var hsb = new StringBuilder();
-        var sb = new StringBuilder();
-        i_rT.GetMenuItems().ForEach(rmi =>
-        {
-            var baseItem = rmi.GetItem();
-            if (!baseItem.settings_recipe.HiddenInResearchTable && !baseItem.settings_recipe.LearnedViaBlueprint)
-            {
-                sb.Append(baseItem.UniqueName + ",");
-            }
-            else
-            {
-                hsb.Append(baseItem.UniqueName + ",");
-            }
-        });
-        Debug.Log(hsb);
-        Debug.Log("==============");
-        Debug.Log(sb);
-    }
-
-    private void DebugStuff()
-    {
-        var availableItemList = new string[] {
-            "Empty Cup", "Simple Purifier", "Simple Grill", "Small Crop Plot", // Food/Water
-            "Research Table", "Simple Bed", "Small Storage", // Other
-            "Building Hammer", "Plastic Hook", "Stone Axe", "Fishing Rod", "Shark Bait", // Tools
-            "Wooden Spear", // Weapons
-            // Equipment
-            "Rope", "Nail", "Wet Brick", // Resources
-            "Throwable Anchor", "Paddle", "Sail", "Streamer", // Navigation
-            "Seating", "Tables", "Shelves", "Sign", "Calendar", "Rug", "Clock" // Decorations
-        };
-        var craftingMenu = ComponentManager<CraftingMenu>.Value;
-        var matchedItemCount = 0;
-        var allItemData = new StringBuilder();
-        allItemData.Append("[");
-        craftingMenu.AllRecipes.Do(recipe =>
-        {
-            if (recipe.settings_recipe.CraftingCategory != CraftingCategory.Hidden
-                && recipe.settings_recipe.CraftingCategory != CraftingCategory.Decorations
-                && recipe.settings_recipe.CraftingCategory != CraftingCategory.CreativeMode
-                && recipe.settings_recipe.CraftingCategory != CraftingCategory.Skin
-                && !recipe.settings_recipe.LearnedFromBeginning)
-            {
-                if (allItemData.Length > 1)
-                {
-                    allItemData.Append(",");
-                }
-                allItemData.Append("{");
-                allItemData.Append($"\"Name\":\"{recipe.name}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"DisplayName\":\"{recipe.settings_Inventory.DisplayName}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"UniqueName\":\"{recipe.UniqueName}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"LearnedByDefault\":\"{recipe.settings_recipe.LearnedFromBeginning}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"Learned\":\"{recipe.settings_recipe.Learned}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"LearnedViaBlueprint\":\"{recipe.settings_recipe.LearnedViaBlueprint}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"CanCraft\":\"{recipe.settings_recipe.CanCraft}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"CraftingCategory\":\"{recipe.settings_recipe.CraftingCategory}\"");
-                allItemData.Append(",");
-                allItemData.Append($"\"SubCategory\":\"{recipe.settings_recipe.SubCategory}\"");
-                allItemData.Append("}");
-            }
-        });
-        allItemData.Append("]");
-        Debug.Log($"E:{availableItemList.Length}, A:{matchedItemCount}");
-        Debug.Log(allItemData.ToString());
     }
 }
