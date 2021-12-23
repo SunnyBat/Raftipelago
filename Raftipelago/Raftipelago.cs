@@ -151,6 +151,26 @@ public class RaftipelagoThree : Mod
         }
     }
 
+    [ConsoleCommand("/givenote", "TODO Delete.")]
+    private static void Command_GiveNote(string[] arguments)
+    {
+        if (arguments.Length == 1)
+        {
+            if (isInWorld() && int.TryParse(arguments[0], out int noteId))
+            {
+                ComponentManager<NoteBook>.Value.UnlockSpecificNoteWithUniqueNoteIndex(noteId, true, false);
+            }
+            else
+            {
+                Debug.LogError("Must be loaded into a world to use this command.");
+            }
+        }
+        else
+        {
+            Debug.LogError("Must specify note ID to unlock.");
+        }
+    }
+
     private static bool isInWorld()
     {
         return ComponentManager<CraftingMenu>.Value != null; // TODO Better way to determine?
