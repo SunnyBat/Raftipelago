@@ -4,6 +4,7 @@ using Raftipelago.Data;
 using Raftipelago.Network;
 using Steamworks;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace Raftipelago.Patches
@@ -21,13 +22,24 @@ namespace Raftipelago.Patches
 			Debug.Log("LearnItem_AlwaysReplace: " + item.UniqueName);
 			for (int i = 0; i < ___menuItems.Count; i++)
 			{
-				if (!___menuItems[i].Learned && ___menuItems[i].GetItem().UniqueIndex == item.UniqueIndex)
+				var menuItemBase = ___menuItems[i].GetItem();
+				if (!___menuItems[i].Learned && menuItemBase.UniqueIndex == item.UniqueIndex)
 				{
-					// Specifically skip researching so we can spam this as necessary
+					if (!CommonUtils.IsValidResearchTableItem(menuItemBase))
+					{
+						typeof(ResearchMenuItem).GetField("learned", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(___menuItems[i], true);
+						menuItemBase.settings_recipe.Learned = true;
+						if (CanvasHelper.ActiveMenu == MenuType.Inventory)
+						{
+							ComponentManager<CraftingMenu>.Value.ReselectCategory();
+						}
+						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
+							.researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, item.settings_Inventory.Sprite));
+						return false;
+					}
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-					var itemLearned = ___menuItems[i].GetItem();
-					Debug.Log("Learned item from research table: " + itemLearned.UniqueName);
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(itemLearned.UniqueName);
+					Debug.Log("Learned item from research table: " + menuItemBase.UniqueName);
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.UniqueName);
 					___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
 					break;
 				}

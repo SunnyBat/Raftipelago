@@ -72,11 +72,7 @@ namespace Raftipelago
             {
                 craftingMenu.AllRecipes.ForEach(recipe =>
                 {
-                    if (recipe.settings_recipe.CraftingCategory != CraftingCategory.Hidden
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.Decorations
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.CreativeMode
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.Skin
-                        && !recipe.settings_recipe.LearnedFromBeginning)
+                    if (CommonUtils.IsValidResearchTableItem(recipe))
                     {
                         _addItem(ref currentId, recipe.UniqueName, allItemData);
                     }
@@ -96,11 +92,7 @@ namespace Raftipelago
             {
                 craftingMenu.AllRecipes.ForEach(recipe =>
                 {
-                    if (!(recipe.settings_recipe.CraftingCategory != CraftingCategory.Hidden
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.Decorations
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.CreativeMode
-                        && recipe.settings_recipe.CraftingCategory != CraftingCategory.Skin
-                        && !recipe.settings_recipe.LearnedFromBeginning))
+                    if (!CommonUtils.IsValidResearchTableItem(recipe))
                     {
                         _addItem(ref currentId, recipe.UniqueName, allItemData);
                     }
@@ -132,6 +124,7 @@ namespace Raftipelago
             var researchTableInventory = ComponentManager<Inventory_ResearchTable>.Value;
             var allLocationData = new StringBuilder();
             allLocationData.Append("[");
+            List<string> allResearchItems = new List<string>();
             int currentId = 48001;
             if (!invert)
             {
@@ -140,9 +133,21 @@ namespace Raftipelago
                     var baseItem = rmi.GetItem();
                     if (!baseItem.settings_recipe.HiddenInResearchTable && !baseItem.settings_recipe.LearnedViaBlueprint)
                     {
-                        _addLocation(ref currentId, baseItem.UniqueName, "ResearchTable", allLocationData);
+                        List<string> researchItems = new List<string>();
+                        var bingoMenuItems = (List<BingoMenuItem>)typeof(ResearchMenuItem).GetField("bingoMenuItems", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(rmi);
+                        foreach (var bingoMenuItem in bingoMenuItems)
+                        {
+                            var baseBingoItem = (Item_Base)typeof(BingoMenuItem).GetField("bingoItem", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bingoMenuItem);
+                            researchItems.Add(baseBingoItem.UniqueName);
+                            if (!allResearchItems.Contains(baseBingoItem.UniqueName))
+                            {
+                                allResearchItems.Add(baseBingoItem.UniqueName);
+                            }
+                        }
+                        _addLocation(ref currentId, baseItem.UniqueName, "ResearchTable", allLocationData, researchItems);
                     }
                 });
+                return string.Join(",", allResearchItems.ToArray());
                 WorldManager.AllLandmarks.ForEach(landmark =>
                 {
                     foreach (var landmarkItem in landmark.landmarkItems)
@@ -171,7 +176,7 @@ namespace Raftipelago
             return allLocationData.ToString();
         }
 
-        private static void _addLocation(ref int id, string name, string region, StringBuilder locData)
+        private static void _addLocation(ref int id, string name, string region, StringBuilder locData, List<string> requiredLocations = null)
         {
             if (locData.Length > 1)
             {
@@ -183,6 +188,20 @@ namespace Raftipelago
             locData.Append($"\"name\":\"{name}\"");
             locData.Append(",");
             locData.Append($"\"region\":\"{region}\"");
+            if (requiredLocations?.Count > 0)
+            {
+                locData.Append(",");
+                locData.Append($"\"requiresAccessToItems\":[");
+                for (int i = 0; i < requiredLocations.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        locData.Append(",");
+                    }
+                    locData.Append($"\"{requiredLocations[i]}\"");
+                }
+                locData.Append("]");
+            }
             locData.Append("}");
         }
     }
