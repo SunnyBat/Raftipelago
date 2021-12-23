@@ -50,15 +50,15 @@ namespace Raftipelago.Patches
 		public static bool PickupItem_SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
 			Network_Player ___playerNetwork)
 		{
+			Debug.Log("PickupItem: " + pickup.name);
 			if (pickup.yieldHandler != null)
-            {
+			{
 				bool hadBlueprint = false;
 				pickup.yieldHandler.Yield.ForEach(cst =>
 				{
 					var itemToAdd = cst?.item;
 					if (itemToAdd?.settings_recipe.IsBlueprint ?? false)
 					{
-						Debug.Log(cst?.item?.UniqueName);
 						ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(itemToAdd.UniqueName);
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 							.researchInfoQue.Enqueue(new Notification_Research_Info(itemToAdd.UniqueName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
@@ -72,7 +72,7 @@ namespace Raftipelago.Patches
 					return false;
 				}
             }
-			return true; // TODO Return true instead
+			return true;
 		}
 	}
 }
