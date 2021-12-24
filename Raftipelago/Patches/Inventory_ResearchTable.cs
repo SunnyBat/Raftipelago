@@ -37,7 +37,7 @@ namespace Raftipelago.Patches
 						return false;
 					}
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.UniqueName);
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.settings_Inventory.DisplayName);
 					___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
 					break;
 				}
@@ -84,7 +84,7 @@ namespace Raftipelago.Patches
 				{
 					if (___availableResearchItems.ContainsKey(item))
 					{
-						Debug.Log("Successfully researched " + item.UniqueName);
+						Debug.Log("Successfully researched " + item.settings_Inventory.DisplayName);
 						___availableResearchItems[item].SetResearchedState(true);
 						for (int j = 0; j < ___menuItems.Count; j++)
 						{
@@ -93,7 +93,7 @@ namespace Raftipelago.Patches
 					}
 					else
                     {
-						Debug.Log("Unable to find research item " + item.UniqueName);
+						Debug.Log("Unable to find research item " + item.settings_Inventory.DisplayName);
                     }
 				}
 				__instance.SortMenuItems();
@@ -101,7 +101,7 @@ namespace Raftipelago.Patches
 			}
 			else
 			{
-				Debug.Log("Can't research " + item.UniqueName);
+				Debug.Log("Can't research " + item.settings_Inventory.DisplayName);
 				__result = false;
 			}
 			return false;

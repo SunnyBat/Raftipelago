@@ -61,7 +61,6 @@ namespace Raftipelago.Patches
 			Item_Base ___item,
 			Inventory_ResearchTable ___inventoryRef)
 		{
-			Debug.Log("Learn_AlwaysReplace: " + ___item.UniqueName);
 			// Original function with item learn omission
 			___learned = true;
 			___canvasgroup.alpha = 0.5f;
@@ -81,7 +80,6 @@ namespace Raftipelago.Patches
 			var unresearchedItems = new List<Item_Base>();
 			___bingoMenuItems.ForEach(itm =>
 			{
-				Debug.Log("Unresearching " + itm.BingoItem.UniqueName);
 				availableResearchItems[itm.BingoItem].SetResearchedState(false);
 				researchedItems.Remove(itm.BingoItem);
 				unresearchedItems.Add(itm.BingoItem);

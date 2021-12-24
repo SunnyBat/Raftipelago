@@ -81,7 +81,7 @@ namespace Raftipelago.Network
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned)
-                        .Select(itm => itm.GetItem().UniqueName));
+                        .Select(itm => itm.GetItem().settings_Inventory.DisplayName));
                     WorldManager.AllLandmarks.ForEach(landmark =>
                     {
                         // TODO Should I filter by story island?
@@ -321,7 +321,7 @@ namespace Raftipelago.Network
 
         private bool _unlockRecipe(string itemName, int fromPlayerId)
         {
-            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == itemName);
+            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
                 if (!foundItem.settings_recipe.Learned)

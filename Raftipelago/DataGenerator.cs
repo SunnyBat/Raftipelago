@@ -11,10 +11,10 @@ namespace Raftipelago
     public class DataGenerator
     {
         private static string[] ProgressionItemList = new string[] {
-            "Battery", "Bolt", "CircuitBoard", "Hinge", "Placeable_Reciever", "Placeable_Reciever_Antenna", "Placeable_CookingStand_Smelter", // Radio Tower requirements
-            "Placeable_MotorWheel", "Placeable_SteeringWheel", // Balboa requirements
+            "Battery", "Bolt", "Circuit board", "Hinge", "Receiver", "Antenna", "Smelter", // Radio Tower requirements
+            "Engine", "Steering Wheel", // Balboa requirements
             "Machete", // Balboa completion requirement
-            "ZiplineTool", // Caravan Island completion requirement
+            "Zipline tool", // Caravan Island completion requirement
 
             "NoteBookNote_Index2_Post-it", // At Radio Tower
             "NoteBookNote_Index17_Vasagatan_PostItNote_FrequencyToBalboa", // At Vasagatan
@@ -67,6 +67,7 @@ namespace Raftipelago
             var craftingMenu = ComponentManager<CraftingMenu>.Value;
             var allItemData = new StringBuilder();
             allItemData.Append("[");
+            var allItemNames = new List<string>();
             int currentId = 47001;
             if (!invert)
             {
@@ -74,7 +75,11 @@ namespace Raftipelago
                 {
                     if (CommonUtils.IsValidResearchTableItem(recipe))
                     {
-                        _addItem(ref currentId, recipe.UniqueName, allItemData);
+                        _addItem(ref currentId, recipe.settings_Inventory.DisplayName, allItemData);
+                        if (!allItemNames.AddUniqueOnly(recipe.settings_Inventory.DisplayName))
+                        {
+                            throw new Exception(recipe.settings_Inventory.DisplayName + " is not unique");
+                        }
                     }
                 });
 
@@ -85,6 +90,10 @@ namespace Raftipelago
                     if (CommonUtils.IsValidNote(nbNote))
                     {
                         _addItem(ref currentId, nbNote.name, allItemData);
+                        if (!allItemNames.AddUniqueOnly(nbNote.name))
+                        {
+                            throw new Exception(nbNote.name + " is not unique");
+                        }
                     }
                 }
             }
@@ -139,7 +148,7 @@ namespace Raftipelago
                             var baseBingoItem = (Item_Base)typeof(BingoMenuItem).GetField("bingoItem", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bingoMenuItem);
                             researchItems.Add(baseBingoItem.UniqueName);
                         }
-                        _addLocation(ref currentId, baseItem.UniqueName, "ResearchTable", allLocationData, researchItems);
+                        _addLocation(ref currentId, baseItem.settings_Inventory.DisplayName, "ResearchTable", allLocationData, researchItems);
                     }
                 });
                 WorldManager.AllLandmarks.ForEach(landmark =>
@@ -162,7 +171,7 @@ namespace Raftipelago
                     var baseItem = rmi.GetItem();
                     if (baseItem.settings_recipe.HiddenInResearchTable || baseItem.settings_recipe.LearnedViaBlueprint)
                     {
-                        _addLocation(ref currentId, baseItem.UniqueName, "ResearchTable", allLocationData);
+                        _addLocation(ref currentId, baseItem.settings_Inventory.DisplayName, "ResearchTable", allLocationData);
                     }
                 });
             }
