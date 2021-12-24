@@ -29,10 +29,13 @@ namespace Raftipelago.Network
         private MethodInfo _setIsPlayerInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
-        private MethodInfo _getLocationIdFromNameMethodInfo;
+        private MethodInfo _getLocationIdFromNameMethodInfo; 
         private MethodInfo _getItemNameFromIdMethodInfo;
+        private MethodInfo _getPlayerAliasMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
+
+        private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
         {
             _initDllData();
@@ -150,6 +153,18 @@ namespace Raftipelago.Network
             }
         }
 
+        public string GetPlayerAlias(int playerId)
+        {
+            if (_proxyServer != null)
+            {
+                return (string)_getPlayerAliasMethodInfo.Invoke(_proxyServer, new object[] { playerId });
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public void Disconnect()
         {
             if (_proxyServer != null)
@@ -168,6 +183,16 @@ namespace Raftipelago.Network
             }
         }
 
+        public string GetNameFromPlayerId(int playerId)
+        {
+            return (string) _getItemNameFromIdMethodInfo.Invoke(_proxyServer, new object[] { playerId });
+        }
+
+        public void ToggleDebug()
+        {
+            shouldPrintDebugMessages = !shouldPrintDebugMessages;
+        }
+
         private void _initDllData()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -180,7 +205,7 @@ namespace Raftipelago.Network
             {
                 var embeddedFilePath = Path.Combine(EmbeddedFileDirectory, fileName);
                 var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
-                _copyDllIfNecessary(embeddedFilePath, outputFilePath);
+                //_copyDllIfNecessary(embeddedFilePath, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
@@ -194,9 +219,9 @@ namespace Raftipelago.Network
 
         private void _copyDllIfNecessary(string embeddedFilePath, string outputFilePath)
         {
-            var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(embeddedFilePath);
             try
             {
+                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(embeddedFilePath);
                 File.WriteAllBytes(outputFilePath, assemblyData);
             }
             catch (Exception)
@@ -215,6 +240,7 @@ namespace Raftipelago.Network
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
             _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
             _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
+            _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
@@ -228,8 +254,9 @@ namespace Raftipelago.Network
         {
             // Events for data sent to us
             proxyServerRef.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, string>)RaftItemUnLockedForCurrentWorld });
+            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int>)RaftItemUnLockedForCurrentWorld });
             proxyServerRef.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
+            proxyServerRef.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
         }
 
         private void _connectToArchipelago(Type proxyServerRef, string username, string password)
@@ -241,6 +268,7 @@ namespace Raftipelago.Network
             }
             catch (Exception e)
             {
+                PrintMessage("Error while connecting to server.");
                 Debug.Log(e);
                 throw e;
             }
@@ -252,19 +280,28 @@ namespace Raftipelago.Network
 
         private void PrintMessage(string msg)
         {
+            try
+            {
+                ChatManager.LocalDebugChatMessage(msg);
+            }
+            catch (Exception) {}
+        }
+
+        private void DebugMessage(string msg)
+        {
             Debug.Log(msg);
         }
 
-        private void RaftItemUnLockedForCurrentWorld(int itemId, string player)
+        private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockRecipe(sentItemName) && !_unlockNote(sentItemName))
+            if (!_unlockRecipe(sentItemName, player) && !_unlockNote(sentItemName, player))
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
         }
 
-        private bool _unlockRecipe(string itemName)
+        private bool _unlockRecipe(string itemName, int fromPlayerId)
         {
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == itemName);
             if (foundItem != null)
@@ -272,9 +309,17 @@ namespace Raftipelago.Network
                 if (!foundItem.settings_recipe.Learned)
                 {
                     // TODO How to get SteamID of remote player or otherwise display different player name
-                    //(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
-                    //    new Notification_Research_Info(foundItem.settings_Inventory.DisplayName, ___localPlayer.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-                    Debug.Log("Unlocking " + foundItem.UniqueName);
+                    try
+                    {
+                        (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                            new Notification_Research_Info(foundItem.settings_Inventory.DisplayName,
+                                CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(fromPlayerId),
+                                ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+                    }
+                    catch (Exception)
+                    {
+                        PrintMessage($"Received {itemName} from {GetPlayerAlias(fromPlayerId)}");
+                    }
                     foundItem.settings_recipe.Learned = true;
                 }
                 return true;
@@ -282,7 +327,7 @@ namespace Raftipelago.Network
             return false;
         }
 
-        private bool _unlockNote(string noteName)
+        private bool _unlockNote(string noteName, int fromPlayerId)
         {
             var notebook = ComponentManager<NoteBook>.Value;
             var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
@@ -291,7 +336,7 @@ namespace Raftipelago.Network
                 if (nbNote.name == noteName)
                 {
                     notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false);
-                    // TODO Notification
+                    ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
                     return true;
                 }
             }

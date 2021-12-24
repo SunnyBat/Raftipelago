@@ -66,7 +66,7 @@ namespace CommandLineTester
             Console.WriteLine("PM: " + obj);
         }
 
-        private static void Tst_RaftItemUnlockedForCurrentWorld(int arg1, string arg2)
+        private static void Tst_RaftItemUnlockedForCurrentWorld(int arg1, int arg2)
         {
             Console.WriteLine("RIUFCW: " + arg1 + ", " + arg2);
         }

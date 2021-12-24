@@ -55,11 +55,10 @@ namespace Raftipelago.Patches
 		public override void Show()
 		{
 			Debug.Log("Show1");
-			Notification_ArchipelagoSent_Info notification_Research_Info = this.archipelagoSentQueue.Dequeue();
-			LocalizationParameters.remoteSteamID = notification_Research_Info.researcher;
-			this.text_foundBy.text = "Found by"; // TODO Localize?
-			this.text_sentTo.text = notification_Research_Info.sentToPlayerName;
-			this.text_locationName.text = notification_Research_Info.foundItemName;
+			Notification_ArchipelagoSent_Info notificationToShow = this.archipelagoSentQueue.Dequeue();
+			this.text_foundBy.text = notificationToShow.researcher;
+			this.text_sentTo.text = notificationToShow.sentToPlayerName;
+			this.text_locationName.text = notificationToShow.foundItemName;
 			this.image_archipelago.sprite = ComponentManager<SpriteManager>.Value.GetArchipelagoSprite();
 			base.Show();
 		}
@@ -75,7 +74,6 @@ namespace Raftipelago.Patches
 		[SerializeField]
 		private Text text_sentTo;
 
-		// Token: 0x04001159 RID: 4441
 		[SerializeField]
 		private Image image_archipelago;
 	}
@@ -83,10 +81,10 @@ namespace Raftipelago.Patches
 	public class Notification_ArchipelagoSent_Info
 	{
 		public string foundItemName;
-		public CSteamID researcher;
+		public string researcher;
 		public string sentToPlayerName;
 
-		public Notification_ArchipelagoSent_Info(string foundItemName, CSteamID researcher, string sentToPlayerName)
+		public Notification_ArchipelagoSent_Info(string foundItemName, string researcher, string sentToPlayerName)
 		{
 			this.foundItemName = foundItemName;
 			this.researcher = researcher;

@@ -18,16 +18,6 @@ namespace Raftipelago.Patches
 		public static bool PickupSpecific_AlwaysReplace(PlayerInventory inventory,
 			RandomDropper ___randomRecipeDropper)
 		{
-			List<string> itms = new List<string>();
-			for (var i = 0; i < 10000; i++)
-			{
-				var itm = ___randomRecipeDropper.GetRandomItem();
-				if (!itms.Contains(itm.UniqueName))
-				{
-					itms.Add(itm.UniqueName);
-				}
-			}
-			Debug.Log(string.Join(",", itms));
 			// Swallow the event entirely
 			return false;
 		}

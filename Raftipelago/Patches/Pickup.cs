@@ -50,7 +50,6 @@ namespace Raftipelago.Patches
 		public static bool PickupItem_SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
 			Network_Player ___playerNetwork)
 		{
-			Debug.Log("PickupItem: " + pickup.name);
 			if (pickup.yieldHandler != null)
 			{
 				bool hadBlueprint = false;

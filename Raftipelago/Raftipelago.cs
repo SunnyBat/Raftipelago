@@ -2,8 +2,11 @@
 using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
+using Raftipelago.Patches;
 using Raftipelago.UnityScripts;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -151,23 +154,85 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/givenote", "TODO Delete.")]
-    private static void Command_GiveNote(string[] arguments)
+    [ConsoleCommand("/toggleDebug", "Toggles Raftipelago debug prints.")]
+    private static void Command_ToggleDebug(string[] arguments)
     {
-        if (arguments.Length == 1)
+        ComponentManager<IArchipelagoLink>.Value.ToggleDebug();
+    }
+
+    private static void test(Notification tstNot)
+    {
+        Debug.Log($"Identifier: {tstNot?.identifier}");
+        Debug.Log($"Is null: {tstNot == null}");
+        Debug.Log($"Is null 2: {Equals(tstNot, null)}");
+        Debug.Log($"Is null 3: {tstNot?.Equals(null)}");
+        Debug.Log($"Is null 4: {ReferenceEquals(tstNot, null)}");
+    }
+
+    [ConsoleCommand("/tstn", "Test command please ignore")]
+    private static void Command_tstn(string[] arguments)
+    {
+        var notificationManager = ComponentManager<NotificationManager>.Value;
+        var correctNotification = notificationManager.ShowNotification("ArchipelagoSent");
+        if (correctNotification == null)
         {
-            if (isInWorld() && int.TryParse(arguments[0], out int noteId))
+            var allNotifications = (List<Notification>)typeof(NotificationManager).GetField("notifications", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notificationManager);
+            allNotifications.RemoveRange(4, allNotifications.Count - 4);
+            Debug.Log(allNotifications.Count);
+            //var notComp = allNotifications[0].gameObject.AddComponent(typeof(Notification_ArchipelagoSent));
+            var parentComponents = allNotifications[0].GetComponentsInParent(typeof(object));
+            var tst = Instantiate(new Notification_ArchipelagoSent());
+            Debug.Log(tst.identifier);
+            Debug.Log(string.Join(",", parentComponents.Select(pc => pc.GetType())));
+            if (allNotifications.Count > 0)
             {
-                ComponentManager<NoteBook>.Value.UnlockSpecificNoteWithUniqueNoteIndex(noteId, true, false);
+                return;
             }
-            else
+            Notification tstNot = new Notification_ArchipelagoSent();
+            var allNots = new Notification[5];
+            for (int i = 0; i < allNotifications.Count; i++)
             {
-                Debug.LogError("Must be loaded into a world to use this command.");
+                allNots[i] = allNotifications[i];
             }
+            allNots[4] = tstNot;
+            Debug.Log($"A: {tstNot.active}");
+            try
+            {
+                Debug.Log($"E: {tstNot.enabled}");
+                Debug.Log($"AE: {tstNot.isActiveAndEnabled}");
+            }
+            catch (Exception) { }
+            typeof(NotificationManager).GetField("notifications", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(notificationManager, new List<Notification>(allNots));
+            allNotifications = (List<Notification>)typeof(NotificationManager).GetField("notifications", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notificationManager);
+            test(tstNot);
+            test(tstNot as Notification_ArchipelagoSent);
+            var notif = allNotifications.Find((Notification n) =>
+            {
+                Debug.Log(n.identifier);
+                var identifiersMatch = n.identifier == "ArchipelagoSent";
+                return identifiersMatch;
+            });
+            test(notif);
+            Debug.Log("Notif: " + notif.identifier);
+            Debug.Log("Notif2: " + allNotifications.Last());
+            correctNotification = notificationManager.ShowNotification("ArchipelagoSent");
+            Debug.Log("CN: " + (correctNotification != null));
         }
-        else
+        Debug.Log(correctNotification.identifier);
+        try
         {
-            Debug.LogError("Must specify note ID to unlock.");
+            var nas = correctNotification as Notification_ArchipelagoSent;
+            Debug.Log("T1");
+            var asq = nas.archipelagoSentQueue;
+            Debug.Log("T2");
+            var not = new Notification_ArchipelagoSent_Info("foundItemName", "researcherName", "sentToPlayerName");
+            Debug.Log("T3");
+            asq.Enqueue(not);
+            Debug.Log("T4");
+        }
+        catch (Exception e)
+        {
+            Debug.Log(e);
         }
     }
 

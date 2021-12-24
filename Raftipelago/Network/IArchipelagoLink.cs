@@ -22,6 +22,10 @@ namespace Raftipelago.Network
 
         string GetItemNameFromId(int itemId);
 
+        string GetPlayerAlias(int playerId);
+
+        void ToggleDebug();
+
         void Disconnect();
 
         void Heartbeat();

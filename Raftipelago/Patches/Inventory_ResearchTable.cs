@@ -19,7 +19,6 @@ namespace Raftipelago.Patches
 			ref string ___eventRef_Learn,
 			ref List<ResearchMenuItem> ___menuItems)
 		{
-			Debug.Log("LearnItem_AlwaysReplace: " + item.UniqueName);
 			for (int i = 0; i < ___menuItems.Count; i++)
 			{
 				var menuItemBase = ___menuItems[i].GetItem();
@@ -38,7 +37,6 @@ namespace Raftipelago.Patches
 						return false;
 					}
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-					Debug.Log("Learned item from research table: " + menuItemBase.UniqueName);
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.UniqueName);
 					___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
 					break;
@@ -61,12 +59,10 @@ namespace Raftipelago.Patches
 			ref List<ResearchMenuItem> ___menuItems,
 			Dictionary<Item_Base, AvaialableResearchItem> ___availableResearchItems)
 		{
-			Debug.Log("Research_AlwaysReplace: " + item.UniqueName);
 			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
 				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
 				___researchedItems.Add(item);
-				Debug.Log("NL: " + ___researchedItems.Count);
 				if (item.settings_recipe.IsBlueprint)
 				{
 					for (int i = 0; i < ___menuItems.Count; i++)

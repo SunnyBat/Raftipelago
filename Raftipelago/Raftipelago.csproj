@@ -43,6 +43,7 @@
     <Compile Include="DataGenerator.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
+    <Compile Include="Patches\LocalizationParameters.cs" />
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\Pickup.cs" />
     <Compile Include="Patches\Pickup_Specific_Blueprint.cs" />

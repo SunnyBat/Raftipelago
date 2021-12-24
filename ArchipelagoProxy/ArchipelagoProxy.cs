@@ -32,11 +32,15 @@ namespace ArchipelagoProxy
         /// <summary>
         /// Called when a new Raft item is unlocked for the current world.
         /// </summary>
-        private event Action<int, string> RaftItemUnlockedForCurrentWorld;
+        private event Action<int, int> RaftItemUnlockedForCurrentWorld;
         /// <summary>
         /// Called when a message is received. This can be a chat message, an item received message, etc
         /// </summary>
         private event Action<string> PrintMessage;
+        /// <summary>
+        /// Called for debug events. Not for general user consumption.
+        /// </summary>
+        private event Action<string> DebugMessage;
 
         // Queues for events
         // Events should be run on the main Unity thread. Thus, we queue up a heartbeat that runs on the
@@ -45,6 +49,7 @@ namespace ArchipelagoProxy
         private ConcurrentQueue<int> _locationUnlockQueue = new ConcurrentQueue<int>();
         private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
         private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+        private ConcurrentQueue<string> _debugQueue = new ConcurrentQueue<string>();
 
         // Lock for all non-thread-safe objects
         private readonly object LockForClass = new object();
@@ -96,14 +101,15 @@ namespace ArchipelagoProxy
             };
             _session.Socket.SocketClosed += closedEventArgs =>
             {
+                _messageQueue.Enqueue($"Disconnected from server.");
                 lock (LockForClass)
                 {
                     isSuccessfullyConnected = false;
                     triggeredConnectedAction = false;
                 }
-                if (PrintMessage != null)
+                if (!closedEventArgs.WasClean)
                 {
-                    PrintMessage($"Disconnected from server with reason {closedEventArgs.Reason} ({closedEventArgs.Code})");
+                    _debugQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
                 }
             };
         }
@@ -126,11 +132,18 @@ namespace ArchipelagoProxy
                     {
                         PrintMessage(nextMessage);
                     }
+                    if (DebugMessage != null) // Not required to run
+                    {
+                        while (_debugQueue.TryDequeue(out string nextMessage))
+                        {
+                            DebugMessage(nextMessage);
+                        }
+                    }
                     if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
                     {
                         while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                         {
-                            RaftItemUnlockedForCurrentWorld(res.Item, _session.Players.GetPlayerAlias(res.Player));
+                            RaftItemUnlockedForCurrentWorld(res.Item, res.Player);
                         }
                     }
                     if (!triggeredConnectedAction)
@@ -153,7 +166,7 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void AddRaftItemUnlockedForCurrentWorldEvent(Action<int, string> newEvent)
+        public void AddRaftItemUnlockedForCurrentWorldEvent(Action<int, int> newEvent)
         {
             if (newEvent != null)
             {
@@ -171,6 +184,17 @@ namespace ArchipelagoProxy
                 lock (LockForClass)
                 {
                     PrintMessage += newEvent;
+                }
+            }
+        }
+
+        public void AddDebugMessageEvent(Action<string> newEvent)
+        {
+            if (newEvent != null)
+            {
+                lock (LockForClass)
+                {
+                    DebugMessage += newEvent;
                 }
             }
         }
@@ -259,6 +283,11 @@ namespace ArchipelagoProxy
             return _session.Items.GetItemName(itemId);
         }
 
+        public string GetPlayerAlias(int playerId)
+        {
+            return _session.Players.GetPlayerAlias(playerId);
+        }
+
         public void Disconnect()
         {
             try
@@ -280,7 +309,7 @@ namespace ArchipelagoProxy
 
         private void HandlePacket(ArchipelagoPacketBase packet)
         {
-            _messageQueue.Enqueue($"Packet received: {packet.PacketType}");
+            _debugQueue.Enqueue($"Packet received: {packet.PacketType}");
             switch (packet.PacketType)
             {
                 case ArchipelagoPacketType.Say:
@@ -316,10 +345,11 @@ namespace ArchipelagoProxy
                 case ArchipelagoPacketType.RoomInfo:
                 case ArchipelagoPacketType.RoomUpdate:
                 case ArchipelagoPacketType.ReceivedItems:
+                case ArchipelagoPacketType.DataPackage:
                     // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
                     break;
                 default:
-                    _messageQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
+                    _debugQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
                     break;
             }
             // TODO Implement other packets
