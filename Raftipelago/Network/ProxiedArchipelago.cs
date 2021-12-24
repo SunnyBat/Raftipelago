@@ -203,9 +203,8 @@ namespace Raftipelago.Network
             }
             foreach (var fileName in LibraryFileNames)
             {
-                var embeddedFilePath = EmbeddedFileDirectory + "\\" + fileName; // Sometimes this uses "/", which RML is not happy with
                 var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
-                _copyDllIfNecessary(embeddedFilePath, outputFilePath);
+                _copyDllIfNecessary(EmbeddedFileDirectory, fileName, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
@@ -217,16 +216,32 @@ namespace Raftipelago.Network
             }
         }
 
-        private void _copyDllIfNecessary(string embeddedFilePath, string outputFilePath)
+        private void _copyDllIfNecessary(string baseDirectory, string fileName, string outputFilePath)
         {
+            // Note to dev: ReadRawFile() will print out a ModManager error in console. This is fine if it only
+            // happens once (and is expeted to when loading locally), but if it happens twice for the same file
+            // then something's wrong.
             try
             {
-                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(embeddedFilePath);
-                File.WriteAllBytes(outputFilePath, assemblyData);
+                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(baseDirectory + "/" + fileName);
+                if (assemblyData.Length > 0)
+                {
+                    File.WriteAllBytes(outputFilePath, assemblyData);
+                }
             }
             catch (Exception)
             {
-                // TODO Check exception type and print if unexpected error occurs
+                try
+                {
+                    var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(baseDirectory + "\\" + fileName);
+                    if (assemblyData?.Length > 0)
+                    {
+                        File.WriteAllBytes(outputFilePath, assemblyData);
+                    }
+                }
+                catch (Exception)
+                {
+                }
             }
         }
 
