@@ -203,9 +203,9 @@ namespace Raftipelago.Network
             }
             foreach (var fileName in LibraryFileNames)
             {
-                var embeddedFilePath = Path.Combine(EmbeddedFileDirectory, fileName);
+                var embeddedFilePath = EmbeddedFileDirectory + "\\" + fileName; // Sometimes this uses "/", which RML is not happy with
                 var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
-                //_copyDllIfNecessary(embeddedFilePath, outputFilePath);
+                _copyDllIfNecessary(embeddedFilePath, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
