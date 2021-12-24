@@ -124,7 +124,6 @@ namespace Raftipelago
             var researchTableInventory = ComponentManager<Inventory_ResearchTable>.Value;
             var allLocationData = new StringBuilder();
             allLocationData.Append("[");
-            List<string> allResearchItems = new List<string>();
             int currentId = 48001;
             if (!invert)
             {
@@ -139,15 +138,10 @@ namespace Raftipelago
                         {
                             var baseBingoItem = (Item_Base)typeof(BingoMenuItem).GetField("bingoItem", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bingoMenuItem);
                             researchItems.Add(baseBingoItem.UniqueName);
-                            if (!allResearchItems.Contains(baseBingoItem.UniqueName))
-                            {
-                                allResearchItems.Add(baseBingoItem.UniqueName);
-                            }
                         }
                         _addLocation(ref currentId, baseItem.UniqueName, "ResearchTable", allLocationData, researchItems);
                     }
                 });
-                return string.Join(",", allResearchItems.ToArray());
                 WorldManager.AllLandmarks.ForEach(landmark =>
                 {
                     foreach (var landmarkItem in landmark.landmarkItems)

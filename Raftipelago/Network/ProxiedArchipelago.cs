@@ -284,7 +284,10 @@ namespace Raftipelago.Network
             {
                 ChatManager.LocalDebugChatMessage(msg);
             }
-            catch (Exception) {}
+            catch (Exception)
+            {
+                Debug.Log(msg);
+            }
         }
 
         private void DebugMessage(string msg)
