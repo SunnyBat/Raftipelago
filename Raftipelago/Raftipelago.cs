@@ -19,6 +19,7 @@ public class RaftipelagoThree : Mod
     public void Start()
     {
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
+        ComponentManager<ProgressiveData>.Value = ComponentManager<ProgressiveData>.Value ?? new ProgressiveData(ComponentManager<EmbeddedFileUtils>.Value);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
@@ -37,6 +38,7 @@ public class RaftipelagoThree : Mod
         StopCoroutine(serverHeartbeat);
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         ComponentManager<IArchipelagoLink>.Value = null;
+        ComponentManager<ProgressiveData>.Value = null; // Allows dev progressives to reload on new load
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
         Debug.Log("Raftipelago has been stopped.");
     }

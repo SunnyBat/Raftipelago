@@ -87,7 +87,7 @@ namespace Raftipelago
                 var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
                 foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
-                    if (CommonUtils.IsValidNote(nbNote))
+                    if (CommonUtils.IsValidNote(nbNote) && ProgressionItemList.Any(progName => progName == nbNote.name)) // Only include valid story-related notes
                     {
                         _addItem(ref currentId, nbNote.name, allItemData);
                         if (!allItemNames.AddUniqueOnly(nbNote.name))
@@ -119,8 +119,6 @@ namespace Raftipelago
             }
             itemData.Append("{");
             itemData.Append($"\"id\":{id++}");
-            itemData.Append(",");
-            itemData.Append($"\"count\":1");
             itemData.Append(",");
             itemData.Append($"\"progression\":{ProgressionItemList.Any(progName => progName == name).ToString().ToLowerInvariant()}");
             itemData.Append(",");

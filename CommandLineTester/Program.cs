@@ -1,4 +1,5 @@
-﻿using Archipelago.MultiClient.Net.Packets;
+﻿using Archipelago.MultiClient.Net;
+using Archipelago.MultiClient.Net.Packets;
 using ArchipelagoProxy;
 using System;
 using System.Collections.Generic;
@@ -18,6 +19,7 @@ namespace CommandLineTester
             tst.AddConnectedToServerEvent(() => { });
             tst.AddRaftItemUnlockedForCurrentWorldEvent(Tst_RaftItemUnlockedForCurrentWorld);
             tst.AddPrintMessageEvent(Tst_PrintMessage);
+            tst.AddDebugMessageEvent(Tst_PrintMessage);
             tst.Connect("SunnyBat-Raft", "");
             while (true)
             {
@@ -48,6 +50,14 @@ namespace CommandLineTester
                 {
                     tst.LocationFromCurrentWorldUnlocked(locChecks.ToArray());
                 }
+                else if (nextLine == "LI")
+                {
+                    var session = (ArchipelagoSession)typeof(ArchipelagoProxy.ArchipelagoProxy).GetField("_session", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(tst);
+                    foreach (var itm in session.Items.AllItemsReceived)
+                    {
+                        Tst_PrintMessage(itm.Item + "," + itm.Location);
+                    }
+                }
                 else if (nextLine.StartsWith("GLFN"))
                 {
                     var locationName = nextLine.Substring(4).Trim();
@@ -57,12 +67,12 @@ namespace CommandLineTester
                 {
                     Console.WriteLine("Unknown command: " + nextLine);
                 }
+                tst.Heartbeat();
             }
         }
 
         private static void Tst_PrintMessage(string obj)
         {
-            Console.WriteLine(Thread.CurrentThread.ManagedThreadId);
             Console.WriteLine("PM: " + obj);
         }
 

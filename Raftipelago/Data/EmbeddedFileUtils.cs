@@ -18,7 +18,7 @@ namespace Raftipelago.Data
         }
         public byte[] ReadRawFile(params string[] path)
         {
-            return _readEmbeddedResource(Path.Combine(path));
+            return _readEmbeddedResource(string.Join("/", path)) ?? _readEmbeddedResource(string.Join("\\", path));
         }
     }
 }

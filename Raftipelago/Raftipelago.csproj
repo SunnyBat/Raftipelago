@@ -39,6 +39,7 @@
   <ItemGroup>
     <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\EmbeddedFileUtils.cs" />
+    <Compile Include="Data\ProgressiveData.cs" />
     <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="DataGenerator.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
@@ -59,6 +60,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <None Include="Data\ProgressiveData.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>

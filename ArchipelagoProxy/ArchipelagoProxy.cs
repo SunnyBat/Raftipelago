@@ -223,12 +223,6 @@ namespace ArchipelagoProxy
 
             if (IsSuccessfullyConnected())
             {
-                if (resendItems) // TODO Figure out how to not double-up on sending items when initially connecting
-                {
-                    // Resend all unlocks every time we reload into world
-                    _session.Items.AllItemsReceived.ToList().ForEach(ni => _itemReceivedQueue.Enqueue(ni));
-                }
-
                 _session.Socket.SendPacket(new StatusUpdatePacket()
                 {
                     Status = isInWorld
@@ -246,12 +240,6 @@ namespace ArchipelagoProxy
             });
         }
 
-        public void HintForItem(string itemText)
-        {
-            // TODO How2hint, it's not anywhere in protocol =/ Probably read spoiler log in code and find item? Or something...
-            Console.WriteLine(itemText);
-        }
-
         public void Connect(string username, string password)
         {
             var invalidMethodNames = new List<string>();
@@ -262,7 +250,7 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 9, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 10, 0), password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Connected");
@@ -309,7 +297,7 @@ namespace ArchipelagoProxy
 
         private void HandlePacket(ArchipelagoPacketBase packet)
         {
-            _debugQueue.Enqueue($"Packet received: {packet.PacketType}");
+            _debugQueue.Enqueue($"Packet received: {JsonConvert.SerializeObject(packet)}");
             switch (packet.PacketType)
             {
                 case ArchipelagoPacketType.Say:
@@ -324,7 +312,7 @@ namespace ArchipelagoProxy
                     {
                         build.Append(GetStringForJsonPartData(messagePart));
                     }
-                    _messageQueue.Enqueue(build.ToString()); // TODO Should we differentiate between Hints and Location Checks? Thinking no atm.
+                    _messageQueue.Enqueue(build.ToString());
                     break;
                 case ArchipelagoPacketType.Connected:
                     lock (LockForClass)
@@ -352,7 +340,6 @@ namespace ArchipelagoProxy
                     _debugQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
                     break;
             }
-            // TODO Implement other packets
         }
 
         private string GetStringForJsonPartData(JsonMessagePart data)

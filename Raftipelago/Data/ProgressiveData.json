@@ -1,0 +1,40 @@
+{
+  "progressive-salve": [
+    [ "Healing salve" ],
+    [ "Good healing salve" ]
+  ],
+  "progressive-purifier": [
+    [ "Advanced purifier" ],
+    [ "Electric purifier" ]
+  ],
+  "progressive-crop-plot": [
+    [ "Medium crop plot" ],
+    [ "Large crop plot" ]
+  ],
+  "progressive-battery": [
+    [ "Battery" ],
+    [ "Battery charger" ]
+  ],
+  "progressive-engine": [
+    [ "Engine" ],
+    [ "Steering Wheel" ],
+    [ "Engine controls" ]
+  ],
+  "progressive-storage": [
+    [ "Storage" ],
+    [ "Large Storage" ]
+  ],
+  "progressive-zipeline": [
+    [ "Zipline tool" ],
+    [ "Zipline" ]
+  ],
+  "progressive-metals": [
+    [ "Smelter" ],
+    [ "Metal detector" ]
+  ],
+  "progressive-bow": [
+    [ "Basic bow" ],
+    [ "Stone arrow" ],
+    [ "Metal arrow" ]
+  ]
+}

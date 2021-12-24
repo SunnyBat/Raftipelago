@@ -35,6 +35,7 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
+        private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
         private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
         {
@@ -51,6 +52,11 @@ namespace Raftipelago.Network
             }
             else
             {
+                // Reset progressives on each connect since we'll be rewriting it all
+                foreach (var progressiveName in ComponentManager<ProgressiveData>.Value.Mappings.Keys)
+                {
+                    _progressiveLevels[progressiveName] = -1; // None unlocked = -1
+                }
                 var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
                 _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
                 _hookUpEvents(proxyServerRef);
@@ -204,7 +210,7 @@ namespace Raftipelago.Network
             foreach (var fileName in LibraryFileNames)
             {
                 var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
-                _copyDllIfNecessary(EmbeddedFileDirectory, fileName, outputFilePath);
+                _copyDllIfNecessary(fileName, outputFilePath);
                 if (_proxyAssembly == null) // Only take first one
                 {
                     _proxyAssembly = Assembly.LoadFrom(outputFilePath);
@@ -216,32 +222,26 @@ namespace Raftipelago.Network
             }
         }
 
-        private void _copyDllIfNecessary(string baseDirectory, string fileName, string outputFilePath)
+        private void _copyDllIfNecessary(string fileName, string outputFilePath)
         {
             // Note to dev: ReadRawFile() will print out a ModManager error in console. This is fine if it only
             // happens once (and is expeted to when loading locally), but if it happens twice for the same file
             // then something's wrong.
             try
             {
-                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(baseDirectory + "/" + fileName);
+                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(EmbeddedFileDirectory, fileName);
                 if (assemblyData.Length > 0)
                 {
                     File.WriteAllBytes(outputFilePath, assemblyData);
                 }
+                else
+                {
+                    Debug.LogWarning($"File {fileName} not properly read. This may indicate mod packaging/programming issues.");
+                }
             }
             catch (Exception)
             {
-                try
-                {
-                    var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(baseDirectory + "\\" + fileName);
-                    if (assemblyData?.Length > 0)
-                    {
-                        File.WriteAllBytes(outputFilePath, assemblyData);
-                    }
-                }
-                catch (Exception)
-                {
-                }
+                Debug.LogWarning($"Unable to copy {fileName}. This can be safely ignored if no errors occur.");
             }
         }
 
@@ -313,30 +313,55 @@ namespace Raftipelago.Network
         private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockRecipe(sentItemName, player) && !_unlockNote(sentItemName, player))
+            if (!_unlockProgressive(sentItemName, player) && !_unlockItem(sentItemName, player))
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
         }
 
-        private bool _unlockRecipe(string itemName, int fromPlayerId)
+        // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
+        private bool _unlockProgressive(string progressiveName, int fromPlayerId)
+        {
+            if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ProgressiveData>.Value.Mappings.ContainsKey(progressiveName))
+            {
+                if (++_progressiveLevels[progressiveName] < ComponentManager<ProgressiveData>.Value.Mappings[progressiveName].Length)
+                {
+                    _sendResearchNotification(progressiveName, fromPlayerId);
+                    foreach (var item in ComponentManager<ProgressiveData>.Value.Mappings[progressiveName][_progressiveLevels[progressiveName]])
+                    {
+                        if (!_unlockItem(item, fromPlayerId, false))
+                        {
+                            Debug.LogError($"Unable to find {item} ({GetPlayerAlias(fromPlayerId)})");
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Progressive {progressiveName} received, but all items already given");
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool _unlockItem(string itemName, int fromPlayerId, bool showNotification = true)
+        {
+            return _unlockRecipe(itemName, fromPlayerId, showNotification) || _unlockNote(itemName, showNotification);
+        }
+
+        private bool _unlockRecipe(string itemName, int fromPlayerId, bool showNotification)
         {
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
                 if (!foundItem.settings_recipe.Learned)
                 {
-                    // TODO How to get SteamID of remote player or otherwise display different player name
-                    try
+                    if (showNotification)
                     {
-                        (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
-                            new Notification_Research_Info(foundItem.settings_Inventory.DisplayName,
-                                CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(fromPlayerId),
-                                ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-                    }
-                    catch (Exception)
-                    {
-                        PrintMessage($"Received {itemName} from {GetPlayerAlias(fromPlayerId)}");
+                        _sendResearchNotification(foundItem.settings_Inventory.DisplayName, fromPlayerId);
                     }
                     foundItem.settings_recipe.Learned = true;
                 }
@@ -345,7 +370,22 @@ namespace Raftipelago.Network
             return false;
         }
 
-        private bool _unlockNote(string noteName, int fromPlayerId)
+        private void _sendResearchNotification(string displayName, int playerId)
+        {
+            try
+            {
+                (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                    new Notification_Research_Info(displayName,
+                        CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(playerId),
+                        ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+            }
+            catch (Exception)
+            {
+                PrintMessage($"Received {displayName} from {GetPlayerAlias(playerId)}");
+            }
+        }
+
+        private bool _unlockNote(string noteName, bool showNotification)
         {
             var notebook = ComponentManager<NoteBook>.Value;
             var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
@@ -353,8 +393,10 @@ namespace Raftipelago.Network
             {
                 if (nbNote.name == noteName)
                 {
-                    notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false);
-                    ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                    if (notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false) && showNotification)
+                    {
+                        ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                    }
                     return true;
                 }
             }
