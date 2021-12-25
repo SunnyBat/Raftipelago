@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,56 +11,18 @@ namespace Raftipelago
 {
     public class DataGenerator
     {
+        // We could move this to a JSON file, but the comments here are nice
         private static string[] ProgressionItemList = new string[] {
             "Battery", "Bolt", "Circuit board", "Hinge", "Receiver", "Antenna", "Smelter", // Radio Tower requirements
             "Engine", "Steering Wheel", // Balboa requirements
-            "Machete", // Balboa completion requirement
+            "Machete", "Basic bow", "Stone arrow", // Balboa completion requirements
             "Zipline tool", // Caravan Island completion requirement
 
-            "NoteBookNote_Index2_Post-it", // At Radio Tower
-            "NoteBookNote_Index17_Vasagatan_PostItNote_FrequencyToBalboa", // At Vasagatan
-            // Balboa does not have a note
-            "NoteBookNote_Index43_Landmark_CaravanIsland_FrequencyToTangaroa" // At Caravan Island
+            "Vasagatan Frequency", // At Radio Tower
+            "Balboa Island Frequency", // At Vasagatan
+            // Balboa does not have a note, but rather a quest
+            "Tangaroa Frequency" // At Caravan Island
             // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
-        };
-        private static Dictionary<string, string> RegionCorrections = new Dictionary<string, string>()
-        {
-            {
-                "19#Landmark_Radar#Big radio tower", "RadioTower"
-            },
-            {
-                "44#Landmark_Vasagatan", "Vasagatan"
-            },
-            {
-                "45#Landmark_BalboaIsland", "BalboaIsland"
-            },
-            {
-                "49#Landmark_CaravanIsland#RealDeal", "CaravanIsland"
-            },
-            {
-                "50#Landmark_Tangaroa#", "Tangaroa"
-            }
-        };
-        // Some location checks cannot be accessed until after specific islands are able to be
-        // completed. For example, some notes on Balboa Island are locked behind the machete, which
-        // is not necessary to reach the island but is necessary to complete it.
-        private static Dictionary<string, string> LocationRegionFixes = new Dictionary<string, string>()
-        {
-            {
-                "Pickup_Landmark_Blueprint_BiofuelExtractor", "BalboaIslandCompletion"
-            },
-            {
-                "Pickup_Landmark_Blueprint_Fueltank", "BalboaIslandCompletion"
-            },
-            {
-                "Pickup_Landmark_Blueprint_Pipes", "BalboaIslandCompletion"
-            },
-            {
-                "Pickup_Landmark_Blueprint_EngineControls", "CaravanIslandCompletion"
-            },
-            {
-                "Pickup_Landmark_Blueprint_MetalDetector", "CaravanIslandCompletion"
-            } // TODO Balboa Island notes, Caravan Island notes
         };
 
         public static string GenerateRawArchipelagoItemList(bool invert = false)
@@ -75,10 +38,11 @@ namespace Raftipelago
                 {
                     if (CommonUtils.IsValidResearchTableItem(recipe))
                     {
-                        _addItem(ref currentId, recipe.settings_Inventory.DisplayName, allItemData);
-                        if (!allItemNames.AddUniqueOnly(recipe.settings_Inventory.DisplayName))
+                        var itemName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, recipe.settings_Inventory.DisplayName);
+                        _addItem(ref currentId, itemName, allItemData);
+                        if (!allItemNames.AddUniqueOnly(itemName))
                         {
-                            throw new Exception(recipe.settings_Inventory.DisplayName + " is not unique");
+                            throw new Exception(itemName + " is not unique");
                         }
                     }
                 });
@@ -87,12 +51,16 @@ namespace Raftipelago
                 var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
                 foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
-                    if (CommonUtils.IsValidNote(nbNote) && ProgressionItemList.Any(progName => progName == nbNote.name)) // Only include valid story-related notes
+                    if (CommonUtils.IsValidNote(nbNote)) // Only include valid story-related notes
                     {
-                        _addItem(ref currentId, nbNote.name, allItemData);
-                        if (!allItemNames.AddUniqueOnly(nbNote.name))
+                        var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, nbNote.name);
+                        if (ProgressionItemList.Any(progName => progName == noteName))
                         {
-                            throw new Exception(nbNote.name + " is not unique");
+                            _addItem(ref currentId, noteName, allItemData);
+                            if (!allItemNames.AddUniqueOnly(noteName))
+                            {
+                                throw new Exception(noteName + " is not unique");
+                            }
                         }
                     }
                 }
@@ -151,16 +119,38 @@ namespace Raftipelago
                 });
                 WorldManager.AllLandmarks.ForEach(landmark =>
                 {
+                    var regionName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueRegionNameToFriendlyNameMappings, landmark.name);
                     foreach (var landmarkItem in landmark.landmarkItems)
                     {
-                        if (CommonUtils.IsNoteOrBlueprint(landmarkItem))
+                        string locName;
+                        if (CommonUtils.IsBlueprint(landmarkItem))
                         {
-                            LocationRegionFixes.TryGetValue(landmarkItem.name, out string forcedRegionName);
-                            var regionName = forcedRegionName ?? (RegionCorrections.TryGetValue(landmark.name, out string correctedRegion) ? correctedRegion : landmark.name);
-                            _addLocation(ref currentId, landmarkItem.name, regionName, allLocationData);
+                            locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings,
+                                landmarkItem.connectedBehaviourID.GetComponent<PickupItem>().PickupName);
                         }
+                        else if (CommonUtils.IsNote(landmarkItem))
+                        {
+                            locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, landmarkItem.name);
+                        }
+                        else if (landmarkItem.name == "Pickup_Landmark_Caravan_RocketDoll") // Edge cases let's gooooo
+                        {
+                            locName = "Blueprint: Firework";
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                        _addLocation(ref currentId, locName, regionName, allLocationData);
                     }
                 });
+                foreach (var questRegion in ComponentManager<ExternalData>.Value.QuestLocations.Keys)
+                {
+                    foreach (var questLocation in ComponentManager<ExternalData>.Value.QuestLocations[questRegion])
+                    {
+                        var locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, questLocation);
+                        _addLocation(ref currentId, locName, questRegion, allLocationData);
+                    }
+                }
             }
             else
             {

@@ -36,9 +36,10 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(note.name);
+			var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
+			ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
 			(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-				.researchInfoQue.Enqueue(new Notification_Research_Info(note.name, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+				.researchInfoQue.Enqueue(new Notification_Research_Info(noteName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 			return false;
 		}
 	}
@@ -50,7 +51,25 @@ namespace Raftipelago.Patches
 		public static bool PickupItem_SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
 			Network_Player ___playerNetwork)
 		{
-			if (pickup.yieldHandler != null)
+			if (pickup.PickupName?.StartsWith("Blueprint") ?? false)
+			{
+				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, pickup.PickupName);
+				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+				PoolManager.ReturnObject(pickup.gameObject);
+				return false;
+			}
+			else if (pickup.name == "Pickup_Landmark_Caravan_RocketDoll") // Doesn't have PickupName set for some reason
+			{
+				var pickupName = "Blueprint: Firework";
+				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+				PoolManager.ReturnObject(pickup.gameObject); // Doesn't remove object
+				return false;
+			}
+			else if (pickup.yieldHandler != null) // Old code, remove once new code verified working
 			{
 				bool hadBlueprint = false;
 				pickup.yieldHandler.Yield.ForEach(cst =>

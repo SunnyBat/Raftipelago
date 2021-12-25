@@ -87,5 +87,10 @@ namespace Raftipelago
         {
             return new CSteamID((ulong)(0x10000 | playerId));
         }
+
+        public static T TryGetOrKey<T>(IDictionary<T, T> dict, T key)
+        {
+            return dict.TryGetValue(key, out T val) ? val : key;
+        }
     }
 }

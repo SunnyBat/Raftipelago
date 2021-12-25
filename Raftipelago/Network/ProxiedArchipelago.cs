@@ -53,7 +53,7 @@ namespace Raftipelago.Network
             else
             {
                 // Reset progressives on each connect since we'll be rewriting it all
-                foreach (var progressiveName in ComponentManager<ProgressiveData>.Value.Mappings.Keys)
+                foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
                 {
                     _progressiveLevels[progressiveName] = -1; // None unlocked = -1
                 }
@@ -322,12 +322,12 @@ namespace Raftipelago.Network
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
         private bool _unlockProgressive(string progressiveName, int fromPlayerId)
         {
-            if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ProgressiveData>.Value.Mappings.ContainsKey(progressiveName))
+            if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
-                if (++_progressiveLevels[progressiveName] < ComponentManager<ProgressiveData>.Value.Mappings[progressiveName].Length)
+                if (++_progressiveLevels[progressiveName] < ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName].Length)
                 {
                     _sendResearchNotification(progressiveName, fromPlayerId);
-                    foreach (var item in ComponentManager<ProgressiveData>.Value.Mappings[progressiveName][_progressiveLevels[progressiveName]])
+                    foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
                         if (!_unlockItem(item, fromPlayerId, false))
                         {

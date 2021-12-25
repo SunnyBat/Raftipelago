@@ -18,7 +18,7 @@ namespace Raftipelago.Patches
 		public static bool PickupSpecific_AlwaysReplace(PlayerInventory inventory,
 			RandomDropper ___blueprintDropper)
 		{
-			// Swallow the event entirely, we never want to 
+			// Swallow the event entirely, we never want to fire it
 			return false;
 		}
 	}

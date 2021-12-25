@@ -22,7 +22,10 @@ namespace Raftipelago.Patches
 				&& CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(LocalizationParameters.remoteSteamID.m_SteamID, out int playerId))
 			{
 				__result = ComponentManager<IArchipelagoLink>.Value.GetPlayerAlias(playerId);
-				Debug.Log(__result);
+				if (__result == null && playerId == 0)
+                {
+					__result = "Console Command";
+                }
 				return false;
 			}
 			return true;
