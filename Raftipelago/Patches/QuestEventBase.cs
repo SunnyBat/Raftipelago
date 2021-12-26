@@ -57,7 +57,7 @@ namespace Raftipelago.Patches
 						Debug.Log("TYPE: " + obj.GetType());
 						if (obj.GetType() == typeof(QuestInteractableComponent_ObjectOnOff))
 						{
-							var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)obj.GetType().GetField("dataComponents").GetValue(objOnOff);
+							var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)obj.GetType().GetField("dataComponents").GetValue(obj);
 							foreach (var dataComp in dataComponents)
 							{
 								foreach (var gameObject in dataComp.gameObjects)
