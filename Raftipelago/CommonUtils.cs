@@ -92,5 +92,12 @@ namespace Raftipelago
         {
             return dict.TryGetValue(key, out T val) ? val : key;
         }
+
+        public static bool HasFinishedRelayStationQuest()
+        {
+            return QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation1)
+                && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation2)
+                && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation3);
+        }
     }
 }

@@ -43,6 +43,7 @@
     <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="DataGenerator.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
+    <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
     <Compile Include="Patches\NotificationManager.cs" />

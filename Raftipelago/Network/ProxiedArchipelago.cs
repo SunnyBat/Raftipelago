@@ -101,6 +101,10 @@ namespace Raftipelago.Network
                             }
                         }
                     });
+                    if (CommonUtils.HasFinishedRelayStationQuest())
+                    {
+                        locationList.Add("Relay Station quest");
+                    }
                     LocationUnlocked(locationList.ToArray());
                 }
             }

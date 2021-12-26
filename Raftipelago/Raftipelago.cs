@@ -54,6 +54,8 @@ public class RaftipelagoThree : Mod
     public override void WorldEvent_WorldUnloaded()
     {
         ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(false);
+        // Reset station count when world unloaded so we don't trigger on reload into a different world
+        HarmonyPatch_BalboaRelayStationScreen_RefreshScreen.previousStationCount = -1;
     }
 
     // TODO Move to in-game chat instead of console
