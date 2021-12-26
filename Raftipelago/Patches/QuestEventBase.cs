@@ -19,29 +19,72 @@ namespace Raftipelago.Patches
 		public static bool Interact_SometimesReplace(Network_Player player, bool successFull,
 			QuestEventBase __instance)
 		{
-			if (ComponentManager<ExternalData>.Value.QuestLocations.Any(kvp => kvp.Value.Contains(__instance.name)))
+			if (__instance.name == "QuestInteractable_WorkBench_CaravanIsland_ZipLineHandle" || __instance.name == "QuestInteractable_WorkBench_CaravanIsland_BatteryCharger")
 			{
 				if (successFull)
 				{
-					var locationName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
-					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-						.researchInfoQue.Enqueue(new Notification_Research_Info(locationName, player.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 					if (Semih_Network.IsHost)
 					{
 						__instance.CurrentObjectStateIndex++;
 					}
 					typeof(QuestEventBase).GetMethod("ConsumeRequiredItems", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, new object[] { player });
-					typeof(QuestEventBase).GetMethod("RefreshColliderState", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, null);
-					__instance.gameObject.SetActiveSafe(false); // TODO Remove only relevant object (currently removes too much, eg removes table objects are sitting on)
 				}
-				else
+				foreach (var objOnOff in __instance.GetComponents<QuestInteractableComponent_ObjectOnOff>())
 				{
-					Debug.Log($"I: {__instance.name} (Unsusccessful)");
+					var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)objOnOff.GetType().GetField("dataComponents").GetValue(objOnOff);
+					foreach (var dataComp in dataComponents)
+					{
+						foreach (var gameObject in dataComp.gameObjects)
+						{
+							gameObject.SetActiveSafe(false);
+						}
+					}
 				}
-				return false;
+				typeof(QuestEventBase).GetMethod("RefreshColliderState", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, null);
+				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
+				var localSteamId = ((Semih_Network)typeof(QuestEventBase).GetProperty("Network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance)).LocalSteamID;
+				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, localSteamId, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 			}
-			return true;
+			else
+			{
+				Debug.Log("Interact: " + __instance.name + " (" + successFull + ")");
+				try
+				{
+					foreach (var obj in __instance.GetComponents<object>())
+					{
+						Debug.Log("TYPE: " + obj.GetType());
+						if (obj.GetType() == typeof(QuestInteractableComponent_ObjectOnOff))
+						{
+							var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)obj.GetType().GetField("dataComponents").GetValue(objOnOff);
+							foreach (var dataComp in dataComponents)
+							{
+								foreach (var gameObject in dataComp.gameObjects)
+								{
+									gameObject.SetActiveSafe(false);
+								}
+							}
+						}
+						else
+						{
+							foreach (var f in obj.GetType().GetRuntimeFields())
+							{
+								Debug.Log($"{f.Name}:" + f.GetValue(obj));
+							}
+							foreach (var p in obj.GetType().GetRuntimeProperties())
+							{
+								Debug.Log($"{p.Name}:" + p.GetValue(obj));
+							}
+						}
+					}
+				}
+				catch (Exception e)
+				{
+					Debug.Log(e);
+				}
+			}
+            return false;
 		}
 	}
 }
