@@ -45,6 +45,7 @@
     <Compile Include="DataGenerator.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
+    <Compile Include="Patches\ChatManager.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />

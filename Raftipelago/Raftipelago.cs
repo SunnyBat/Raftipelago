@@ -59,8 +59,7 @@ public class RaftipelagoThree : Mod
     // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
     {
-        var archipelagoLink = ComponentManager<IArchipelagoLink>.Value;
-        archipelagoLink.SetIsInWorld(true);
+        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
     }
 
     public override void WorldEvent_WorldUnloaded()
@@ -68,20 +67,6 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(false);
         // Reset station count when world unloaded so we don't trigger on reload into a different world
         HarmonyPatch_BalboaRelayStationScreen_RefreshScreen.previousStationCount = -1;
-    }
-
-    // TODO Move to in-game chat instead of console
-    [ConsoleCommand("/chatMessage", "Send a message through the Raft proxy")]
-    private static void Command_chatMessage(string[] arguments)
-    {
-        if (arguments.Length >= 1)
-        {
-            ComponentManager<IArchipelagoLink>.Value.SendChatMessage(string.Join(" ", arguments));
-        }
-        else
-        {
-            Debug.LogError("Usage: <i>/chatMessage (message)</i>");
-        }
     }
 
     // TODO Add to in-game chat as well (keep this implementation to be able to choose either)

@@ -102,7 +102,6 @@ namespace ArchipelagoProxy
             };
             _session.Socket.SocketClosed += closedEventArgs =>
             {
-                _messageQueue.Enqueue($"Disconnected from server.");
                 lock (LockForClass)
                 {
                     isSuccessfullyConnected = false;
@@ -110,7 +109,11 @@ namespace ArchipelagoProxy
                 }
                 if (!closedEventArgs.WasClean)
                 {
-                    _debugQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
+                    _messageQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
+                }
+                else
+                {
+                    _debugQueue.Enqueue($"Disconnected from server.");
                 }
             };
         }
@@ -125,14 +128,14 @@ namespace ArchipelagoProxy
 
         public void Heartbeat()
         {
+            while (_messageQueue.TryDequeue(out string nextMessage))
+            {
+                PrintMessage(nextMessage);
+            }
             lock (LockForClass)
             {
-                if (IsSuccessfullyConnected()) // Don't process anything if we're not properly connected -- we don't want to accidentally send invalid data
+                if (IsSuccessfullyConnected()) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
                 {
-                    while (_messageQueue.TryDequeue(out string nextMessage))
-                    {
-                        PrintMessage(nextMessage);
-                    }
                     if (DebugMessage != null) // Not required to run
                     {
                         while (_debugQueue.TryDequeue(out string nextMessage))
@@ -274,6 +277,11 @@ namespace ArchipelagoProxy
             else
             {
                 _messageQueue.Enqueue("Failed to connect");
+                try
+                {
+                    _session.Socket.Disconnect();
+                }
+                catch (Exception) { }
             }
         }
 
@@ -344,6 +352,33 @@ namespace ArchipelagoProxy
                     if (allLocations.Count > 0)
                     {
                         LocationFromCurrentWorldUnlocked(allLocations.ToArray());
+                    }
+                    break;
+                case ArchipelagoPacketType.ConnectionRefused:
+                    var connectionRefusedPacket = (ConnectionRefusedPacket)packet;
+                    foreach (var err in connectionRefusedPacket.Errors)
+                    {
+                        switch (err)
+                        {
+                            case ConnectionRefusedError.InvalidSlot:
+                                _messageQueue.Enqueue("Error connecting: Username not found.");
+                                break;
+                            case ConnectionRefusedError.InvalidGame:
+                                _messageQueue.Enqueue("Error connecting: Invalid game. Server likely does not support Raft.");
+                                break;
+                            case ConnectionRefusedError.InvalidPassword:
+                                _messageQueue.Enqueue("Error connecting: Invalid password.");
+                                break;
+                            case ConnectionRefusedError.SlotAlreadyTaken:
+                                _messageQueue.Enqueue("Error connecting: Someone else is already connected with this username (slot already taken).");
+                                break;
+                            case ConnectionRefusedError.IncompatibleVersion:
+                                _messageQueue.Enqueue("Error connecting: Incompatible versions between Archipelago and Raftipelago.");
+                                break;
+                            default:
+                                _messageQueue.Enqueue("Error connecting: Unknown reason..");
+                                break;
+                        }
                     }
                     break;
                 case ArchipelagoPacketType.RoomInfo:

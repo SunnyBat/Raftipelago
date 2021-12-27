@@ -277,7 +277,7 @@ namespace Raftipelago.Network
         {
             try
             {
-                ChatManager.LocalDebugChatMessage(msg);
+                ComponentManager<ChatManager>.Value.HandleChatMessageInput(msg, CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0));
             }
             catch (Exception)
             {
