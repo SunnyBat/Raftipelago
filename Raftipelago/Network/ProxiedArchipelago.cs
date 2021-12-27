@@ -16,13 +16,7 @@ namespace Raftipelago.Network
     public class ProxiedArchipelago : IArchipelagoLink
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
-        private const string AppDataFolderName = "Raftipelago";
-        private const string EmbeddedFileDirectory = "Data";
         private const string ResourcePackIdentifier = "Resource Pack: ";
-        /// <summary>
-        /// Index 0 is the ArchipelagoProxy DLL that we want to actually run code from
-        /// </summary>
-        private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Newtonsoft.Json.dll", "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll" };
         private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
         private Assembly _proxyAssembly;
@@ -43,7 +37,7 @@ namespace Raftipelago.Network
         private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
         {
-            _initDllData();
+            _proxyAssembly = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly);
             var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
             _initMethodInfo(proxyServerRef);
         }
@@ -215,52 +209,6 @@ namespace Raftipelago.Network
         public List<int> GetAllUnlockedResourcePacks()
         {
             return _sentResourcePackIds;
-        }
-
-        private void _initDllData()
-        {
-            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
-            if (!Directory.Exists(proxyServerDirectory))
-            {
-                Directory.CreateDirectory(proxyServerDirectory);
-            }
-            foreach (var fileName in LibraryFileNames)
-            {
-                var outputFilePath = Path.Combine(proxyServerDirectory, fileName);
-                _copyDllIfNecessary(fileName, outputFilePath);
-                if (_proxyAssembly == null) // Only take first one
-                {
-                    _proxyAssembly = Assembly.LoadFrom(outputFilePath);
-                }
-                else
-                {
-                    Assembly.LoadFrom(outputFilePath);
-                }
-            }
-        }
-
-        private void _copyDllIfNecessary(string fileName, string outputFilePath)
-        {
-            // Note to dev: ReadRawFile() will print out a ModManager error in console. This is fine if it only
-            // happens once (and is expeted to when loading locally), but if it happens twice for the same file
-            // then something's wrong.
-            try
-            {
-                var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(EmbeddedFileDirectory, fileName);
-                if (assemblyData.Length > 0)
-                {
-                    File.WriteAllBytes(outputFilePath, assemblyData);
-                }
-                else
-                {
-                    Debug.LogWarning($"File {fileName} not properly read. This may indicate mod packaging/programming issues.");
-                }
-            }
-            catch (Exception)
-            {
-                Debug.LogWarning($"Unable to copy {fileName}. This can be safely ignored if no errors occur.");
-            }
         }
 
         private void _initMethodInfo(Type proxyServerRef)

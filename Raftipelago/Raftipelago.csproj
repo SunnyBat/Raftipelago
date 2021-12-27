@@ -38,6 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CommonUtils.cs" />
+    <Compile Include="Data\AssemblyManager.cs" />
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\ExternalData.cs" />
     <Compile Include="Data\SpriteManager.cs" />
