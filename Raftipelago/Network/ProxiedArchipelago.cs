@@ -82,7 +82,6 @@ namespace Raftipelago.Network
                 _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
                 if (inWorld)
                 {
-                    Debug.Log(string.Join(",", _alreadyReceivedItemIds));
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned && CommonUtils.IsValidResearchTableItem(itm.GetItem()))
@@ -94,9 +93,10 @@ namespace Raftipelago.Network
                         // In theory notes will only be on story islands, so non-story islands will be fine.
                         foreach (var landmarkItem in landmark.landmarkItems)
                         {
-                            if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf)
+                            if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf
+                                && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                             {
-                                locationList.Add(landmarkItem.name);
+                                locationList.Add(friendlyName);
                             }
                         }
                     });
