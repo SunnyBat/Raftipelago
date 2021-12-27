@@ -1,7 +1,9 @@
-﻿using Steamworks;
+﻿using Raftipelago.Data;
+using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,6 +14,10 @@ namespace Raftipelago
     // in our code. Because of this, extensions should not be used for Raft classes.
     public class CommonUtils
     {
+        private static Type RGD_Game_Raftipelago_Type;
+        private static ConstructorInfo RGD_Game_Raftipelago_ConstructorInfo;
+        private static FieldInfo unlockedItemsFieldInfo;
+
         private const ulong ArchipelagoIdentifierBit = 0x10000;
         private const ulong ArchipelagoPlayerIdBitsMask = 0xFFFF;
         private const ulong AllArchipelagoBitsMask = 0x1FFFF;
@@ -98,6 +104,69 @@ namespace Raftipelago
             return QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation1)
                 && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation2)
                 && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation3);
+        }
+
+        public static RGD_Game CreateRaftipelagoGame(RGD_Game baseData)
+        {
+            if (RGD_Game_Raftipelago_Type == null)
+            {
+                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
+            }
+            if (RGD_Game_Raftipelago_ConstructorInfo == null)
+            {
+                RGD_Game_Raftipelago_ConstructorInfo = RGD_Game_Raftipelago_Type.GetConstructor(new Type[] { typeof(RGD_Game) });
+            }
+            var newGame = (RGD_Game)RGD_Game_Raftipelago_ConstructorInfo.Invoke(new object[] { baseData });
+            return newGame;
+        }
+
+        public static bool IsValidRaftipelagoSave(RGD_Game game)
+        {
+            return GetUnlockedItemPacks(game)?.Count >= 0;
+        }
+
+        public static List<int> GetUnlockedItemPacks(object gameData)
+        {
+            if (gameData == null)
+            {
+                return null;
+            }
+            if (RGD_Game_Raftipelago_Type == null)
+            {
+                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
+            }
+            if (unlockedItemsFieldInfo == null)
+            {
+                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ItemPacks");
+            }
+
+            if (gameData.GetType() != RGD_Game_Raftipelago_Type)
+            {
+                return null;
+            }
+            return (List<int>)unlockedItemsFieldInfo.GetValue(gameData);
+        }
+
+        public static void SetUnlockedItemPacks(object gameData, List<int> itemPacks)
+        {
+            if (gameData == null)
+            {
+                return;
+            }
+            if (RGD_Game_Raftipelago_Type == null)
+            {
+                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
+            }
+            if (unlockedItemsFieldInfo == null)
+            {
+                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ItemPacks");
+            }
+
+            if (gameData.GetType() != RGD_Game_Raftipelago_Type)
+            {
+                return;
+            }
+            unlockedItemsFieldInfo.SetValue(gameData, itemPacks);
         }
     }
 }

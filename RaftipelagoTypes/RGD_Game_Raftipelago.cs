@@ -8,6 +8,10 @@ namespace RaftipelagoTypes
 	[Serializable]
 	public class RGD_Game_Raftipelago : RGD_Game
 	{
+		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks";
+
+		public List<int> Raftipelago_ItemPacks;
+
 		public RGD_Game_Raftipelago(RGD_Game baseObj)
 		{
 			var myType = typeof(RGD_Game_Raftipelago);
@@ -22,18 +26,16 @@ namespace RaftipelagoTypes
 		{
 			try
 			{
-				Raftipelago_ItemPacks = (List<int>)(info.GetValue("Raftipelago-ItemPacks", typeof(List<int>)) ?? new List<int>());
+				Raftipelago_ItemPacks = (List<int>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<int>)) ?? new List<int>());
 			}
 			catch (Exception) { } // SavedData will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
 		}
 
-		[OnDeserializing]
-		protected override void SetDefaults(StreamingContext sc)
-		{
-			base.SetDefaults(sc);
-			Raftipelago_ItemPacks = null;
-		}
-
-		public List<int> Raftipelago_ItemPacks;
+        [OnDeserializing]
+        protected override void SetDefaults(StreamingContext sc)
+        {
+            base.SetDefaults(sc);
+            Raftipelago_ItemPacks = null;
+        }
 	}
 }

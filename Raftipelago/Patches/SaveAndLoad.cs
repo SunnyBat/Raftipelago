@@ -33,9 +33,8 @@ namespace Raftipelago.Patches
 		public static void Postfix(
 			ref RGD_Game __result)
 		{
-			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
-			var newGame = (RGD_Game)customGameType.GetConstructor(new Type[] { typeof(RGD_Game) }).Invoke(new object[] { __result });
-			customGameType.GetField("Raftipelago_ItemPacks").SetValue(newGame, ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks());
+			var newGame = CommonUtils.CreateRaftipelagoGame(__result);
+			CommonUtils.SetUnlockedItemPacks(newGame, ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks());
 			__result = newGame;
 		}
 	}
