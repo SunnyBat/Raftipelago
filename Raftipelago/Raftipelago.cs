@@ -37,7 +37,7 @@ public class RaftipelagoThree : Mod
             WorldEvent_WorldLoaded();
         }
         StartCoroutine(serverHeartbeat);
-        Debug.Log("Mod Raftipelago has been loaded!");
+        Debug.Log("Raftipelago has been loaded!");
     }
 
     public void OnModUnload()
@@ -85,7 +85,7 @@ public class RaftipelagoThree : Mod
     {
         if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() == true)
         {
-            Debug.Log("Already connected to Archipelago. Disconnect before attempting to connect to a different server.");
+            Debug.LogError("Already connected to Archipelago. Disconnect with /disconnect before attempting to connect to a different server.");
         }
         else if (arguments.Length >= 2)
         {
@@ -169,6 +169,12 @@ public class RaftipelagoThree : Mod
     private static void Command_ToggleDebug(string[] arguments)
     {
         ComponentManager<IArchipelagoLink>.Value.ToggleDebug();
+    }
+
+    [ConsoleCommand("/UAN", "Unlocks all notebook notes.")]
+    private static void Command_UnlockAllNotes(string[] arguments)
+    {
+        ComponentManager<NoteBook>.Value.UnlockAllNotes();
     }
 
     private static void test(Notification tstNot)

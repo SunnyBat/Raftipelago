@@ -70,7 +70,6 @@ namespace Raftipelago.Patches
 			}
 			else if (pickup.yieldHandler != null) // Old code, remove once new code verified working
 			{
-				Debug.LogWarning("Pickup: Parsing yieldHandler for " + pickup.name);
 				pickup.yieldHandler.Yield.ForEach(cst =>
 				{
 					var itemToAdd = cst?.item;

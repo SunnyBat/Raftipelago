@@ -143,7 +143,6 @@ namespace Raftipelago.Network
                 }
                 if (locationIds.Count > 0)
                 {
-                    Debug.Log("Unlocking locations " + string.Join(",", locationIds));
                     LocationUnlocked(locationIds.ToArray());
                 }
             }
@@ -250,7 +249,7 @@ namespace Raftipelago.Network
             catch (Exception e)
             {
                 PrintMessage("Error while connecting to server.");
-                Debug.Log(e);
+                Debug.LogError(e);
                 throw e;
             }
         }

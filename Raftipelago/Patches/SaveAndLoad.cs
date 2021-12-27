@@ -21,7 +21,6 @@ namespace Raftipelago.Patches
 			}
 			else
 			{
-				Debug.Log("RRGD4");
 				ComponentManager<IArchipelagoLink>.Value.SetUnlockedResourcePacks(new List<int>());
 			}
         }

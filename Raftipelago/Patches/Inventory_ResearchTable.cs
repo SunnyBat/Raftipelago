@@ -84,7 +84,6 @@ namespace Raftipelago.Patches
 				{
 					if (___availableResearchItems.ContainsKey(item))
 					{
-						Debug.Log("Successfully researched " + item.settings_Inventory.DisplayName);
 						___availableResearchItems[item].SetResearchedState(true);
 						for (int j = 0; j < ___menuItems.Count; j++)
 						{
@@ -93,7 +92,7 @@ namespace Raftipelago.Patches
 					}
 					else
                     {
-						Debug.Log("Unable to find research item " + item.settings_Inventory.DisplayName);
+						Debug.LogError("Unable to find research item " + item.settings_Inventory.DisplayName);
                     }
 				}
 				__instance.SortMenuItems();
