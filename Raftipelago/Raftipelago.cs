@@ -7,18 +7,25 @@ using Raftipelago.UnityScripts;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
 
 public class RaftipelagoThree : Mod
 {
+    private const string EmbeddedFileDirectory = "Data";
+    private const string AppDataFolderName = "Raftipelago";
+
     private Harmony patcher;
     private IEnumerator serverHeartbeat;
     public void Start()
     {
+        string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
+        // We only need to load assemblies once; Raft needs to be restarted to load new versions, so we just keep the instance around forever
+        ComponentManager<AssemblyManager>.Value = ComponentManager<AssemblyManager>.Value ?? new AssemblyManager(EmbeddedFileDirectory, proxyServerDirectory);
         ComponentManager<ExternalData>.Value = ComponentManager<ExternalData>.Value ?? new ExternalData(ComponentManager<EmbeddedFileUtils>.Value);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();

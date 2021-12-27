@@ -14,12 +14,9 @@ namespace Raftipelago.Patches
 	public class RaftipelagoRGDGameVerifier
     {
 		public static bool IsValidRaftipelagoSave(RGD_Game game)
-        {
-			if (game?.GetType() == typeof(RGD_Game_Raftipelago))
-			{
-				Debug.Log(game.name + " = " + ((RGD_Game_Raftipelago)game).Raftipelago_ItemPacks);
-			}
-			return game?.GetType() == typeof(RGD_Game_Raftipelago) && ((RGD_Game_Raftipelago)game).Raftipelago_ItemPacks?.Count >= 0;
+		{
+			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
+			return game?.GetType() == customGameType && ((List<int>)customGameType.GetField("Raftipelago_ItemPacks").GetValue(game))?.Count >= 0;
 		}
     }
 

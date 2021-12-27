@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using Raftipelago.Network;
 using System;
 using System.Collections.Generic;
@@ -17,12 +18,14 @@ namespace Raftipelago.Patches
 		[HarmonyPostfix]
 		public static void Postfix(RGD_Game game)
 		{
+			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
 			Debug.Log("RRGDG1");
-			if (game.GetType() == typeof(RGD_Game_Raftipelago))
+			if (game.GetType() == customGameType)
 			{
 				Debug.Log("RRGDG2");
-				var castedGame = (RGD_Game_Raftipelago)game;
-				ComponentManager<IArchipelagoLink>.Value.SetUnlockedResourcePacks(castedGame.Raftipelago_ItemPacks);
+				var itemPacks = (List<int>) customGameType.GetField("Raftipelago_ItemPacks").GetValue(game);
+				Debug.Log("RRGDG2.5");
+				ComponentManager<IArchipelagoLink>.Value.SetUnlockedResourcePacks(itemPacks);
 				Debug.Log("RRGDG3");
 			}
 			else
@@ -41,9 +44,10 @@ namespace Raftipelago.Patches
 		public static void Postfix(
 			ref RGD_Game __result)
 		{
-			var res = new RGD_Game_Raftipelago(__result);
-			res.Raftipelago_ItemPacks = ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks();
-			__result = res;
+			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
+			var newGame = (RGD_Game)customGameType.GetConstructor(new Type[] { typeof(RGD_Game) }).Invoke(new object[] { __result });
+			customGameType.GetField("Raftipelago_ItemPacks").SetValue(newGame, ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks());
+			__result = newGame;
 		}
 	}
 
@@ -210,39 +214,39 @@ namespace Raftipelago.Patches
 		}
 	}
 
-	[Serializable]
-	public class RGD_Game_Raftipelago : RGD_Game
-    {
-		public RGD_Game_Raftipelago(RGD_Game baseObj)
-        {
-			var myType = typeof(RGD_Game_Raftipelago);
-			foreach (var field in baseObj.GetType().GetFields())
-            {
-				var baseObjValue = field.GetValue(baseObj);
-				myType.GetField(field.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SetValue(this, baseObjValue);
-			}
-		}
+	//[Serializable]
+	//public class RGD_Game_Raftipelago : RGD_Game
+ //   {
+	//	public RGD_Game_Raftipelago(RGD_Game baseObj)
+ //       {
+	//		var myType = typeof(RGD_Game_Raftipelago);
+	//		foreach (var field in baseObj.GetType().GetFields())
+ //           {
+	//			var baseObjValue = field.GetValue(baseObj);
+	//			myType.GetField(field.Name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SetValue(this, baseObjValue);
+	//		}
+	//	}
 
-		public RGD_Game_Raftipelago(SerializationInfo info, StreamingContext sc) : base(info, sc)
-		{
-			try
-			{
-				Raftipelago_ItemPacks = (List<int>)(info.GetValue("Raftipelago-ItemPacks", typeof(List<int>)) ?? new List<int>());
-				Debug.Log("RIP = " + Raftipelago_ItemPacks);
-			}
-			catch (Exception e)
-			{
-				Debug.Log(e.Message);
-			} // SavedData will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
-		}
+	//	public RGD_Game_Raftipelago(SerializationInfo info, StreamingContext sc) : base(info, sc)
+	//	{
+	//		try
+	//		{
+	//			Raftipelago_ItemPacks = (List<int>)(info.GetValue("Raftipelago-ItemPacks", typeof(List<int>)) ?? new List<int>());
+	//			Debug.Log("RIP = " + Raftipelago_ItemPacks);
+	//		}
+	//		catch (Exception e)
+	//		{
+	//			Debug.Log(e.Message);
+	//		} // SavedData will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
+	//	}
 
-		[OnDeserializing]
-		protected override void SetDefaults(StreamingContext sc)
-        {
-			base.SetDefaults(sc);
-			Raftipelago_ItemPacks = null;
-        }
+	//	[OnDeserializing]
+	//	protected override void SetDefaults(StreamingContext sc)
+ //       {
+	//		base.SetDefaults(sc);
+	//		Raftipelago_ItemPacks = null;
+ //       }
 
-		public List<int> Raftipelago_ItemPacks;
-    }
+	//	public List<int> Raftipelago_ItemPacks;
+ //   }
 }

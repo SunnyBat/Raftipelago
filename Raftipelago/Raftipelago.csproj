@@ -376,9 +376,18 @@
     <Content Include="Data\Newtonsoft.Json.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Data\RaftipelagoTypes.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Data\websocket-sharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RaftipelagoTypes\RaftipelagoTypes.csproj">
+      <Project>{76799aac-2ead-4106-835e-c169c380cae0}</Project>
+      <Name>RaftipelagoTypes</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <PreBuildEvent>

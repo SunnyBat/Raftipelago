@@ -1,0 +1,1 @@
+copy /B /Y /L %1RaftipelagoTypes.dll %2RaftipelagoTypes.dll

@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArchipelagoProxy", "Archipe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLineTester", "CommandLineTester\CommandLineTester.csproj", "{32341567-66EB-4514-BFD6-01F02D0A19AD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftipelagoTypes", "RaftipelagoTypes\RaftipelagoTypes.csproj", "{76799AAC-2EAD-4106-835E-C169C380CAE0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{32341567-66EB-4514-BFD6-01F02D0A19AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32341567-66EB-4514-BFD6-01F02D0A19AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32341567-66EB-4514-BFD6-01F02D0A19AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76799AAC-2EAD-4106-835E-C169C380CAE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76799AAC-2EAD-4106-835E-C169C380CAE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76799AAC-2EAD-4106-835E-C169C380CAE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76799AAC-2EAD-4106-835E-C169C380CAE0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
