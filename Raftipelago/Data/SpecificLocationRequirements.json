@@ -5,5 +5,10 @@
   "Fuel pipe blueprint": [ "BowAndArrow" ],
   "Fuel tank blueprint": [ "BowAndArrow", "Machete" ],
   "Balboa Island Note from Hentry": [ "BowAndArrow", "Machete" ],
-  "Balboa Island Correas diary 3": [ "BowAndArrow", "Machete" ]
+  "Balboa Island Correas diary 3": [ "BowAndArrow", "Machete" ],
+  "Blueprint: Firework": [ "ExplosivePowder" ],
+  "Zipline quest": [ "ExplosivePowder" ],
+  "Caravan Island Journal 9 - Doctor's Note": [ "Zipline tool" ],
+  "Blueprint: Engine controls": [ "Zipline tool" ],
+  "Caravan Island Frequency to Tangaroa": [ "Zipline tool" ]
 }

@@ -60,6 +60,7 @@ namespace ArchipelagoProxy
         // Tracking between Archipelago Server <-> Proxy <-> Raft
         private bool isRaftWorldLoaded = false;
         private bool isSuccessfullyConnected = false;
+        private bool isGameCompleted = false; // Edge case of not connected, complete game, connect
         private bool triggeredConnectedAction = false;
         public ArchipelagoProxy(string urlToHost)
         {
@@ -199,6 +200,22 @@ namespace ArchipelagoProxy
             }
         }
 
+        public void SetGameCompleted(bool completed)
+        {
+            lock (LockForClass)
+            {
+                isGameCompleted = completed;
+            }
+
+            if (completed && IsSuccessfullyConnected())
+            {
+                _session.Socket.SendPacket(new StatusUpdatePacket()
+                {
+                    Status = ArchipelagoClientState.ClientGoal
+                });
+            }
+        }
+
         public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
         {
             _session.Locations.CompleteLocationChecks(locationIds);
@@ -211,14 +228,11 @@ namespace ArchipelagoProxy
 
         public void SetIsPlayerInWorld(bool isInWorld, bool forceResync = false)
         {
-            bool resendItems = false;
+            bool gameCompleted;
             lock (LockForClass)
             {
-                if (!isRaftWorldLoaded || forceResync)
-                {
-                    resendItems = isInWorld;
-                }
                 isRaftWorldLoaded = isInWorld;
+                gameCompleted = isGameCompleted;
             }
 
             if (IsSuccessfullyConnected())
@@ -226,7 +240,9 @@ namespace ArchipelagoProxy
                 _session.Socket.SendPacket(new StatusUpdatePacket()
                 {
                     Status = isInWorld
-                        ? ArchipelagoClientState.ClientPlaying
+                        ? gameCompleted
+                            ? ArchipelagoClientState.ClientGoal
+                            : ArchipelagoClientState.ClientPlaying
                         : ArchipelagoClientState.ClientReady
                 });
             }

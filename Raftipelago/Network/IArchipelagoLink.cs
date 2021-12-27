@@ -30,6 +30,8 @@ namespace Raftipelago.Network
 
         List<int> GetAllReceivedItemIds();
 
+        void SetGameCompleted(bool completed);
+
         void Disconnect();
 
         void Heartbeat();

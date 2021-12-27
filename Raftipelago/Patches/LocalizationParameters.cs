@@ -24,7 +24,7 @@ namespace Raftipelago.Patches
 				__result = ComponentManager<IArchipelagoLink>.Value.GetPlayerAlias(playerId);
 				if (__result == null && playerId == 0)
                 {
-					__result = "Console Command";
+					__result = "Server";
                 }
 				return false;
 			}

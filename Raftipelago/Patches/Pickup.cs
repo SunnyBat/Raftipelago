@@ -37,7 +37,14 @@ namespace Raftipelago.Patches
 				}
 			}
 			var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
-			ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
+			if (noteName == "Tangaroa Next Frequency") // Special condition for victory
+            {
+				ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
+            }
+			else
+			{
+				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
+			}
 			(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 				.researchInfoQue.Enqueue(new Notification_Research_Info(noteName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 			return false;

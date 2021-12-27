@@ -182,6 +182,21 @@ public class RaftipelagoThree : Mod
         ComponentManager<NoteBook>.Value.UnlockAllNotes();
     }
 
+    [ConsoleCommand("/TCG", "Completes Raft in Archipelago. Should be used only for testing.")]
+    private static void Command_CompleteGame(string[] arguments)
+    {
+        if (arguments.Length == 1 && arguments[0] == "confirmCompletion")
+        {
+            var cName = "Tangaroa Next Frequency";
+            ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(cName);
+            ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
+        }
+        else
+        {
+            Debug.LogError("Usage: /TCG confirmCompletion");
+        }
+    }
+
     private static void test(Notification tstNot)
     {
         Debug.Log($"Identifier: {tstNot?.identifier}");

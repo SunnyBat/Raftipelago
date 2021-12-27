@@ -29,6 +29,7 @@ namespace Raftipelago.Network
         private MethodInfo _getLocationIdFromNameMethodInfo; 
         private MethodInfo _getItemNameFromIdMethodInfo;
         private MethodInfo _getPlayerAliasMethodInfo;
+        private MethodInfo _setGameCompletedMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
@@ -79,7 +80,6 @@ namespace Raftipelago.Network
         {
             if (_proxyServer != null)
             {
-                _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
                 if (inWorld)
                 {
                     var locationList = new List<string>();
@@ -96,7 +96,14 @@ namespace Raftipelago.Network
                             if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf
                                 && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                             {
-                                locationList.Add(friendlyName);
+                                if (friendlyName == "Tangaroa Next Frequency") // Special condition for victory
+                                {
+                                    SetGameCompleted(true);
+                                }
+                                else
+                                {
+                                    locationList.Add(friendlyName);
+                                }
                             }
                         }
                     });
@@ -106,6 +113,7 @@ namespace Raftipelago.Network
                     }
                     LocationUnlocked(locationList.ToArray());
                 }
+                _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
             }
         }
 
@@ -173,6 +181,11 @@ namespace Raftipelago.Network
             }
         }
 
+        public void SetGameCompleted(bool completed)
+        {
+            _setGameCompletedMethodInfo.Invoke(_proxyServer, new object[] { completed });
+        }
+
         public void Disconnect()
         {
             if (_proxyServer != null)
@@ -222,6 +235,7 @@ namespace Raftipelago.Network
             _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
             _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
             _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
+            _setGameCompletedMethodInfo = proxyServerRef.GetMethod("SetGameCompleted");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }

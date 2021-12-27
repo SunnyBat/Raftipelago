@@ -20,7 +20,7 @@ namespace Raftipelago
 
             "Vasagatan Frequency", // At Radio Tower
             "Balboa Island Frequency", // At Vasagatan
-            // Balboa does not have a note, but rather a quest
+            "Caravan Island Frequency", // At Balboa Island
             "Tangaroa Frequency" // At Caravan Island
             // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
         };
@@ -36,10 +36,6 @@ namespace Raftipelago
             {
                 craftingMenu.AllRecipes.ForEach(recipe =>
                 {
-                    if (recipe.settings_Inventory.DisplayName.Contains("rophy"))
-                    {
-                        UnityEngine.Debug.Log($"{recipe.settings_Inventory.DisplayName} :: {recipe.settings_recipe.CraftingCategory}");
-                    }
                     if (CommonUtils.IsValidUnlockableItem(recipe))
                     {
                         var itemName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, recipe.settings_Inventory.DisplayName);
@@ -55,7 +51,7 @@ namespace Raftipelago
                 var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
                 foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
-                    if (CommonUtils.IsValidNote(nbNote)) // Only include valid story-related notes
+                    if (CommonUtils.IsValidNote(nbNote) || nbNote?.name == "ThumbNailButton_CaravanIsland") // Only include valid story-related notes
                     {
                         var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, nbNote.name);
                         if (ProgressionItemList.Any(progName => progName == noteName))
@@ -144,7 +140,9 @@ namespace Raftipelago
                         {
                             continue;
                         }
-                        _addLocation(ref currentId, locName, regionName, allLocationData);
+                        var additionalRequirements = ComponentManager<ExternalData>.Value.AdditionalLocationCheckItemRequirements.GetValueOrDefault(locName);
+                        var reqList = additionalRequirements == null ? null : new List<string>(additionalRequirements);
+                        _addLocation(ref currentId, locName, regionName, allLocationData, reqList);
                     }
                 });
                 foreach (var questRegion in ComponentManager<ExternalData>.Value.QuestLocations.Keys)
@@ -152,7 +150,9 @@ namespace Raftipelago
                     foreach (var questLocation in ComponentManager<ExternalData>.Value.QuestLocations[questRegion])
                     {
                         var locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, questLocation);
-                        _addLocation(ref currentId, locName, questRegion, allLocationData);
+                        var additionalRequirements = ComponentManager<ExternalData>.Value.AdditionalLocationCheckItemRequirements.GetValueOrDefault(locName);
+                        var reqList = additionalRequirements == null ? null : new List<string>(additionalRequirements);
+                        _addLocation(ref currentId, locName, questRegion, allLocationData, reqList);
                     }
                 }
             }
