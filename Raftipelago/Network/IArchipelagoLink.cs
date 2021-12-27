@@ -26,9 +26,9 @@ namespace Raftipelago.Network
 
         void ToggleDebug();
 
-        void SetUnlockedResourcePacks(List<int> resourcePackIds);
+        void SetAlreadyReceivedItemIds(List<int> resourcePackIds);
 
-        List<int> GetAllUnlockedResourcePacks();
+        List<int> GetAllReceivedItemIds();
 
         void Disconnect();
 

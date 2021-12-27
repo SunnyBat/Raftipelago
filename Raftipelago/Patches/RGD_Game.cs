@@ -12,7 +12,7 @@ namespace Raftipelago.Patches
 		[HarmonyPostfix]
 		public static void Postfix(SerializationInfo info, StreamingContext sc)
 		{
-			info.AddValue("Raftipelago-ItemPacks", ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks());
+			info.AddValue("Raftipelago-ItemPacks", ComponentManager<IArchipelagoLink>.Value.GetAllReceivedItemIds());
 		}
 	}
 }

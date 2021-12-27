@@ -32,7 +32,7 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
-        private List<int> _sentResourcePackIds = new List<int>();
+        private List<int> _alreadyReceivedItemIds = new List<int>();
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
         private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
@@ -200,14 +200,14 @@ namespace Raftipelago.Network
             shouldPrintDebugMessages = !shouldPrintDebugMessages;
         }
 
-        public void SetUnlockedResourcePacks(List<int> resourcePackIds)
+        public void SetAlreadyReceivedItemIds(List<int> resourcePackIds)
         {
-            this._sentResourcePackIds = new List<int>(resourcePackIds);
+            this._alreadyReceivedItemIds = new List<int>(resourcePackIds);
         }
 
-        public List<int> GetAllUnlockedResourcePacks()
+        public List<int> GetAllReceivedItemIds()
         {
-            return _sentResourcePackIds;
+            return _alreadyReceivedItemIds;
         }
 
         private void _initMethodInfo(Type proxyServerRef)
@@ -278,7 +278,7 @@ namespace Raftipelago.Network
         private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(sentItemName, player) && _unlockItem(sentItemName, player) == UnlockResult.NotFound)
+            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(itemId, sentItemName, player) && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
@@ -288,11 +288,11 @@ namespace Raftipelago.Network
         {
             if (sentItemName.StartsWith(ResourcePackIdentifier))
             {
-                if (_sentResourcePackIds.AddUniqueOnly(itemId))
+                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId))
                 {
                     var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
                     var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
-                    if (resourcePackMatch.Success && int.TryParse(resourcePackMatch.Groups[2].Value, out int itemCount))
+                    if (resourcePackMatch.Success && int.TryParse(resourcePackMatch.Groups[1].Value, out int itemCount))
                     {
                         RAPI.GetLocalPlayer().Inventory.AddItem(resourcePackMatch.Groups[2].Value, itemCount);
                         (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
@@ -311,7 +311,7 @@ namespace Raftipelago.Network
         }
 
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
-        private bool _unlockProgressive(string progressiveName, int fromPlayerId)
+        private bool _unlockProgressive(int itemId, string progressiveName, int fromPlayerId)
         {
             if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
@@ -320,7 +320,7 @@ namespace Raftipelago.Network
                     bool unlockedAnyItem = false;
                     foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
-                        var itemResult = _unlockItem(item, fromPlayerId, false);
+                        var itemResult = _unlockItem(itemId, item, fromPlayerId, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
                             Debug.LogError($"Unable to find {item} ({GetPlayerAlias(fromPlayerId)})");
@@ -348,9 +348,9 @@ namespace Raftipelago.Network
             }
         }
 
-        private UnlockResult _unlockItem(string itemName, int fromPlayerId, bool showNotification = true)
+        private UnlockResult _unlockItem(int itemId, string itemName, int fromPlayerId, bool showNotification = true)
         {
-            var result = _unlockRecipe(itemName, fromPlayerId, showNotification);
+            var result = _unlockRecipe(itemId, itemName, fromPlayerId, showNotification);
             if (result == UnlockResult.NotFound)
             {
                 result = _unlockNote(itemName, showNotification);
@@ -358,15 +358,13 @@ namespace Raftipelago.Network
             return result;
         }
 
-        private UnlockResult _unlockRecipe(string itemName, int fromPlayerId, bool showNotification)
+        private UnlockResult _unlockRecipe(int itemId, string itemName, int fromPlayerId, bool showNotification)
         {
-            Debug.Log("UR");
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
-                if (!foundItem.settings_recipe.Learned)
+                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId))
                 {
-                    Debug.Log("Item " + foundItem.settings_Inventory.DisplayName + " not learned");
                     if (showNotification)
                     {
                         _sendResearchNotification(foundItem.settings_Inventory.DisplayName, fromPlayerId);
@@ -388,7 +386,6 @@ namespace Raftipelago.Network
 
         private void _sendResearchNotification(string displayName, int playerId)
         {
-            Debug.Log("SRN");
             try
             {
                 (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(

@@ -144,7 +144,7 @@ namespace Raftipelago
             }
             if (unlockedItemsFieldInfo == null)
             {
-                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ItemPacks");
+                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ReceivedItems");
             }
 
             if (gameData.GetType() != RGD_Game_Raftipelago_Type)
@@ -166,7 +166,7 @@ namespace Raftipelago
             }
             if (unlockedItemsFieldInfo == null)
             {
-                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ItemPacks");
+                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ReceivedItems");
             }
 
             if (gameData.GetType() != RGD_Game_Raftipelago_Type)

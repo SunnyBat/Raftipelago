@@ -250,7 +250,7 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 11, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 12, 0), password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Connected");

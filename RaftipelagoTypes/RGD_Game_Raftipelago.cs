@@ -10,7 +10,7 @@ namespace RaftipelagoTypes
 	{
 		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks";
 
-		public List<int> Raftipelago_ItemPacks;
+		public List<int> Raftipelago_ReceivedItems;
 
 		public RGD_Game_Raftipelago(RGD_Game baseObj)
 		{
@@ -26,7 +26,7 @@ namespace RaftipelagoTypes
 		{
 			try
 			{
-				Raftipelago_ItemPacks = (List<int>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<int>)) ?? new List<int>());
+				Raftipelago_ReceivedItems = (List<int>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<int>)) ?? new List<int>());
 			}
 			catch (Exception) { } // SavedData will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
 		}
@@ -35,7 +35,7 @@ namespace RaftipelagoTypes
         protected override void SetDefaults(StreamingContext sc)
         {
             base.SetDefaults(sc);
-            Raftipelago_ItemPacks = null;
+            Raftipelago_ReceivedItems = null;
         }
 	}
 }

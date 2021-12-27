@@ -16,12 +16,12 @@ namespace Raftipelago.Patches
 			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
 			if (game.GetType() == customGameType)
 			{
-				var itemPacks = (List<int>) customGameType.GetField("Raftipelago_ItemPacks").GetValue(game);
-				ComponentManager<IArchipelagoLink>.Value.SetUnlockedResourcePacks(itemPacks);
+				var itemPacks = (List<int>) customGameType.GetField("Raftipelago_ReceivedItems").GetValue(game);
+				ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(itemPacks);
 			}
 			else
 			{
-				ComponentManager<IArchipelagoLink>.Value.SetUnlockedResourcePacks(new List<int>());
+				ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(new List<int>());
 			}
         }
     }
@@ -34,7 +34,7 @@ namespace Raftipelago.Patches
 			ref RGD_Game __result)
 		{
 			var newGame = CommonUtils.CreateRaftipelagoGame(__result);
-			CommonUtils.SetUnlockedItemPacks(newGame, ComponentManager<IArchipelagoLink>.Value.GetAllUnlockedResourcePacks());
+			CommonUtils.SetUnlockedItemPacks(newGame, ComponentManager<IArchipelagoLink>.Value.GetAllReceivedItemIds());
 			__result = newGame;
 		}
 	}
