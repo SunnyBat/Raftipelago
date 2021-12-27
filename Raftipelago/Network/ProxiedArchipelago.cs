@@ -82,6 +82,7 @@ namespace Raftipelago.Network
                 _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
                 if (inWorld)
                 {
+                    Debug.Log(string.Join(",", _alreadyReceivedItemIds));
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned && CommonUtils.IsValidResearchTableItem(itm.GetItem()))
@@ -272,7 +273,10 @@ namespace Raftipelago.Network
 
         private void DebugMessage(string msg)
         {
-            Debug.Log(msg);
+            if (shouldPrintDebugMessages)
+            {
+                Debug.Log(msg);
+            }
         }
 
         private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
@@ -363,13 +367,13 @@ namespace Raftipelago.Network
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
+                foundItem.settings_recipe.Learned = true;
                 if (_alreadyReceivedItemIds.AddUniqueOnly(itemId))
                 {
                     if (showNotification)
                     {
                         _sendResearchNotification(foundItem.settings_Inventory.DisplayName, fromPlayerId);
                     }
-                    foundItem.settings_recipe.Learned = true;
                     if (CanvasHelper.ActiveMenu == MenuType.Inventory)
                     {
                         ComponentManager<CraftingMenu>.Value.ReselectCategory();
@@ -401,23 +405,26 @@ namespace Raftipelago.Network
 
         private UnlockResult _unlockNote(string noteName, bool showNotification)
         {
-            var notebook = ComponentManager<NoteBook>.Value;
-            var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
-            foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
+            if (ComponentManager<ExternalData>.Value.FriendlyItemNameToUniqueNameMappings.TryGetValue(noteName, out string uniqueNoteName))
             {
-                if (nbNote.name == noteName)
+                var notebook = ComponentManager<NoteBook>.Value;
+                var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
+                foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
-                    if (notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false))
+                    if (nbNote.name == uniqueNoteName)
                     {
-                        if (showNotification)
+                        if (notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false))
                         {
-                            ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                            if (showNotification)
+                            {
+                                ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                            }
+                            return UnlockResult.NewlyUnlocked;
                         }
-                        return UnlockResult.NewlyUnlocked;
-                    }
-                    else
-                    {
-                        return UnlockResult.AlreadyUnlocked;
+                        else
+                        {
+                            return UnlockResult.AlreadyUnlocked;
+                        }
                     }
                 }
             }

@@ -10,7 +10,7 @@ namespace Raftipelago.Data
     {
         public const string ArchipelagoProxyAssembly = "ArchipelagoProxy.dll";
         public const string RaftipelagoTypesAssembly = "RaftipelagoTypes.dll";
-        private readonly string[] LibraryFileNames = new string[] { RaftipelagoTypesAssembly, "Newtonsoft.Json.dll", "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll", ArchipelagoProxyAssembly };
+        private readonly string[] LibraryFileNames = new string[] { RaftipelagoTypesAssembly, "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll", ArchipelagoProxyAssembly };
         private Dictionary<string, Assembly> _loadedAssemblies = new Dictionary<string, Assembly>();
 
         public AssemblyManager(string fromFolderPath, string toFolderPath)

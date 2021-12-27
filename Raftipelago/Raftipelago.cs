@@ -29,6 +29,7 @@ public class RaftipelagoThree : Mod
         ComponentManager<ExternalData>.Value = ComponentManager<ExternalData>.Value ?? new ExternalData(ComponentManager<EmbeddedFileUtils>.Value);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
+        ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(CommonUtils.GetUnlockedItemPacks(SaveAndLoad.WorldToLoad) ?? new List<int>());
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
@@ -44,6 +45,10 @@ public class RaftipelagoThree : Mod
     {
         StopCoroutine(serverHeartbeat);
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
+        if (isInWorld())
+        {
+            CommonUtils.SetUnlockedItemPacks(SaveAndLoad.WorldToLoad, ComponentManager<IArchipelagoLink>.Value.GetAllReceivedItemIds());
+        }
         ComponentManager<IArchipelagoLink>.Value = null;
         ComponentManager<ExternalData>.Value = null; // Allows configurations to reload on new load
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");

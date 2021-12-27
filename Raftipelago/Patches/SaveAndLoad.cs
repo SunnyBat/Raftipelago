@@ -13,17 +13,8 @@ namespace Raftipelago.Patches
 		[HarmonyPostfix]
 		public static void Postfix(RGD_Game game)
 		{
-			var customGameType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
-			if (game.GetType() == customGameType)
-			{
-				var itemPacks = (List<int>) customGameType.GetField("Raftipelago_ReceivedItems").GetValue(game);
-				ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(itemPacks);
-			}
-			else
-			{
-				ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(new List<int>());
-			}
-        }
+			ComponentManager<IArchipelagoLink>.Value.SetAlreadyReceivedItemIds(CommonUtils.GetUnlockedItemPacks(game) ?? new List<int>());
+		}
     }
 
 	[HarmonyPatch(typeof(SaveAndLoad), "CreateRGDGame")]
