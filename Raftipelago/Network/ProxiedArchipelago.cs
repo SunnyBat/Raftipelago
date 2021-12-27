@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Raftipelago.Network
@@ -17,10 +18,12 @@ namespace Raftipelago.Network
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
         private const string AppDataFolderName = "Raftipelago";
         private const string EmbeddedFileDirectory = "Data";
+        private const string ResourcePackIdentifier = "Resource Pack: ";
         /// <summary>
         /// Index 0 is the ArchipelagoProxy DLL that we want to actually run code from
         /// </summary>
         private readonly string[] LibraryFileNames = new string[] { "ArchipelagoProxy.dll", "Newtonsoft.Json.dll", "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll" };
+        private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
         private Assembly _proxyAssembly;
         private object _proxyServer;
@@ -35,6 +38,7 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
+        private List<int> _sentResourcePackIds = new List<int>();
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
         private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
@@ -203,6 +207,16 @@ namespace Raftipelago.Network
             shouldPrintDebugMessages = !shouldPrintDebugMessages;
         }
 
+        public void SetUnlockedResourcePacks(List<int> resourcePackIds)
+        {
+            this._sentResourcePackIds = new List<int>(resourcePackIds);
+        }
+
+        public List<int> GetAllUnlockedResourcePacks()
+        {
+            return _sentResourcePackIds;
+        }
+
         private void _initDllData()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -317,10 +331,36 @@ namespace Raftipelago.Network
         private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockProgressive(sentItemName, player) && !_unlockItem(sentItemName, player))
+            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(sentItemName, player) && !_unlockItem(sentItemName, player))
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
+        }
+
+        private bool _unlockResourcePack(int itemId, string sentItemName, int player)
+        {
+            if (sentItemName.StartsWith(ResourcePackIdentifier))
+            {
+                if (_sentResourcePackIds.AddUniqueOnly(itemId))
+                {
+                    var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
+                    var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
+                    if (resourcePackMatch.Success && int.TryParse(resourcePackMatch.Groups[2].Value, out int itemCount))
+                    {
+                        RAPI.GetLocalPlayer().Inventory.AddItem(resourcePackMatch.Groups[2].Value, itemCount);
+                        (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                            new Notification_Research_Info(itemCommand,
+                                CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(player),
+                                ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+                    }
+                    else
+                    {
+                        Debug.LogError("Could not parse resource command " + itemCommand);
+                    }
+                }
+                return true;
+            }
+            return false;
         }
 
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
