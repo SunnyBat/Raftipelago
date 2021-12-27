@@ -28,10 +28,6 @@ namespace Raftipelago.Patches
 					{
 						typeof(ResearchMenuItem).GetField("learned", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(___menuItems[i], true);
 						menuItemBase.settings_recipe.Learned = true;
-						if (CanvasHelper.ActiveMenu == MenuType.Inventory)
-						{
-							ComponentManager<CraftingMenu>.Value.ReselectCategory();
-						}
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 							.researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, item.settings_Inventory.Sprite));
 					}

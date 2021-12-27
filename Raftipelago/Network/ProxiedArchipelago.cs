@@ -84,7 +84,7 @@ namespace Raftipelago.Network
                 {
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
-                        .FindAll(itm => itm.Learned)
+                        .FindAll(itm => itm.Learned && CommonUtils.IsValidResearchTableItem(itm.GetItem()))
                         .Select(itm => itm.GetItem().settings_Inventory.DisplayName));
                     WorldManager.AllLandmarks.ForEach(landmark =>
                     {
@@ -278,7 +278,7 @@ namespace Raftipelago.Network
         private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(sentItemName, player) && !_unlockItem(sentItemName, player))
+            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(sentItemName, player) && _unlockItem(sentItemName, player) == UnlockResult.NotFound)
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId})");
             }
@@ -317,13 +317,23 @@ namespace Raftipelago.Network
             {
                 if (++_progressiveLevels[progressiveName] < ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName].Length)
                 {
-                    _sendResearchNotification(progressiveName, fromPlayerId);
+                    bool unlockedAnyItem = false;
                     foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
-                        if (!_unlockItem(item, fromPlayerId, false))
+                        var itemResult = _unlockItem(item, fromPlayerId, false);
+                        if (itemResult == UnlockResult.NotFound)
                         {
                             Debug.LogError($"Unable to find {item} ({GetPlayerAlias(fromPlayerId)})");
                         }
+                        else if (itemResult == UnlockResult.NewlyUnlocked)
+                        {
+                            unlockedAnyItem = true;
+                        }
+                    }
+
+                    if (unlockedAnyItem)
+                    {
+                        _sendResearchNotification(progressiveName, fromPlayerId);
                     }
                 }
                 else
@@ -338,31 +348,47 @@ namespace Raftipelago.Network
             }
         }
 
-        private bool _unlockItem(string itemName, int fromPlayerId, bool showNotification = true)
+        private UnlockResult _unlockItem(string itemName, int fromPlayerId, bool showNotification = true)
         {
-            return _unlockRecipe(itemName, fromPlayerId, showNotification) || _unlockNote(itemName, showNotification);
+            var result = _unlockRecipe(itemName, fromPlayerId, showNotification);
+            if (result == UnlockResult.NotFound)
+            {
+                result = _unlockNote(itemName, showNotification);
+            }
+            return result;
         }
 
-        private bool _unlockRecipe(string itemName, int fromPlayerId, bool showNotification)
+        private UnlockResult _unlockRecipe(string itemName, int fromPlayerId, bool showNotification)
         {
+            Debug.Log("UR");
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
                 if (!foundItem.settings_recipe.Learned)
                 {
+                    Debug.Log("Item " + foundItem.settings_Inventory.DisplayName + " not learned");
                     if (showNotification)
                     {
                         _sendResearchNotification(foundItem.settings_Inventory.DisplayName, fromPlayerId);
                     }
                     foundItem.settings_recipe.Learned = true;
+                    if (CanvasHelper.ActiveMenu == MenuType.Inventory)
+                    {
+                        ComponentManager<CraftingMenu>.Value.ReselectCategory();
+                    }
+                    return UnlockResult.NewlyUnlocked;
                 }
-                return true;
+                else
+                {
+                    return UnlockResult.AlreadyUnlocked;
+                }
             }
-            return false;
+            return UnlockResult.NotFound;
         }
 
         private void _sendResearchNotification(string displayName, int playerId)
         {
+            Debug.Log("SRN");
             try
             {
                 (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
@@ -376,7 +402,7 @@ namespace Raftipelago.Network
             }
         }
 
-        private bool _unlockNote(string noteName, bool showNotification)
+        private UnlockResult _unlockNote(string noteName, bool showNotification)
         {
             var notebook = ComponentManager<NoteBook>.Value;
             var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
@@ -384,14 +410,28 @@ namespace Raftipelago.Network
             {
                 if (nbNote.name == noteName)
                 {
-                    if (notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false) && showNotification)
+                    if (notebook.UnlockSpecificNoteWithUniqueNoteIndex(nbNote.noteIndex, true, false))
                     {
-                        ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                        if (showNotification)
+                        {
+                            ComponentManager<NotificationManager>.Value.ShowNotification("NoteBookNote");
+                        }
+                        return UnlockResult.NewlyUnlocked;
                     }
-                    return true;
+                    else
+                    {
+                        return UnlockResult.AlreadyUnlocked;
+                    }
                 }
             }
-            return false;
+            return UnlockResult.NotFound;
+        }
+
+        private enum UnlockResult
+        {
+            NotFound = 1,
+            AlreadyUnlocked = 2,
+            NewlyUnlocked = 3
         }
     }
 }
