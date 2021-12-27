@@ -34,11 +34,13 @@ namespace Raftipelago.Patches
 						}
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 							.researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, item.settings_Inventory.Sprite));
-						return false;
 					}
-					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.settings_Inventory.DisplayName);
-					___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
+					else
+					{
+						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+						ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.settings_Inventory.DisplayName);
+						___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
+					}
 					break;
 				}
 			}

@@ -42,12 +42,19 @@ namespace Raftipelago
             return note?.name?.Contains("NoteBookNote") ?? false;
         }
 
-        public static bool IsValidResearchTableItem(Item_Base item)
+        public static bool IsValidUnlockableItem(Item_Base item)
         {
             return item.settings_recipe.CraftingCategory != CraftingCategory.Hidden
                 && item.settings_recipe.CraftingCategory != CraftingCategory.Decorations
                 && item.settings_recipe.CraftingCategory != CraftingCategory.CreativeMode
                 && item.settings_recipe.CraftingCategory != CraftingCategory.Skin
+                && !item.settings_recipe.LearnedFromBeginning;
+        }
+
+        public static bool IsValidResearchTableItem(Item_Base item)
+        {
+            return !item.settings_recipe.HiddenInResearchTable
+                && !item.settings_recipe.LearnedViaBlueprint
                 && !item.settings_recipe.LearnedFromBeginning;
         }
 

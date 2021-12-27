@@ -36,7 +36,11 @@ namespace Raftipelago
             {
                 craftingMenu.AllRecipes.ForEach(recipe =>
                 {
-                    if (CommonUtils.IsValidResearchTableItem(recipe))
+                    if (recipe.settings_Inventory.DisplayName.Contains("rophy"))
+                    {
+                        UnityEngine.Debug.Log($"{recipe.settings_Inventory.DisplayName} :: {recipe.settings_recipe.CraftingCategory}");
+                    }
+                    if (CommonUtils.IsValidUnlockableItem(recipe))
                     {
                         var itemName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, recipe.settings_Inventory.DisplayName);
                         _addItem(ref currentId, itemName, allItemData);
@@ -69,7 +73,7 @@ namespace Raftipelago
             {
                 craftingMenu.AllRecipes.ForEach(recipe =>
                 {
-                    if (!CommonUtils.IsValidResearchTableItem(recipe))
+                    if (!CommonUtils.IsValidUnlockableItem(recipe))
                     {
                         _addItem(ref currentId, recipe.UniqueName, allItemData);
                     }
@@ -105,7 +109,7 @@ namespace Raftipelago
                 researchTableInventory.GetMenuItems().ForEach(rmi =>
                 {
                     var baseItem = rmi.GetItem();
-                    if (!baseItem.settings_recipe.HiddenInResearchTable && !baseItem.settings_recipe.LearnedViaBlueprint)
+                    if (CommonUtils.IsValidResearchTableItem(baseItem))
                     {
                         List<string> researchItems = new List<string>();
                         var bingoMenuItems = (List<BingoMenuItem>)typeof(ResearchMenuItem).GetField("bingoMenuItems", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(rmi);
