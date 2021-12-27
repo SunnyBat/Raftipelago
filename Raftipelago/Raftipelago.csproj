@@ -46,6 +46,7 @@
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
+    <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
     <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\Pickup.cs" />
@@ -54,7 +55,9 @@
     <Compile Include="Patches\QuestEventBase.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Network\ProxiedArchipelago.cs" />
+    <Compile Include="Patches\RGD_Game.cs" />
     <Compile Include="Patches\RGD_ResearchTableWorld.cs" />
+    <Compile Include="Patches\SaveAndLoad.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
   </ItemGroup>
