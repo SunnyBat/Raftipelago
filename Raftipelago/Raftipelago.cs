@@ -34,7 +34,7 @@ public class RaftipelagoThree : Mod
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         if (isInWorld())
         {
-            WorldEvent_WorldLoaded();
+            WorldLoaded_ArchipelagoSetup();
         }
         StartCoroutine(serverHeartbeat);
         Debug.Log("Raftipelago has been loaded!");
@@ -51,14 +51,14 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value = null;
         ComponentManager<ExternalData>.Value = null; // Allows configurations to reload on new load
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
-        Debug.Log("Raftipelago has been stopped.");
+        Debug.Log("Raftipelago has been unloaded.");
     }
 
     // This should ONLY be used for Archipelago-related setup; this is called even after
     // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
     {
-        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+        WorldLoaded_ArchipelagoSetup();
     }
 
     public override void WorldEvent_WorldUnloaded()
@@ -68,6 +68,11 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(false);
         // Reset station count when world unloaded so we don't trigger on reload into a different world
         HarmonyPatch_BalboaRelayStationScreen_RefreshScreen.previousStationCount = -1;
+    }
+
+    private static void WorldLoaded_ArchipelagoSetup()
+    {
+        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
     }
 
     // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
@@ -139,7 +144,7 @@ public class RaftipelagoThree : Mod
         }
         else
         {
-            Debug.LogError("Must be loaded into a world to generate item list.");
+            Debug.LogError("Must be loaded into a world to generate location list.");
         }
     }
 
@@ -152,7 +157,7 @@ public class RaftipelagoThree : Mod
         }
         else
         {
-            Debug.LogError("Must be loaded into a world to generate item list.");
+            Debug.LogError("Must be loaded into a world to generate location list.");
         }
     }
 

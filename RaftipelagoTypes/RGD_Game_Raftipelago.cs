@@ -32,7 +32,7 @@ namespace RaftipelagoTypes
 			{
 				Raftipelago_ReceivedItems = (List<int>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<int>)) ?? new List<int>());
 			}
-			catch (Exception) { } // SavedData will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
+			catch (Exception) { } // Raftipelago_ReceivedItems will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
 		}
 
         [OnDeserializing]
