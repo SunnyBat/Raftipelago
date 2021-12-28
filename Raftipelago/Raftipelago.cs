@@ -172,15 +172,41 @@ public class RaftipelagoThree : Mod
     [ConsoleCommand("/TCG", "Completes Raft in Archipelago. Should be used only for testing.")]
     private static void Command_CompleteGame(string[] arguments)
     {
-        if (arguments.Length == 1 && arguments[0] == "confirmCompletion")
+        if (arguments.Length == 1 && arguments[0] == "useLandmark")
         {
-            var cName = "Tangaroa Next Frequency";
-            ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(cName);
+            if (isInWorld())
+            {
+                WorldManager.AllLandmarks.ForEach(landmark =>
+                {
+                    // TODO Should I filter by story island?
+                    // Can get IDs from SceneLoader debug prints.
+                    // In theory notes will only be on story islands, so non-story islands will be fine.
+                    foreach (var landmarkItem in landmark.landmarkItems)
+                    {
+                        if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && landmarkItem.gameObject.activeSelf
+                            && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
+                        {
+                            if (friendlyName == "Tangaroa Next Frequency") // Special condition for victory
+                            {
+                                landmarkItem.gameObject.SetActiveSafe(false);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+            else
+            {
+                Debug.LogError("Must be in world to use landmark completion");
+            }
+        }
+        else if (arguments.Length == 1 && arguments[0] == "useArchipelago")
+        {
             ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
         }
         else
         {
-            Debug.LogError("Usage: /TCG confirmCompletion");
+            Debug.LogError("Usage: /TCG (useLandmark :: useArchipelago)");
         }
     }
 

@@ -183,7 +183,10 @@ namespace Raftipelago.Network
 
         public void SetGameCompleted(bool completed)
         {
-            _setGameCompletedMethodInfo.Invoke(_proxyServer, new object[] { completed });
+            if (_proxyServer != null)
+            {
+                _setGameCompletedMethodInfo.Invoke(_proxyServer, new object[] { completed });
+            }
         }
 
         public void Disconnect()
