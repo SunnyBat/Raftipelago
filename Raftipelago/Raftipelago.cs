@@ -169,7 +169,16 @@ public class RaftipelagoThree : Mod
         ComponentManager<NoteBook>.Value.UnlockAllNotes();
     }
 
-    [ConsoleCommand("/TCG", "Completes Raft in Archipelago. Should be used only for testing.")]
+    [ConsoleCommand("/UL", "Unlocks specific location.")]
+    private static void Command_UnlockLocation(string[] arguments)
+    {
+        if (arguments.Length == 1)
+        {
+            ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(int.Parse(arguments[0]));
+        }
+    }
+
+    [ConsoleCommand("/CompleteGame", "Completes Raft in Archipelago. Included for testing, may be removed at any time.")]
     private static void Command_CompleteGame(string[] arguments)
     {
         if (arguments.Length == 1 && arguments[0] == "useLandmark")

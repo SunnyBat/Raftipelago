@@ -359,7 +359,7 @@ namespace Raftipelago.Network
                 }
                 else
                 {
-                    Debug.LogWarning($"Progressive {progressiveName} received, but all items already given");
+                    Debug.LogWarning($"{progressiveName} received, but all items already given");
                 }
                 return true;
             }

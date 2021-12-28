@@ -36,5 +36,11 @@
     [ "Basic bow" ],
     [ "Stone arrow" ],
     [ "Metal arrow" ]
+  ],
+  "progressive-frequency": [
+    [ "Vasagatan Frequency" ],
+    [ "Balboa Island Frequency" ],
+    [ "Caravan Island Frequency" ],
+    [ "Tangaroa Frequency" ]
   ]
 }
