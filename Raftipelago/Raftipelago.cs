@@ -178,6 +178,29 @@ public class RaftipelagoThree : Mod
         }
     }
 
+    [ConsoleCommand("/SN", "Shows fake notification for testing.")]
+    private static void Command_SN(string[] arguments)
+    {
+        
+        if (arguments.Length == 1 && int.TryParse(arguments[0], out int notifCount))
+        {
+            for (int i = 0; i < notifCount; i++)
+            {
+                (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                    new Notification_Research_Info("TestNotif",
+                        CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0),
+                        ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+            }
+        }
+        else
+        {
+            (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
+                new Notification_Research_Info("TestNotif",
+                    CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0),
+                    ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+        }
+    }
+
     [ConsoleCommand("/CompleteGame", "Completes Raft in Archipelago. Included for testing, may be removed at any time.")]
     private static void Command_CompleteGame(string[] arguments)
     {

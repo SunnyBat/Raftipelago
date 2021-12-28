@@ -1,13 +1,4 @@
 ﻿using HarmonyLib;
-using Raftipelago.Data;
-using Raftipelago.Network;
-using Steamworks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -29,7 +20,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_LoadGame_Selection_get_IsSelectionLoadable
 	{
 		[HarmonyPostfix]
-		public static void PostUpdate(
+		public static void Postfix(
 			ref bool __result,
 			LoadGame_Selection __instance)
 		{

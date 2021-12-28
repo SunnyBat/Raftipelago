@@ -2,10 +2,7 @@
 using Steamworks;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Raftipelago
 {
@@ -75,7 +72,7 @@ namespace Raftipelago
             // In our case, our custom SteamID is in the range 0x10000 - 0x1FFFF
             if (
                 // XOR to check bits 18-64 are 0 so we know this is considered an invalid SteamID
-                (steamId & (long.MaxValue - 0x1FFFF)) == 0
+                (steamId & (long.MaxValue - AllArchipelagoBitsMask)) == 0
                 // AND to make sure our Archipelago identifier bit is 1 (this means we don't trigger off Steam ID 0)
                 && (steamId & ArchipelagoIdentifierBit) == ArchipelagoIdentifierBit)
             {

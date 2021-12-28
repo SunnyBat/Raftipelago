@@ -19,7 +19,7 @@ namespace Raftipelago.Network
         private const string ResourcePackIdentifier = "Resource Pack: ";
         private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
-        private Assembly _proxyAssembly;
+        private Type _proxyServerType;
         private object _proxyServer;
 
         private MethodInfo _isSuccessfullyConnectedMethodInfo;
@@ -33,14 +33,19 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
+        /// <summary>
+        /// A list of all Item IDs that have already been received. This prevents duplicates.
+        /// </summary>
         private List<int> _alreadyReceivedItemIds = new List<int>();
+        /// <summary>
+        /// A list of all levels of progressive items received. -1 is none received, 0 is one received, etc
+        /// </summary>
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
         private bool shouldPrintDebugMessages = false;
         public ProxiedArchipelago()
         {
-            _proxyAssembly = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly);
-            var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
-            _initMethodInfo(proxyServerRef);
+            _proxyServerType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly).GetType(ArchipelagoProxyClassNamespaceIdentifier);
+            _initMethodInfo(_proxyServerType);
         }
 
         public void Connect(string URL, string username, string password)
@@ -56,10 +61,9 @@ namespace Raftipelago.Network
                 {
                     _progressiveLevels[progressiveName] = -1; // None unlocked = -1
                 }
-                var proxyServerRef = _proxyAssembly.GetType(ArchipelagoProxyClassNamespaceIdentifier);
-                _proxyServer = _createNewArchipelagoProxy(proxyServerRef, URL);
-                _hookUpEvents(proxyServerRef);
-                _connectToArchipelago(proxyServerRef, username, password);
+                _proxyServer = _createNewArchipelagoProxy(URL);
+                _hookUpEvents();
+                _connectToArchipelago(username, password);
             }
         }
 
@@ -243,25 +247,25 @@ namespace Raftipelago.Network
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
-        private object _createNewArchipelagoProxy(Type proxyServerRef, string hostUrl)
+        private object _createNewArchipelagoProxy(string hostUrl)
         {
-            return proxyServerRef.GetConstructor(new Type[] { typeof(string) }).Invoke(new object[] { hostUrl });
+            return _proxyServerType.GetConstructor(new Type[] { typeof(string) }).Invoke(new object[] { hostUrl });
         }
 
-        private void _hookUpEvents(Type proxyServerRef)
+        private void _hookUpEvents()
         {
             // Events for data sent to us
-            proxyServerRef.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            proxyServerRef.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int>)RaftItemUnLockedForCurrentWorld });
-            proxyServerRef.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
-            proxyServerRef.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
+            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
+            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int>)RaftItemUnLockedForCurrentWorld });
+            _proxyServerType.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
+            _proxyServerType.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
         }
 
-        private void _connectToArchipelago(Type proxyServerRef, string username, string password)
+        private void _connectToArchipelago(string username, string password)
         {
             try
             {
-                var proxyServerStartMethodInfo = proxyServerRef.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
+                var proxyServerStartMethodInfo = _proxyServerType.GetMethod("Connect", new Type[] { typeof(string), typeof(string) });
                 proxyServerStartMethodInfo.Invoke(_proxyServer, new object[] { username, password });
             }
             catch (Exception e)

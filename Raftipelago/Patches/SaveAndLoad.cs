@@ -1,9 +1,6 @@
 ﻿using HarmonyLib;
-using Raftipelago.Data;
 using Raftipelago.Network;
-using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {

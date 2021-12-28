@@ -1,11 +1,7 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
-using Steamworks;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +11,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_NotificationManager_ShowNotification
 	{
 		[HarmonyPrefix]
-		public static void ShowNotification_OptionalReplace(
+		public static void SometimesReplace(
 			string identifier,
 			ref List<Notification> ___notifications
 			)

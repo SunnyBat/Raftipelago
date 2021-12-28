@@ -1,14 +1,8 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
 using Raftipelago.Network;
-using Steamworks;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -16,11 +10,12 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_QuestEventBase_Interact
 	{
 		[HarmonyPrefix]
-		public static bool Interact_SometimesReplace(Network_Player player, bool successFull,
+		public static bool SometimesReplace(Network_Player player, bool successFull,
 			QuestEventBase __instance)
 		{
 			if (__instance.name == "QuestInteractable_WorkBench_CaravanIsland_ZipLineHandle" || __instance.name == "QuestInteractable_WorkBench_CaravanIsland_BatteryCharger")
 			{
+				// We need to complete the quest without giving vanilla rewards, including updating the underlying GameObject's state (to hide it)
 				if (successFull)
 				{
 					if (Semih_Network.IsHost)
@@ -31,6 +26,7 @@ namespace Raftipelago.Patches
 				}
 				foreach (var objOnOff in __instance.GetComponents<QuestInteractableComponent_ObjectOnOff>())
 				{
+					// Grab the specific required component (eg a toolbox) and hide it
 					var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)objOnOff.GetType().GetField("dataComponents").GetValue(objOnOff);
 					foreach (var dataComp in dataComponents)
 					{
@@ -41,6 +37,8 @@ namespace Raftipelago.Patches
 					}
 				}
 				typeof(QuestEventBase).GetMethod("RefreshColliderState", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, null);
+
+				// Trigger notification and Archipelago location check instead
 				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
 				var localSteamId = ((Semih_Network)typeof(QuestEventBase).GetProperty("Network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance)).LocalSteamID;
 				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
@@ -52,4 +50,3 @@ namespace Raftipelago.Patches
 		}
 	}
 }
-//SendOnInteractEvent

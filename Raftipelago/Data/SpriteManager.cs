@@ -4,7 +4,7 @@ namespace Raftipelago.Data
 {
     public class SpriteManager
 	{
-		private static Sprite _archipelagoSprite;
+		private Sprite _archipelagoSprite;
 		public Sprite GetArchipelagoSprite()
         {
 			if (_archipelagoSprite == null)

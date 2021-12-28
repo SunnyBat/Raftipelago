@@ -1,14 +1,7 @@
 ﻿using HarmonyLib;
-using Raftipelago.Data;
 using Raftipelago.Network;
 using Steamworks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -16,7 +9,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_ChatManager_HandleChatMessageInput
 	{
 		[HarmonyPrefix]
-		public static bool HandleChatMessageInput_AlwaysReplace(string text, CSteamID textWriterSteamID,
+		public static bool AlwaysReplace(string text, CSteamID textWriterSteamID,
 			ChatManager __instance)
 		{
 			bool flag = __instance.chatFieldController.HandleChatMessageAsCheat(text, textWriterSteamID);

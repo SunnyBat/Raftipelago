@@ -1,15 +1,8 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
 using Raftipelago.Network;
-using Steamworks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -20,9 +13,9 @@ namespace Raftipelago.Patches
 		public static int previousStationCount = -1;
 
 		[HarmonyPrefix]
-		public static bool RefreshScreen_AlwaysReplace(BalboaRelayStationScreen __instance,
-			ref TextMeshPro ___frequencyText,
-			ref TextMeshPro ___stationsActivatedText)
+		public static bool AlwaysReplace(BalboaRelayStationScreen __instance,
+			TextMeshPro ___frequencyText,
+			TextMeshPro ___stationsActivatedText)
 		{
 			int activeStationCount = (int)typeof(BalboaRelayStationScreen).GetMethod("GetActiveStationCount", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(__instance, null);
 			if (activeStationCount == 0)
@@ -44,8 +37,7 @@ namespace Raftipelago.Patches
 					___stationsActivatedText.text = "Location sent";
 					var locationName = "Relay Station quest";
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
-					var fakeSteamID = CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0); // TODO Get playerID somehow
-					// TODO Not let this spam 3 times upon completion
+					var fakeSteamID = RAPI.GetLocalPlayer().steamID;
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 						.researchInfoQue.Enqueue(new Notification_Research_Info(locationName, fakeSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				}

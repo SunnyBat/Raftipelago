@@ -13,7 +13,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_Inventory_ResearchTable_LearnItem
 	{
 		[HarmonyPrefix]
-		public static bool LearnItem_AlwaysReplace(Item_Base item, CSteamID researcherID,
+		public static bool AlwaysReplace(Item_Base item, CSteamID researcherID,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			ref string ___eventRef_Learn,
@@ -49,7 +49,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_Inventory_ResearchTable_Research
 	{
 		[HarmonyPrefix]
-		public static bool Research_AlwaysReplace(Item_Base item, bool autoLearnRecipe,
+		public static bool AlwaysReplace(Item_Base item, bool autoLearnRecipe,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			List<Item_Base> ___researchedItems,
@@ -68,12 +68,8 @@ namespace Raftipelago.Patches
 						ResearchMenuItem researchMenuItem = ___menuItems[i];
 						if (researchMenuItem.GetItem().UniqueIndex == item.settings_recipe.BlueprintItem.UniqueIndex)
 						{
-							// TODO How to handle? Separate unlock or just ignore? If ignoring, just override CanResearchBlueprint() to always false.
-							// Alternatively, we could make blueprints NOT auto-unlock items, and require they be put into the research table. If we
-							// do this, we'll want to add the item with a custom recipe to the research table itself in case the blueprint is lost
-							// (to prevent softlocks).
-							//researchMenuItem.gameObject.SetActive(true);
-							Debug.Log("Skipping blueprint " + item.UniqueName);
+							// This should never happen, but log a message just in case we get one
+							Debug.LogWarning("Skipping blueprint " + item.UniqueName);
 							break;
 						}
 					}

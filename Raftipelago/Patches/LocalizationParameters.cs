@@ -1,13 +1,5 @@
 ﻿using HarmonyLib;
-using Raftipelago.Data;
 using Raftipelago.Network;
-using Steamworks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -15,7 +7,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_LocalizationParameters_GetParameterValue
 	{
 		[HarmonyPrefix]
-		public static bool GetParameterValue_SometimesReplace(string parameter,
+		public static bool SometimesReplace(string parameter,
 			ref string __result)
 		{
 			if (parameter == "RemoteSteamID"
