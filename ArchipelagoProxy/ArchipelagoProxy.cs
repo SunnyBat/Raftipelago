@@ -15,12 +15,7 @@ namespace ArchipelagoProxy
 {
     public class ArchipelagoProxy
     {
-        /*
-         * Open Questions
-         * - Is the StatusUpdate packet's ClientState.ClientGoal (which is documented as "Goal Completion") expected to be set by us automatically, or is this a "Complete"/"Forfeit" command thing?
-         * -- Maybe depends on configuration of run?
-         * -- Does MultiClient.Net do this for us?
-         */
+        public const int ArchipelagoDataVersion = 12;
 
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
@@ -269,14 +264,14 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 12, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, ArchipelagoDataVersion, 0), password: password);
             if (loginResult.Successful)
             {
-                _messageQueue.Enqueue("Connected");
+                _messageQueue.Enqueue("Successfully connected to Archipelago");
             }
             else
             {
-                _messageQueue.Enqueue("Failed to connect");
+                _messageQueue.Enqueue("Failed to connect to Archipelago");
                 try
                 {
                     _session.Socket.Disconnect();
@@ -376,7 +371,7 @@ namespace ArchipelagoProxy
                                 _messageQueue.Enqueue("Error connecting: Incompatible versions between Archipelago and Raftipelago.");
                                 break;
                             default:
-                                _messageQueue.Enqueue("Error connecting: Unknown reason..");
+                                _messageQueue.Enqueue("Error connecting: Unknown reason.");
                                 break;
                         }
                     }

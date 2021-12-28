@@ -8,12 +8,16 @@ namespace RaftipelagoTypes
 	[Serializable]
 	public class RGD_Game_Raftipelago : RGD_Game
 	{
-		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks";
+		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks"; // TODO Rename before public release (required for existing saves to work properly)
 
 		public List<int> Raftipelago_ReceivedItems;
 
 		public RGD_Game_Raftipelago(RGD_Game baseObj)
 		{
+			// Dynamically assign existing fields; we're re-creating a new object with the same
+			// values/references, and we want this to modify public and non-public fields. We
+			// also want this to be able to immediately adapt to updates, which reflection will
+			// make happen.
 			var myType = typeof(RGD_Game_Raftipelago);
 			foreach (var field in baseObj.GetType().GetFields())
 			{
