@@ -49,8 +49,6 @@
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
-    <Compile Include="Patches\Notification_Research.cs" />
-    <Compile Include="Patches\NotificationManager.cs" />
     <Compile Include="Patches\Pickup.cs" />
     <Compile Include="Patches\Pickup_Specific_Blueprint.cs" />
     <Compile Include="Patches\Pickup_Specific_CookingTableRecipe.cs" />
