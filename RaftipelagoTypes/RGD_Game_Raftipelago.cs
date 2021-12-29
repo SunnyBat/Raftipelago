@@ -12,6 +12,10 @@ namespace RaftipelagoTypes
 
 		public List<int> Raftipelago_ReceivedItems;
 
+		public RGD_Game_Raftipelago()
+		{
+		}
+
 		public RGD_Game_Raftipelago(RGD_Game baseObj)
 		{
 			// Dynamically assign existing fields; we're re-creating a new object with the same

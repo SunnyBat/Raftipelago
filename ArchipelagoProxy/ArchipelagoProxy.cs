@@ -27,7 +27,7 @@ namespace ArchipelagoProxy
         /// <summary>
         /// Called when a new Raft item is unlocked for the current world.
         /// </summary>
-        private event Action<int, int> RaftItemUnlockedForCurrentWorld;
+        private event Action<int, int, int> RaftItemUnlockedForCurrentWorld;
         /// <summary>
         /// Called when a message is received. This can be a chat message, an item received message, etc
         /// </summary>
@@ -142,7 +142,7 @@ namespace ArchipelagoProxy
                     {
                         while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                         {
-                            RaftItemUnlockedForCurrentWorld(res.Item, res.Player);
+                            RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player);
                         }
                     }
                     if (!triggeredConnectedAction)
@@ -165,7 +165,7 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void AddRaftItemUnlockedForCurrentWorldEvent(Action<int, int> newEvent)
+        public void AddRaftItemUnlockedForCurrentWorldEvent(Action<int, int, int> newEvent)
         {
             if (newEvent != null)
             {

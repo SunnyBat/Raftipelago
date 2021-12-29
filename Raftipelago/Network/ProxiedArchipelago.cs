@@ -256,7 +256,7 @@ namespace Raftipelago.Network
         {
             // Events for data sent to us
             _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int>)RaftItemUnLockedForCurrentWorld });
+            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int, int>)RaftItemUnlockedForCurrentWorld });
             _proxyServerType.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
             _proxyServerType.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
         }
@@ -300,20 +300,34 @@ namespace Raftipelago.Network
             }
         }
 
-        private void RaftItemUnLockedForCurrentWorld(int itemId, int player)
+        /// <summary>
+        /// Runs off of the assumption that we have a limited ID set for items and locations.
+        /// </summary>
+        /// <param name="itemId">The Item ID unlocked</param>
+        /// <param name="locationId">The Location ID unlocked</param>
+        /// <returns></returns>
+        private int calculateUniqueIdentifier(int itemId, int locationId)
+        {
+            // First 16 bits = ItemID, last 16 bits = LocationID
+            return (((itemId - 47000) & 0xFFFF) << 16) | ((locationId - 48000) & 0xFFFF);
+        }
+
+        private void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
         {
             var sentItemName = GetItemNameFromId(itemId);
-            if (!_unlockResourcePack(itemId, sentItemName, player) && !_unlockProgressive(itemId, sentItemName, player) && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
+            if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
+                && !_unlockProgressive(itemId, sentItemName, player)
+                && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
             {
-                Debug.LogError($"Unable to find {sentItemName} ({itemId})");
+                Debug.LogError($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
         }
 
-        private bool _unlockResourcePack(int itemId, string sentItemName, int player)
+        private bool _unlockResourcePack(int itemId, int locationId, string sentItemName, int player)
         {
             if (sentItemName.StartsWith(ResourcePackIdentifier))
             {
-                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId))
+                if (_alreadyReceivedItemIds.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId)))
                 {
                     var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
                     var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
@@ -363,7 +377,7 @@ namespace Raftipelago.Network
                 }
                 else
                 {
-                    Debug.LogWarning($"{progressiveName} received, but all items already given");
+                    Debug.Log($"{progressiveName} received, but all items already given");
                 }
                 return true;
             }
@@ -389,7 +403,7 @@ namespace Raftipelago.Network
             if (foundItem != null)
             {
                 foundItem.settings_recipe.Learned = true;
-                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId))
+                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId)) // We don't want to check with locationId, since we don't want to alert on the same item multiple times
                 {
                     if (showNotification)
                     {

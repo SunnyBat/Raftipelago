@@ -46,6 +46,11 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         if (isInWorld())
         {
+            if (SaveAndLoad.WorldToLoad == null)
+            {
+                // WorldToLoad is only used on world load, we can modify it without consequence
+                SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] { }).Invoke(null);
+            }
             CommonUtils.SetUnlockedItemPacks(SaveAndLoad.WorldToLoad, ComponentManager<IArchipelagoLink>.Value.GetAllReceivedItemIds());
         }
         ComponentManager<IArchipelagoLink>.Value = null;
