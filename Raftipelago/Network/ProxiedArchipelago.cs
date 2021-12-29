@@ -30,6 +30,7 @@ namespace Raftipelago.Network
         private MethodInfo _getItemNameFromIdMethodInfo;
         private MethodInfo _getPlayerAliasMethodInfo;
         private MethodInfo _setGameCompletedMethodInfo;
+        private MethodInfo _requeueAllItemsMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
@@ -42,6 +43,7 @@ namespace Raftipelago.Network
         /// </summary>
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
         private bool shouldPrintDebugMessages = false;
+        private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
         {
             _proxyServerType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly).GetType(ArchipelagoProxyClassNamespaceIdentifier);
@@ -56,11 +58,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                // Reset progressives on each connect since we'll be rewriting it all
-                foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
-                {
-                    _progressiveLevels[progressiveName] = -1; // None unlocked = -1
-                }
+                _resetForNextLoad();
                 _proxyServer = _createNewArchipelagoProxy(URL);
                 _hookUpEvents();
                 _connectToArchipelago(username, password);
@@ -86,6 +84,7 @@ namespace Raftipelago.Network
             {
                 if (inWorld)
                 {
+                    hasLoadedRaftWorldBefore = true;
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned && CommonUtils.IsValidResearchTableItem(itm.GetItem()))
@@ -109,6 +108,27 @@ namespace Raftipelago.Network
                                     locationList.Add(friendlyName);
                                 }
                             }
+                            else if (ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name)) // Friendly names and non-LandmarkItems will be ignored. This is fine.
+                            {
+                                var shouldSendLocation = false;
+                                // Will need to add additional processing if new QuestInteractableComponents show up
+                                foreach (var objOnOff in landmarkItem.GetComponents<QuestInteractableComponent_ObjectOnOff>())
+                                {
+                                    // Grab the specific required component (eg a toolbox) and hide it
+                                    var dataComponents = (List<QuestInteractable_ComponentData_ObjectOnOff>)objOnOff.GetType().GetField("dataComponents").GetValue(objOnOff);
+                                    foreach (var dataComp in dataComponents)
+                                    {
+                                        foreach (var gameObject in dataComp.gameObjects)
+                                        {
+                                            shouldSendLocation |= !gameObject.activeSelf; // If disabled, items have been turned in
+                                        }
+                                    }
+                                }
+                                if (shouldSendLocation && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string specialLocationName))
+                                {
+                                    locationList.Add(specialLocationName);
+                                }
+                            }
                         }
                     });
                     if (CommonUtils.HasFinishedRelayStationQuest())
@@ -116,6 +136,10 @@ namespace Raftipelago.Network
                         locationList.Add("Relay Station quest");
                     }
                     LocationUnlocked(locationList.ToArray());
+                }
+                else
+                {
+                    _resetForNextLoad(true);
                 }
                 _setIsPlayerInWorldMethodInfo.Invoke(_proxyServer, new object[] { inWorld, false });
             }
@@ -231,6 +255,19 @@ namespace Raftipelago.Network
             return _alreadyReceivedItemIds;
         }
 
+        private void _resetForNextLoad(bool isReload = false)
+        {
+            // Reset progressives on each connect since we'll be rewriting it all
+            foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
+            {
+                _progressiveLevels[progressiveName] = -1; // None unlocked = -1
+            }
+            if (isReload && hasLoadedRaftWorldBefore) // Don't requeue if never loaded world before -- we'll just duplicate for no reason
+            {
+                _requeueAllItemsMethodInfo.Invoke(_proxyServer, null);
+            }
+        }
+
         private void _initMethodInfo(Type proxyServerRef)
         {
             // Events for data that we send to proxy
@@ -243,6 +280,7 @@ namespace Raftipelago.Network
             _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
             _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
             _setGameCompletedMethodInfo = proxyServerRef.GetMethod("SetGameCompleted");
+            _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }

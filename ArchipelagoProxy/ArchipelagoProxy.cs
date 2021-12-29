@@ -121,6 +121,20 @@ namespace ArchipelagoProxy
             }
         }
 
+        public void RequeueAllItems()
+        {
+            lock(LockForClass)
+            {
+                if (isSuccessfullyConnected)
+                {
+                    foreach (var item in _session.Items.AllItemsReceived)
+                    {
+                        _itemReceivedQueue.Enqueue(item);
+                    }
+                }
+            }
+        }
+
         public void Heartbeat()
         {
             while (_messageQueue.TryDequeue(out string nextMessage))
@@ -248,10 +262,13 @@ namespace ArchipelagoProxy
 
         public void SendChatMessage(string message)
         {
-            _session.Socket.SendPacket(new SayPacket()
+            if (IsSuccessfullyConnected())
             {
-                Text = message
-            });
+                _session.Socket.SendPacket(new SayPacket()
+                {
+                    Text = message
+                });
+            }
         }
 
         public void Connect(string username, string password)
