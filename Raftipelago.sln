@@ -5,6 +5,7 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raftipelago", "Raftipelago\Raftipelago.csproj", "{41D2BDD7-E52C-4470-AC81-5F4B496CC559}"
 	ProjectSection(ProjectDependencies) = postProject
 		{5F759893-24E9-42A8-8732-7F68517BFA90} = {5F759893-24E9-42A8-8732-7F68517BFA90}
+		{76799AAC-2EAD-4106-835E-C169C380CAE0} = {76799AAC-2EAD-4106-835E-C169C380CAE0}
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArchipelagoProxy", "ArchipelagoProxy\ArchipelagoProxy.csproj", "{5F759893-24E9-42A8-8732-7F68517BFA90}"
