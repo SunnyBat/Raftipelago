@@ -13,7 +13,7 @@ namespace Raftipelago.Network
     /// <summary>
     /// A communication layer for Archipelago that uses dynamically-loaded libraries.
     /// </summary>
-    public class ProxiedArchipelago : MarshalByRefObject, IArchipelagoLink
+    public class ProxiedArchipelago : IArchipelagoLink
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
         private const string ResourcePackIdentifier = "Resource Pack: ";
