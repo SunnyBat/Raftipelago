@@ -66,7 +66,7 @@ namespace ArchipelagoProxy
                 var portStr = PortFinderRegex.Match(urlToHost).Groups[1].Value;
                 if (int.TryParse(portStr, out int port))
                 {
-                    _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
+                    _session = ArchipelagoSessionFactory.CreateSession(hostAddress, port);
                 }
                 else
                 {
