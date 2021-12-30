@@ -66,6 +66,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <None Include="Data\Archipelago.MultiClient.Net.dll.copyonly">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Data\FriendlyItems.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -75,11 +78,17 @@
     <None Include="Data\FriendlyRegions.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Data\Newtonsoft.Json.dll.copyonly">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Data\ProgressiveData.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Data\QuestLocations.json" />
     <None Include="Data\SpecificLocationRequirements.json" />
+    <None Include="Data\websocket-sharp.dll.copyonly">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="modinfo.json" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -367,16 +376,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Data\Archipelago.MultiClient.Net.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Content Include="Data\ArchipelagoProxy.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Data\RaftipelagoTypes.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Data\websocket-sharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

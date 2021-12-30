@@ -10,7 +10,11 @@ namespace Raftipelago.Data
     {
         public const string ArchipelagoProxyAssembly = "ArchipelagoProxy.dll";
         public const string RaftipelagoTypesAssembly = "RaftipelagoTypes.dll";
-        private readonly string[] LibraryFileNames = new string[] { RaftipelagoTypesAssembly, "websocket-sharp.dll", "Archipelago.MultiClient.Net.dll", ArchipelagoProxyAssembly };
+        private readonly string[] LibraryFileNames = new string[] { RaftipelagoTypesAssembly, ArchipelagoProxyAssembly };
+        // We use the file extension ".copyonly" because the RML compilation process apparently tries to load the DLLs present in
+        // the rmod file. By changing the extension, this doesn't happen, and we can compile successfully while in Raft. Since we
+        // still need the DLLs loaded into the AppDomain, we still copy them over.
+        private readonly string[] CopyOnlyLibraryFileNames = new string[] { "Archipelago.MultiClient.Net.dll", "websocket-sharp.dll", "Newtonsoft.Json.dll" };
         private Dictionary<string, Assembly> _loadedAssemblies = new Dictionary<string, Assembly>();
 
         public AssemblyManager(string fromFolderPath, string toFolderPath)
@@ -24,6 +28,11 @@ namespace Raftipelago.Data
                 var outputFilePath = Path.Combine(toFolderPath, fileName);
                 _copyDllIfNecessary(fromFolderPath, fileName, outputFilePath);
                 _loadedAssemblies[fileName] = Assembly.LoadFrom(outputFilePath);
+            }
+            foreach (var fileName in CopyOnlyLibraryFileNames)
+            {
+                var outputFilePath = Path.Combine(toFolderPath, fileName);
+                _copyDllIfNecessary(fromFolderPath, fileName + ".copyonly", outputFilePath);
             }
         }
 
