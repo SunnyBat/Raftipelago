@@ -59,22 +59,6 @@ namespace Raftipelago.Network
             var ads = new AppDomainSetup();
             ads.PrivateBinPath = proxyServerDirectory;
             _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);
-            //var builder = _appDomain.DefineDynamicAssembly(new AssemblyName(), System.Reflection.Emit.AssemblyBuilderAccess.Run);
-            Debug.Log(string.Join("\r\n", Assembly.GetExecutingAssembly().GetType().GetMethods().Select(m => m.Name + " (" + string.Join(",", m.GetParameters().Select(p => p.Name + "::" + p.ParameterType)))));
-            var moduleList = (Module[])GetResult(Assembly.GetExecutingAssembly(), "GetModules", new object[] { true }, new Type[] { typeof(bool) });
-            Debug.Log(string.Join(",", ((Module[])GetResult(Assembly.GetExecutingAssembly(), "GetModules", new object[] { true }, new Type[] { typeof(bool) })).Select(m => m.Assembly?.GetName())));
-            MethodInfo methodGetRawBytes = moduleList[0].GetType().GetMethod("GetRawBytes", BindingFlags.Instance | BindingFlags.NonPublic);
-            Debug.Log("kk");
-            object o = methodGetRawBytes.Invoke(Assembly.GetExecutingAssembly(), null);
-            Debug.Log("kk2");
-            byte[] assemblyBytes = (byte[])o;
-            _appDomain.Load(assemblyBytes);
-        }
-
-        private object GetResult(object callOn, string methodName, object[] mP = null, Type[] mT = null)
-        {
-            MethodInfo mi = callOn.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, mT, null);
-            return mi.Invoke(callOn, mP);
         }
 
         public void Connect(string URL, string username, string password)
@@ -86,20 +70,9 @@ namespace Raftipelago.Network
             else
             {
                 _resetForNextLoad();
-                Debug.Log("TEST");
                 _proxyServer = _appDomain.CreateInstanceAndUnwrap("ArchipelagoProxy", ArchipelagoProxyClassNamespaceIdentifier, false, BindingFlags.Default, null, new object[] { URL }, null, null);
-                Debug.Log(_proxyServer.GetType().Assembly.FullName);
-                try
-                {
-                    _hookUpEvents();
-                }
-                catch (Exception e)
-                {
-                    Debug.Log(e);
-                }
-                Debug.Log("k2");
+                _hookUpEvents();
                 _connectToArchipelago(username, password);
-                Debug.Log("k3");
             }
         }
 
@@ -331,10 +304,28 @@ namespace Raftipelago.Network
         private void _hookUpEvents()
         {
             // Events for data sent to us
-            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int, int>)RaftItemUnlockedForCurrentWorld });
-            _proxyServerType.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
-            _proxyServerType.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
+            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { GetNewEventObject((Action)ConnnectedToServer, "ActionHandler") });
+            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<int, int, int>)RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
+            _proxyServerType.GetMethod("AddPrintMessageEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+            _proxyServerType.GetMethod("AddDebugMessageEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)DebugMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+        }
+
+        private object GetNewEventObject<T>(T arg, string typeName, params Type[] genericTypes)
+        {
+            var raftipelagoTypes = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly);
+            var constructorArgTypes = new Type[] { typeof(T) };
+            var typeInfo = raftipelagoTypes.GetType("RaftipelagoTypes." + typeName);
+            if (genericTypes.Length > 0)
+            {
+                return typeInfo.MakeGenericType(genericTypes).GetConstructor(constructorArgTypes).Invoke(new object[] { arg });
+            }
+            else
+            {
+                return typeInfo.GetConstructor(constructorArgTypes).Invoke(new object[] { arg });
+            }
         }
 
         private void _connectToArchipelago(string username, string password)

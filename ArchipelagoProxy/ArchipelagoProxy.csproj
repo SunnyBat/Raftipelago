@@ -58,6 +58,12 @@
     <Compile Include="ArchipelagoProxy.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RaftipelagoTypes\RaftipelagoTypes.csproj">
+      <Project>{76799aac-2ead-4106-835e-c169c380cae0}</Project>
+      <Name>RaftipelagoTypes</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>call "$(SolutionDir)copyProxyDLLs.bat" "$(ProjectDir)$(OutDir)" "$(SolutionDir)Raftipelago\Data\"</PostBuildEvent>
