@@ -15,8 +15,6 @@ namespace ArchipelagoProxy
 {
     public class ArchipelagoProxy
     {
-        public const int ArchipelagoDataVersion = 1;
-
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
         // Events TO Raft
@@ -281,7 +279,7 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, ArchipelagoDataVersion, 0), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 2), password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
