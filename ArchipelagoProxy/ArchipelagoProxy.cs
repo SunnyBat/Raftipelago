@@ -15,7 +15,7 @@ namespace ArchipelagoProxy
 {
     public class ArchipelagoProxy
     {
-        public const int ArchipelagoDataVersion = 12;
+        public const int ArchipelagoDataVersion = 1;
 
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
