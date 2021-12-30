@@ -35,5 +35,7 @@ namespace Raftipelago.Network
         void Disconnect();
 
         void Heartbeat();
+
+        void onUnload();
     }
 }

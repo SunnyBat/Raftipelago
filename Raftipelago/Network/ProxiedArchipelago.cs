@@ -52,13 +52,9 @@ namespace Raftipelago.Network
             _initMethodInfo(_proxyServerType);
         }
 
-        private void _initAppDomain()
+        public void onUnload()
         {
-            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var proxyServerDirectory = Path.Combine(appDataDirectory, "Raftipelago"); // TODO Separate folder per run to dynamically load better
-            var ads = new AppDomainSetup();
-            ads.PrivateBinPath = proxyServerDirectory;
-            _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);
+            AppDomain.Unload(_appDomain);
         }
 
         public void Connect(string URL, string username, string password)
@@ -266,6 +262,15 @@ namespace Raftipelago.Network
             return _alreadyReceivedItemIds;
         }
 
+        private void _initAppDomain()
+        {
+            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var proxyServerDirectory = Path.Combine(appDataDirectory, RaftipelagoThree.AppDataFolderName);
+            var ads = new AppDomainSetup();
+            ads.PrivateBinPath = proxyServerDirectory;
+            _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);
+        }
+
         private void _resetForNextLoad(bool isReload = false)
         {
             // Reset progressives on each connect since we'll be rewriting it all
@@ -294,11 +299,6 @@ namespace Raftipelago.Network
             _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
-        }
-
-        private object _createNewArchipelagoProxy(string hostUrl)
-        {
-            return _proxyServerType.GetConstructor(new Type[] { typeof(string) }).Invoke(new object[] { hostUrl });
         }
 
         private void _hookUpEvents()
