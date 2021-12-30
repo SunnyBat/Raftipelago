@@ -96,7 +96,6 @@ public class RaftipelagoThree : Mod
             int currentIndex = 1;
             string username = readNextValue(arguments, ref currentIndex);
             string password = readNextValue(arguments, ref currentIndex);
-            Debug.Log($"{serverAddress} :: {username} :: {password}");
             ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
             ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(isInWorld());
         }
