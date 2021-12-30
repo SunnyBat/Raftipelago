@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "license": "GNU AGPLv3",
   "icon": "Data/Archipelago.png",
-  "banner": "Ocean.png",
+  "banner": "Banner.png",
   "gameVersion": "1.0",
   "requiredByAllPlayers": true,
   "updateUrl": "https://www.raftmodding.com/api/v1/mods/raftipelago/version.txt",
