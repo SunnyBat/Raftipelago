@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace ArchipelagoProxy
 {
-    public class ArchipelagoProxy
+    public class ArchipelagoProxy : MarshalByRefObject
     {
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 

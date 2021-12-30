@@ -13,12 +13,13 @@ namespace Raftipelago.Network
     /// <summary>
     /// A communication layer for Archipelago that uses dynamically-loaded libraries.
     /// </summary>
-    public class ProxiedArchipelago : IArchipelagoLink
+    public class ProxiedArchipelago : MarshalByRefObject, IArchipelagoLink
     {
         private const string ArchipelagoProxyClassNamespaceIdentifier = "ArchipelagoProxy.ArchipelagoProxy";
         private const string ResourcePackIdentifier = "Resource Pack: ";
         private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
+        private AppDomain _appDomain;
         private Type _proxyServerType;
         private object _proxyServer;
 
@@ -46,8 +47,34 @@ namespace Raftipelago.Network
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
         {
+            _initAppDomain();
             _proxyServerType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly).GetType(ArchipelagoProxyClassNamespaceIdentifier);
             _initMethodInfo(_proxyServerType);
+        }
+
+        private void _initAppDomain()
+        {
+            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var proxyServerDirectory = Path.Combine(appDataDirectory, "Raftipelago"); // TODO Separate folder per run to dynamically load better
+            var ads = new AppDomainSetup();
+            ads.PrivateBinPath = proxyServerDirectory;
+            _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);
+            //var builder = _appDomain.DefineDynamicAssembly(new AssemblyName(), System.Reflection.Emit.AssemblyBuilderAccess.Run);
+            Debug.Log(string.Join("\r\n", Assembly.GetExecutingAssembly().GetType().GetMethods().Select(m => m.Name + " (" + string.Join(",", m.GetParameters().Select(p => p.Name + "::" + p.ParameterType)))));
+            var moduleList = (Module[])GetResult(Assembly.GetExecutingAssembly(), "GetModules", new object[] { true }, new Type[] { typeof(bool) });
+            Debug.Log(string.Join(",", ((Module[])GetResult(Assembly.GetExecutingAssembly(), "GetModules", new object[] { true }, new Type[] { typeof(bool) })).Select(m => m.Assembly?.GetName())));
+            MethodInfo methodGetRawBytes = moduleList[0].GetType().GetMethod("GetRawBytes", BindingFlags.Instance | BindingFlags.NonPublic);
+            Debug.Log("kk");
+            object o = methodGetRawBytes.Invoke(Assembly.GetExecutingAssembly(), null);
+            Debug.Log("kk2");
+            byte[] assemblyBytes = (byte[])o;
+            _appDomain.Load(assemblyBytes);
+        }
+
+        private object GetResult(object callOn, string methodName, object[] mP = null, Type[] mT = null)
+        {
+            MethodInfo mi = callOn.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static, null, mT, null);
+            return mi.Invoke(callOn, mP);
         }
 
         public void Connect(string URL, string username, string password)
@@ -59,9 +86,20 @@ namespace Raftipelago.Network
             else
             {
                 _resetForNextLoad();
-                _proxyServer = _createNewArchipelagoProxy(URL);
-                _hookUpEvents();
+                Debug.Log("TEST");
+                _proxyServer = _appDomain.CreateInstanceAndUnwrap("ArchipelagoProxy", ArchipelagoProxyClassNamespaceIdentifier, false, BindingFlags.Default, null, new object[] { URL }, null, null);
+                Debug.Log(_proxyServer.GetType().Assembly.FullName);
+                try
+                {
+                    _hookUpEvents();
+                }
+                catch (Exception e)
+                {
+                    Debug.Log(e);
+                }
+                Debug.Log("k2");
                 _connectToArchipelago(username, password);
+                Debug.Log("k3");
             }
         }
 
