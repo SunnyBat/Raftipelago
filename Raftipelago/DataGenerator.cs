@@ -126,7 +126,7 @@ namespace Raftipelago
                             locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings,
                                 landmarkItem.connectedBehaviourID.GetComponent<PickupItem>().PickupName);
                         }
-                        else if (CommonUtils.IsNote(landmarkItem))
+                        else if (CommonUtils.IsNote(landmarkItem) || ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name))
                         {
                             locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, landmarkItem.name);
                         }
@@ -162,6 +162,26 @@ namespace Raftipelago
                     if (baseItem.settings_recipe.HiddenInResearchTable || baseItem.settings_recipe.LearnedViaBlueprint)
                     {
                         _addLocation(ref currentId, baseItem.settings_Inventory.DisplayName, "ResearchTable", allLocationData);
+                    }
+                });
+                WorldManager.AllLandmarks.ForEach(landmark =>
+                {
+                    var regionName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueRegionNameToFriendlyNameMappings, landmark.name);
+                    foreach (var landmarkItem in landmark.landmarkItems)
+                    {
+                        string locName;
+                        if (CommonUtils.IsBlueprint(landmarkItem) || CommonUtils.IsNote(landmarkItem) || landmarkItem.name == "Pickup_Landmark_Caravan_RocketDoll"
+                            || ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            locName = landmarkItem.name;
+                        }
+                        var additionalRequirements = ComponentManager<ExternalData>.Value.AdditionalLocationCheckItemRequirements.GetValueOrDefault(locName);
+                        var reqList = additionalRequirements == null ? null : new List<string>(additionalRequirements);
+                        _addLocation(ref currentId, locName, regionName, allLocationData, reqList);
                     }
                 });
             }
