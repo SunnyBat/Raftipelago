@@ -9,6 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using UnityEngine;
 
 public class RaftipelagoThree : Mod
@@ -91,13 +92,64 @@ public class RaftipelagoThree : Mod
         else if (arguments.Length >= 2)
         {
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
-            ComponentManager<IArchipelagoLink>.Value.Connect(arguments[0], arguments[1], arguments.Length > 2 ? arguments[2] : null);
+            string serverAddress = arguments[0];
+            int currentIndex = 1;
+            string username = readNextValue(arguments, ref currentIndex);
+            string password = readNextValue(arguments, ref currentIndex);
+            Debug.Log($"{serverAddress} :: {username} :: {password}");
+            ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
             ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(isInWorld());
         }
         else
         {
             Debug.LogError("Usage: <i>/connect (URL) (Username) (Password)</i> -- Password is optional. Parenthesis should be omitted unless part of URL or username. If a value has spaces, use \"\" around it, eg \"My Unique Username\".");
         }
+    }
+
+    private static string readNextValue(string[] arguments, ref int currentIndex)
+    {
+        if (currentIndex >= arguments.Length)
+        {
+            return null;
+        }
+        StringBuilder valueBuilder = new StringBuilder();
+        bool quotedValue = false;
+        do
+        {
+            if (arguments[currentIndex].StartsWith("\""))
+            {
+                if (arguments[currentIndex].EndsWith("\"")) // Account for "MyValue"
+                {
+                    valueBuilder.Append(arguments[currentIndex].Substring(1, arguments[currentIndex].Length - 2));
+                }
+                else // "My Value[...]"
+                {
+                    quotedValue = true;
+                    valueBuilder.Append(arguments[currentIndex].Substring(1));
+                }
+            }
+            else
+            {
+                if (quotedValue)
+                {
+                    valueBuilder.Append(" "); // This may have been more than one space -- this is unavoidable without char substitutes. Not in scope at the moment.
+                }
+
+                if (quotedValue && arguments[currentIndex].EndsWith("\"")) // "My Value[...]"
+                {
+                    valueBuilder.Append(arguments[currentIndex].Substring(0, arguments[currentIndex].Length - 1));
+                    quotedValue = false;
+                }
+                else // Non-quoted, or potentially MyValue" -- this may be a typo, but the mod will just do as it's told
+                {
+                    valueBuilder.Append(arguments[currentIndex]);
+                }
+            }
+            currentIndex++;
+        }
+        while (quotedValue && currentIndex < arguments.Length);
+
+        return valueBuilder.ToString();
     }
 
     // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
