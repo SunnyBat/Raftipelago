@@ -15,7 +15,7 @@ using UnityEngine;
 public class RaftipelagoThree : Mod
 {
     private const string EmbeddedFileDirectory = "Data";
-    private const string AppDataFolderName = "Raftipelago";
+    public const string AppDataFolderName = "Raftipelago";
 
     private Harmony patcher;
     private IEnumerator serverHeartbeat;
@@ -50,10 +50,12 @@ public class RaftipelagoThree : Mod
             if (SaveAndLoad.WorldToLoad == null)
             {
                 // WorldToLoad is only used on world load, we can modify it without consequence
-                SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] { }).Invoke(null);
+                SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly)
+                    .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
             }
             CommonUtils.SetUnlockedItemPacks(SaveAndLoad.WorldToLoad, ComponentManager<IArchipelagoLink>.Value.GetAllReceivedItemIds());
         }
+        ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
         ComponentManager<ExternalData>.Value = null; // Allows configurations to reload on new load
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");

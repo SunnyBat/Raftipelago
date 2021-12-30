@@ -19,6 +19,7 @@ namespace Raftipelago.Network
         private const string ResourcePackIdentifier = "Resource Pack: ";
         private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
+        private AppDomain _appDomain;
         private Type _proxyServerType;
         private object _proxyServer;
 
@@ -46,8 +47,14 @@ namespace Raftipelago.Network
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
         {
+            _initAppDomain();
             _proxyServerType = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.ArchipelagoProxyAssembly).GetType(ArchipelagoProxyClassNamespaceIdentifier);
             _initMethodInfo(_proxyServerType);
+        }
+
+        public void onUnload()
+        {
+            AppDomain.Unload(_appDomain);
         }
 
         public void Connect(string URL, string username, string password)
@@ -59,7 +66,7 @@ namespace Raftipelago.Network
             else
             {
                 _resetForNextLoad();
-                _proxyServer = _createNewArchipelagoProxy(URL);
+                _proxyServer = _appDomain.CreateInstanceAndUnwrap("ArchipelagoProxy", ArchipelagoProxyClassNamespaceIdentifier, false, BindingFlags.Default, null, new object[] { URL }, null, null);
                 _hookUpEvents();
                 _connectToArchipelago(username, password);
             }
@@ -255,6 +262,15 @@ namespace Raftipelago.Network
             return _alreadyReceivedItemIds;
         }
 
+        private void _initAppDomain()
+        {
+            string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var proxyServerDirectory = Path.Combine(appDataDirectory, RaftipelagoThree.AppDataFolderName);
+            var ads = new AppDomainSetup();
+            ads.PrivateBinPath = proxyServerDirectory;
+            _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);
+        }
+
         private void _resetForNextLoad(bool isReload = false)
         {
             // Reset progressives on each connect since we'll be rewriting it all
@@ -285,18 +301,31 @@ namespace Raftipelago.Network
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
         }
 
-        private object _createNewArchipelagoProxy(string hostUrl)
-        {
-            return _proxyServerType.GetConstructor(new Type[] { typeof(string) }).Invoke(new object[] { hostUrl });
-        }
-
         private void _hookUpEvents()
         {
             // Events for data sent to us
-            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { (Action)ConnnectedToServer });
-            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent").Invoke(_proxyServer, new object[] { (Action<int, int, int>)RaftItemUnlockedForCurrentWorld });
-            _proxyServerType.GetMethod("AddPrintMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)PrintMessage });
-            _proxyServerType.GetMethod("AddDebugMessageEvent").Invoke(_proxyServer, new object[] { (Action<string>)DebugMessage });
+            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { GetNewEventObject((Action)ConnnectedToServer, "ActionHandler") });
+            _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<int, int, int>)RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
+            _proxyServerType.GetMethod("AddPrintMessageEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+            _proxyServerType.GetMethod("AddDebugMessageEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)DebugMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+        }
+
+        private object GetNewEventObject<T>(T arg, string typeName, params Type[] genericTypes)
+        {
+            var raftipelagoTypes = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly);
+            var constructorArgTypes = new Type[] { typeof(T) };
+            var typeInfo = raftipelagoTypes.GetType("RaftipelagoTypes." + typeName);
+            if (genericTypes.Length > 0)
+            {
+                return typeInfo.MakeGenericType(genericTypes).GetConstructor(constructorArgTypes).Invoke(new object[] { arg });
+            }
+            else
+            {
+                return typeInfo.GetConstructor(constructorArgTypes).Invoke(new object[] { arg });
+            }
         }
 
         private void _connectToArchipelago(string username, string password)
