@@ -157,7 +157,7 @@ public class RaftipelagoThree : Mod
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]
     private static void Command_Disconnect(string[] arguments)
     {
-        if (arguments.Length == 1 && arguments[0].Equals("confirmDisconnect", System.StringComparison.InvariantCultureIgnoreCase))
+        if (arguments.Length == 1 && arguments[0].Equals("confirmDisconnect", StringComparison.InvariantCultureIgnoreCase))
         {
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
         }

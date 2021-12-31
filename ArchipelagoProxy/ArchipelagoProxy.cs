@@ -55,6 +55,9 @@ namespace ArchipelagoProxy
         private bool isSuccessfullyConnected = false;
         private bool isGameCompleted = false; // Edge case of not connected, complete game, connect
         private bool triggeredConnectedAction = false;
+        private int successiveConnectFailures = 0;
+        private string _lastUsedUsername;
+        private string _lastUsedPassword;
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -93,6 +96,13 @@ namespace ArchipelagoProxy
             {
                 HandlePacket(packet);
             };
+            _session.Socket.SocketOpened += () =>
+            {
+                lock (LockForClass)
+                {
+                    successiveConnectFailures = 0;
+                }
+            };
             _session.Socket.SocketClosed += closedEventArgs =>
             {
                 lock (LockForClass)
@@ -100,9 +110,26 @@ namespace ArchipelagoProxy
                     isSuccessfullyConnected = false;
                     triggeredConnectedAction = false;
                 }
-                if (!closedEventArgs.WasClean)
+                if (!closedEventArgs.WasClean) // We assume that this will not happen because of incorrect login info
                 {
-                    _messageQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
+                    if (closedEventArgs.Reason != "An exception has occurred while attempting to connect.") // We handle connection issue notifications outside of here, don't print while reconnecting
+                    {
+                        _messageQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
+                    }
+                    int successiveFailures;
+                    string username;
+                    string password;
+                    lock (LockForClass) // Don't block lock on reconnect
+                    {
+                        successiveFailures = ++successiveConnectFailures;
+                        username = _lastUsedUsername;
+                        password = _lastUsedPassword;
+                    }
+                    if (successiveFailures < 5)
+                    {
+                        _messageQueue.Enqueue($"Attempting to reconnect from server (#" + successiveFailures + ")");
+                        _connectInternal(username, password, false);
+                    }
                 }
                 else
                 {
@@ -139,17 +166,17 @@ namespace ArchipelagoProxy
             {
                 PrintMessage(nextMessage);
             }
+            if (DebugMessage != null) // Not required to run
+            {
+                while (_debugQueue.TryDequeue(out string nextMessage))
+                {
+                    DebugMessage(nextMessage);
+                }
+            }
             lock (LockForClass)
             {
                 if (IsSuccessfullyConnected()) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
                 {
-                    if (DebugMessage != null) // Not required to run
-                    {
-                        while (_debugQueue.TryDequeue(out string nextMessage))
-                        {
-                            DebugMessage(nextMessage);
-                        }
-                    }
                     if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
                     {
                         while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
@@ -219,16 +246,16 @@ namespace ArchipelagoProxy
 
             if (completed && IsSuccessfullyConnected())
             {
-                _session.Socket.SendPacket(new StatusUpdatePacket()
+                _session.Socket.SendPacketAsync(new StatusUpdatePacket()
                 {
                     Status = ArchipelagoClientState.ClientGoal
-                });
+                }, _generateErrorCheckCallback("Error setting game as completed. Try disconnecting+reconnecting."));
             }
         }
 
         public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
         {
-            _session.Locations.CompleteLocationChecks(locationIds);
+            _session.Locations.CompleteLocationChecksAsync(_generateErrorCheckCallback("Error completing location checks: " + string.Join(",", locationIds)), locationIds);
         }
 
         public int[] GetAllLocationIdsUnlockedForCurrentWorld()
@@ -247,14 +274,14 @@ namespace ArchipelagoProxy
 
             if (IsSuccessfullyConnected())
             {
-                _session.Socket.SendPacket(new StatusUpdatePacket()
+                _session.Socket.SendPacketAsync(new StatusUpdatePacket()
                 {
                     Status = isInWorld
                         ? gameCompleted
                             ? ArchipelagoClientState.ClientGoal
                             : ArchipelagoClientState.ClientPlaying
                         : ArchipelagoClientState.ClientReady
-                });
+                }, _generateErrorCheckCallback("Error setting ClientState"));
             }
         }
 
@@ -262,10 +289,10 @@ namespace ArchipelagoProxy
         {
             if (IsSuccessfullyConnected())
             {
-                _session.Socket.SendPacket(new SayPacket()
+                _session.Socket.SendPacketAsync(new SayPacket()
                 {
                     Text = message
-                });
+                }, _generateErrorCheckCallback("Error sending chat message: " + message));
             }
         }
 
@@ -279,20 +306,12 @@ namespace ArchipelagoProxy
             {
                 throw new InvalidOperationException($"Not all Proxy -> Raft events are set up. Set those up before connecting. ({string.Join(",", invalidMethodNames)})");
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 2), password: password);
-            if (loginResult.Successful)
+
+            lock (LockForClass)
             {
-                _messageQueue.Enqueue("Successfully connected to Archipelago");
+                successiveConnectFailures = 10000; // Do not attempt to reconnect if this fails (using int.MaxValue can wrap around to negatives, easier to stay far away from that)
             }
-            else
-            {
-                _messageQueue.Enqueue("Failed to connect to Archipelago");
-                try
-                {
-                    _session.Socket.Disconnect();
-                }
-                catch (Exception) { }
-            }
+            _connectInternal(username, password, true);
         }
 
         public int GetLocationIdFromName(string locationName)
@@ -315,10 +334,47 @@ namespace ArchipelagoProxy
             try
             {
                 _session.Socket.Disconnect();
+                _messageQueue.Enqueue("Disconnected from server.");
             }
             catch (Exception)
             {
+                _messageQueue.Enqueue("Error occurred while disconnecting from server. You may have already been disconnected.");
             }
+        }
+
+        private void _connectInternal(string username, string password, bool disconnectOnFailure)
+        {
+            lock (LockForClass)
+            {
+                _lastUsedUsername = username;
+                _lastUsedPassword = password;
+            }
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 2), password: password);
+            if (loginResult.Successful)
+            {
+                _messageQueue.Enqueue("Successfully connected to Archipelago");
+            }
+            else if (disconnectOnFailure)
+            {
+                _messageQueue.Enqueue("Failed to connect to Archipelago");
+                try
+                {
+                    _session.Socket.Disconnect();
+                }
+                catch (Exception) { }
+            }
+            // else ignore
+        }
+
+        private Action<bool> _generateErrorCheckCallback(string onFailureMessage)
+        {
+            return (wasSuccessful) =>
+            {
+                if (!wasSuccessful)
+                {
+                    _messageQueue.Enqueue(onFailureMessage);
+                }
+            };
         }
 
         private void _addNameIfInvalid(object action, string name, List<string> addTo)

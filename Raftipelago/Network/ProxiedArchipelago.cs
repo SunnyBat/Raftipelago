@@ -54,7 +54,7 @@ namespace Raftipelago.Network
 
         public void onUnload()
         {
-            AppDomain.Unload(_appDomain);
+            _unloadAppDomain();
         }
 
         public void Connect(string URL, string username, string password)
@@ -231,12 +231,9 @@ namespace Raftipelago.Network
                 try
                 {
                     _disconnectMethodInfo.Invoke(_proxyServer, new object[] { });
-                    _proxyServer = null; // Reset since we will make a new one to reconnect
                 }
                 catch (Exception e)
                 {
-                    // At this point all we can do is clean up and try again later
-                    _proxyServer = null;
                     Debug.LogError(e);
                 }
             }
@@ -281,6 +278,15 @@ namespace Raftipelago.Network
             if (isReload && hasLoadedRaftWorldBefore) // Don't requeue if never loaded world before -- we'll just duplicate for no reason
             {
                 _requeueAllItemsMethodInfo.Invoke(_proxyServer, null);
+            }
+        }
+
+        private void _unloadAppDomain()
+        {
+            if (_appDomain != null)
+            {
+                AppDomain.Unload(_appDomain);
+                _appDomain = null;
             }
         }
 
