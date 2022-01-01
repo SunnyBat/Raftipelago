@@ -10,28 +10,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ArchipelagoProxy
 {
     public class ArchipelagoProxy : MarshalByRefObject
     {
+        private const int TIME_BETWEEN_UPDATES_MS = 100;
+        private const int TIME_BETWEEN_RECONNECTS = 2500;
+        private const int MAX_RECONNECT_ATTEMPTS = 5;
+
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
-        // Events TO Raft
+        private readonly ArchipelagoSession _session;
+        private readonly Thread _commsThread;
+
+        // Lock for all non-thread-safe objects
+        // We use a private object so we don't have to worry about other threads locking this ArchipelagoProxy instance object
+        private readonly object LockForClass = new object();
+
+        // === Server -> Client Events ===
+
         /// <summary>
-        /// Called when successfully connected to server
+        /// Called when successfully connected to server. Must only be called from main Unity thread.
         /// </summary>
         private event Action ConnectedToServer;
         /// <summary>
-        /// Called when a new Raft item is unlocked for the current world.
+        /// Called when a new Raft item is unlocked for the current world. Must only be called from main Unity thread.
         /// </summary>
         private event Action<int, int, int> RaftItemUnlockedForCurrentWorld;
         /// <summary>
-        /// Called when a message is received. This can be a chat message, an item received message, etc
+        /// Called when a message is received. This can be a chat message, an item received message, etc. Must only be called from main Unity thread.
         /// </summary>
         private event Action<string> PrintMessage;
         /// <summary>
-        /// Called for debug events. Not for general user consumption.
+        /// Called for debug events. Not for general user consumption. Must only be called from main Unity thread.
         /// </summary>
         private event Action<string> DebugMessage;
 
@@ -39,25 +52,36 @@ namespace ArchipelagoProxy
         // Events should be run on the main Unity thread. Thus, we queue up a heartbeat that runs on the
         // main Unity thread that will dequeue these objects and trigger the appropriate events. Because
         // of this, these queues need to be thread-safe.
-        private ConcurrentQueue<int> _locationUnlockQueue = new ConcurrentQueue<int>();
         private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
         private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
         private ConcurrentQueue<string> _debugQueue = new ConcurrentQueue<string>();
 
-        // Lock for all non-thread-safe objects
-        private readonly object LockForClass = new object();
+        private bool _triggeredConnectedAction = false;
 
-        // Everything here should be gated behind the LockForClass, and should never spin on it
-        private readonly ArchipelagoSession _session;
+        // === Client -> Server Events ===
+        // We use these so the main Unity thread doesn't block while we're sending packets.
+        // Instead, we queue up everything we need, then flush them every so often on
+        // a separate thread.
+        private ConcurrentQueue<int> _locationUnlockQueue = new ConcurrentQueue<int>();
+        private ConcurrentQueue<string> _chatQueue = new ConcurrentQueue<string>();
+
+        private bool _isGameCompleted = false; // Edge case of not connected, complete game, connect
+        /// <summary>
+        /// If this is not the same as isRaftWorldLoaded, we must resend the state.
+        /// </summary>
+        private ArchipelagoClientState _lastSentRaftWorldState = ArchipelagoClientState.ClientUnknown;
+
+        // === Server <-> Proxy <-> Client ===
 
         // Tracking between Archipelago Server <-> Proxy <-> Raft
-        private bool isRaftWorldLoaded = false;
-        private bool isSuccessfullyConnected = false;
-        private bool isGameCompleted = false; // Edge case of not connected, complete game, connect
-        private bool triggeredConnectedAction = false;
-        private int successiveConnectFailures = 0;
+        // Everything here should be gated behind the LockForClass, and should never spin on it
+        private bool _isRaftWorldLoaded = false;
+        private bool _isSuccessfullyConnected = false;
+        private int _successiveConnectFailures = MAX_RECONNECT_ATTEMPTS;
         private string _lastUsedUsername;
         private string _lastUsedPassword;
+        private bool _isUserIssuedConnect = false;
+        private bool _shouldDisconnect = false;
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -100,15 +124,15 @@ namespace ArchipelagoProxy
             {
                 lock (LockForClass)
                 {
-                    successiveConnectFailures = 0;
+                    _successiveConnectFailures = 0;
                 }
             };
             _session.Socket.SocketClosed += closedEventArgs =>
             {
                 lock (LockForClass)
                 {
-                    isSuccessfullyConnected = false;
-                    triggeredConnectedAction = false;
+                    _isSuccessfullyConnected = false;
+                    _triggeredConnectedAction = false;
                 }
                 if (!closedEventArgs.WasClean) // We assume that this will not happen because of incorrect login info
                 {
@@ -116,33 +140,21 @@ namespace ArchipelagoProxy
                     {
                         _messageQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
                     }
-                    int successiveFailures;
-                    string username;
-                    string password;
-                    lock (LockForClass) // Don't block lock on reconnect
-                    {
-                        successiveFailures = ++successiveConnectFailures;
-                        username = _lastUsedUsername;
-                        password = _lastUsedPassword;
-                    }
-                    if (successiveFailures < 5)
-                    {
-                        _messageQueue.Enqueue($"Attempting to reconnect from server (#" + successiveFailures + ")");
-                        _connectInternal(username, password, false);
-                    }
                 }
                 else
                 {
                     _debugQueue.Enqueue($"Disconnected from server.");
                 }
             };
+            _commsThread = new Thread(new ThreadStart(_runCommsThread));
+            _commsThread.Start();
         }
 
         public bool IsSuccessfullyConnected()
         {
             lock (LockForClass)
             {
-                return isSuccessfullyConnected;
+                return _isSuccessfullyConnected;
             }
         }
 
@@ -150,7 +162,7 @@ namespace ArchipelagoProxy
         {
             lock(LockForClass)
             {
-                if (isSuccessfullyConnected)
+                if (_isSuccessfullyConnected)
                 {
                     foreach (var item in _session.Items.AllItemsReceived)
                     {
@@ -177,16 +189,16 @@ namespace ArchipelagoProxy
             {
                 if (IsSuccessfullyConnected()) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
                 {
-                    if (isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                    if (_isRaftWorldLoaded) // Only run these once we've successfully loaded a world
                     {
                         while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                         {
                             RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player);
                         }
                     }
-                    if (!triggeredConnectedAction)
+                    if (!_triggeredConnectedAction)
                     {
-                        triggeredConnectedAction = true; // Set first in case ConnectedToServer() blows up
+                        _triggeredConnectedAction = true; // Set first in case ConnectedToServer() blows up
                         ConnectedToServer();
                     }
                 }
@@ -241,21 +253,17 @@ namespace ArchipelagoProxy
         {
             lock (LockForClass)
             {
-                isGameCompleted = completed;
-            }
-
-            if (completed && IsSuccessfullyConnected())
-            {
-                _session.Socket.SendPacketAsync(new StatusUpdatePacket()
-                {
-                    Status = ArchipelagoClientState.ClientGoal
-                }, _generateErrorCheckCallback("Error setting game as completed. Try disconnecting+reconnecting."));
+                _isGameCompleted = completed;
+                _lastSentRaftWorldState = ArchipelagoClientState.ClientUnknown; // Force resend of world state
             }
         }
 
         public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
         {
-            _session.Locations.CompleteLocationChecksAsync(_generateErrorCheckCallback("Error completing location checks: " + string.Join(",", locationIds)), locationIds);
+            foreach (var locId in locationIds)
+            {
+                _locationUnlockQueue.Enqueue(locId);
+            }
         }
 
         public int[] GetAllLocationIdsUnlockedForCurrentWorld()
@@ -268,32 +276,14 @@ namespace ArchipelagoProxy
             bool gameCompleted;
             lock (LockForClass)
             {
-                isRaftWorldLoaded = isInWorld;
-                gameCompleted = isGameCompleted;
-            }
-
-            if (IsSuccessfullyConnected())
-            {
-                _session.Socket.SendPacketAsync(new StatusUpdatePacket()
-                {
-                    Status = isInWorld
-                        ? gameCompleted
-                            ? ArchipelagoClientState.ClientGoal
-                            : ArchipelagoClientState.ClientPlaying
-                        : ArchipelagoClientState.ClientReady
-                }, _generateErrorCheckCallback("Error setting ClientState"));
+                _isRaftWorldLoaded = isInWorld;
+                gameCompleted = _isGameCompleted;
             }
         }
 
         public void SendChatMessage(string message)
         {
-            if (IsSuccessfullyConnected())
-            {
-                _session.Socket.SendPacketAsync(new SayPacket()
-                {
-                    Text = message
-                }, _generateErrorCheckCallback("Error sending chat message: " + message));
-            }
+            _chatQueue.Enqueue(message);
         }
 
         public void Connect(string username, string password)
@@ -309,9 +299,11 @@ namespace ArchipelagoProxy
 
             lock (LockForClass)
             {
-                successiveConnectFailures = 10000; // Do not attempt to reconnect if this fails (using int.MaxValue can wrap around to negatives, easier to stay far away from that)
+                _lastUsedUsername = username;
+                _lastUsedPassword = password;
+                _isUserIssuedConnect = true;
+                _successiveConnectFailures = MAX_RECONNECT_ATTEMPTS - 1; // Do not attempt to reconnect if this fails
             }
-            _connectInternal(username, password, true);
         }
 
         public int GetLocationIdFromName(string locationName)
@@ -333,8 +325,11 @@ namespace ArchipelagoProxy
         {
             try
             {
-                _session.Socket.Disconnect();
-                _messageQueue.Enqueue("Disconnected from server.");
+                lock (LockForClass)
+                {
+                    _successiveConnectFailures = MAX_RECONNECT_ATTEMPTS; // Do not attempt to reconnect
+                    _shouldDisconnect = true;
+                }
             }
             catch (Exception)
             {
@@ -342,7 +337,136 @@ namespace ArchipelagoProxy
             }
         }
 
-        private void _connectInternal(string username, string password, bool disconnectOnFailure)
+        private void _runCommsThread()
+        {
+            for (;;)
+            {
+                var startTime = DateTime.Now;
+                try
+                {
+                    if (_comms_connect())
+                    {
+                        _comms_updateRaftWorldState();
+                        _comms_sendLocations();
+                        _comms_sendChat();
+                    }
+                }
+                catch (Exception e)
+                {
+                    _debugQueue.Enqueue(e.ToString());
+                }
+
+                _sleepForMillis(startTime, TIME_BETWEEN_UPDATES_MS);
+            }
+        }
+
+        private bool _comms_connect()
+        {
+            int successiveFailures;
+            string username;
+            string password;
+            bool isUserIssued;
+            bool shouldDisconnect;
+            lock (LockForClass) // Don't block lock on reconnect
+            {
+                successiveFailures = ++_successiveConnectFailures;
+                username = _lastUsedUsername;
+                password = _lastUsedPassword;
+                isUserIssued = _isUserIssuedConnect;
+                shouldDisconnect = _shouldDisconnect;
+            }
+
+            bool isConnected = _session.Socket.Connected;
+            if (isConnected && shouldDisconnect)
+            {
+                _session.Socket.Disconnect();
+                _messageQueue.Enqueue("Disconnected from server.");
+                return false;
+            }
+            else if (!isConnected)
+            {
+                while (!isConnected && successiveFailures <= MAX_RECONNECT_ATTEMPTS)
+                {
+                    var startTime = DateTime.Now;
+                    if (!isUserIssued)
+                    {
+                        _messageQueue.Enqueue($"Attempting to reconnect from server (#" + successiveFailures + ")");
+                    }
+                    isConnected = _connectInternal(username, password, isUserIssued);
+                    lock (LockForClass)
+                    {
+                        if (isConnected)
+                        {
+                            _successiveConnectFailures = 0; // Auto-attempt to reconnect when disconnected
+                        }
+                        else
+                        {
+                            successiveFailures = ++_successiveConnectFailures;
+                        }
+                    }
+                    if (!isConnected)
+                    {
+                        _sleepForMillis(startTime, TIME_BETWEEN_RECONNECTS);
+                    }
+                }
+                lock (LockForClass)
+                {
+                    _isUserIssuedConnect = false;
+                }
+            }
+            return isConnected;
+        }
+
+        private void _comms_updateRaftWorldState()
+        {
+            ArchipelagoClientState lastSentState;
+            bool worldLoaded;
+            bool goalCompleted;
+            lock (LockForClass)
+            {
+                lastSentState = _lastSentRaftWorldState;
+                worldLoaded = _isRaftWorldLoaded;
+                goalCompleted = _isGameCompleted;
+            }
+            var currentState = worldLoaded
+                ? goalCompleted
+                    ? ArchipelagoClientState.ClientGoal
+                    : ArchipelagoClientState.ClientPlaying
+                : ArchipelagoClientState.ClientReady;
+            if (currentState != lastSentState)
+            {
+                _session.Socket.SendPacket(new StatusUpdatePacket()
+                {
+                    Status = currentState
+                });
+            }
+        }
+
+        private void _comms_sendLocations()
+        {
+            List<int> allLocations = new List<int>();
+            while (_locationUnlockQueue.TryDequeue(out int nextLocation))
+            {
+                allLocations.Add(nextLocation);
+            }
+            if (allLocations.Count > 0)
+            {
+                _session.Locations.CompleteLocationChecks(allLocations.ToArray());
+            }
+        }
+
+        private void _comms_sendChat()
+        {
+            while (_chatQueue.TryDequeue(out string nextMessage))
+            {
+                _session.Socket.SendPacket(new SayPacket()
+                {
+                    Text = nextMessage
+                });
+            }
+        }
+
+        private bool _connectInternal(string username, string password, bool disconnectOnFailure)
         {
             lock (LockForClass)
             {
@@ -353,6 +477,7 @@ namespace ArchipelagoProxy
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
+                return true;
             }
             else if (disconnectOnFailure)
             {
@@ -364,17 +489,15 @@ namespace ArchipelagoProxy
                 catch (Exception) { }
             }
             // else ignore
+
+            return false;
         }
 
-        private Action<bool> _generateErrorCheckCallback(string onFailureMessage)
+        private void _sleepForMillis(DateTime startTime, int durationInMillis)
         {
-            return (wasSuccessful) =>
-            {
-                if (!wasSuccessful)
-                {
-                    _messageQueue.Enqueue(onFailureMessage);
-                }
-            };
+            var timeTakenToRun = (int)(DateTime.Now - startTime).TotalMilliseconds;
+            var timeToSleep = Math.Max(0, durationInMillis - timeTakenToRun);
+            Thread.Sleep(timeToSleep);
         }
 
         private void _addNameIfInvalid(object action, string name, List<string> addTo)
@@ -407,17 +530,8 @@ namespace ArchipelagoProxy
                 case ArchipelagoPacketType.Connected:
                     lock (LockForClass)
                     {
-                        isSuccessfullyConnected = true;
-                        SetIsPlayerInWorld(isRaftWorldLoaded, true); // Call so we trigger all required processes
-                    }
-                    List<int> allLocations = new List<int>();
-                    while (_locationUnlockQueue.TryDequeue(out int nextLocation))
-                    {
-                        allLocations.Add(nextLocation);
-                    }
-                    if (allLocations.Count > 0)
-                    {
-                        LocationFromCurrentWorldUnlocked(allLocations.ToArray());
+                        _isSuccessfullyConnected = true;
+                        SetIsPlayerInWorld(_isRaftWorldLoaded, true); // Call so we trigger all required processes
                     }
                     break;
                 case ArchipelagoPacketType.ConnectionRefused:
