@@ -82,6 +82,7 @@ namespace ArchipelagoProxy
         private string _lastUsedPassword;
         private bool _isUserIssuedConnect = false;
         private bool _shouldDisconnect = false;
+        private bool _shouldKeepRunning = true;
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -155,6 +156,14 @@ namespace ArchipelagoProxy
             lock (LockForClass)
             {
                 return _isSuccessfullyConnected;
+            }
+        }
+
+        public void IrreversablyDestroy()
+        {
+            lock (LockForClass)
+            {
+                _shouldKeepRunning = false;
             }
         }
 
@@ -348,7 +357,12 @@ namespace ArchipelagoProxy
 
         private void _runCommsThread()
         {
-            for (;;)
+            bool shouldKeepRunning;
+            lock (LockForClass)
+            {
+                shouldKeepRunning = _shouldKeepRunning;
+            }
+            while (shouldKeepRunning)
             {
                 var startTime = DateTime.Now;
                 try
@@ -366,6 +380,10 @@ namespace ArchipelagoProxy
                 }
 
                 _sleepForMillis(startTime, TIME_BETWEEN_UPDATES_MS);
+                lock (LockForClass)
+                {
+                    shouldKeepRunning = _shouldKeepRunning;
+                }
             }
         }
 

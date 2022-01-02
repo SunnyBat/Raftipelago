@@ -24,6 +24,7 @@ namespace Raftipelago.Network
         private object _proxyServer;
 
         private MethodInfo _isSuccessfullyConnectedMethodInfo;
+        private MethodInfo _irreversablyDestroyMethodInfo;
         private MethodInfo _setIsPlayerInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
@@ -275,9 +276,13 @@ namespace Raftipelago.Network
             {
                 _progressiveLevels[progressiveName] = -1; // None unlocked = -1
             }
-            if (isReload && hasLoadedRaftWorldBefore) // Don't requeue if never loaded world before -- we'll just duplicate for no reason
+            if (isReload && hasLoadedRaftWorldBefore && _proxyServer != null) // Don't requeue if never loaded world before -- we'll just duplicate for no reason
             {
                 _requeueAllItemsMethodInfo.Invoke(_proxyServer, null);
+            }
+            else if (!isReload && _proxyServer != null)
+            {
+                _irreversablyDestroyMethodInfo.Invoke(_proxyServer, null);
             }
         }
 
@@ -295,6 +300,7 @@ namespace Raftipelago.Network
             // Events for data that we send to proxy
             // If a method is overloaded, it needs specific types. Otherwise, no typing is needed.
             _isSuccessfullyConnectedMethodInfo = proxyServerRef.GetMethod("IsSuccessfullyConnected");
+            _irreversablyDestroyMethodInfo = proxyServerRef.GetMethod("IrreversablyDestroy");
             _setIsPlayerInWorldMethodInfo = proxyServerRef.GetMethod("SetIsPlayerInWorld");
             _sendChatMessageMethodInfo = proxyServerRef.GetMethod("SendChatMessage");
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
