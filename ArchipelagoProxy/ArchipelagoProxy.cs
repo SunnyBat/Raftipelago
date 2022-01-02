@@ -185,22 +185,31 @@ namespace ArchipelagoProxy
                     DebugMessage(nextMessage);
                 }
             }
+            bool successfullyConnected;
+            bool isWorldLoaded;
+            bool triggeredConnectedAction;
             lock (LockForClass)
             {
-                if (IsSuccessfullyConnected()) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
+                successfullyConnected = IsSuccessfullyConnected(); // Call in lock to prevent releasing then immediately reclaiming lock
+                isWorldLoaded = _isRaftWorldLoaded;
+                triggeredConnectedAction = _triggeredConnectedAction;
+            }
+            if (successfullyConnected) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
+            {
+                if (isWorldLoaded) // Only run these once we've successfully loaded a world
                 {
-                    if (_isRaftWorldLoaded) // Only run these once we've successfully loaded a world
+                    while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                     {
-                        while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
-                        {
-                            RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player);
-                        }
+                        RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player);
                     }
-                    if (!_triggeredConnectedAction)
+                }
+                if (!triggeredConnectedAction)
+                {
+                    lock (LockForClass)
                     {
                         _triggeredConnectedAction = true; // Set first in case ConnectedToServer() blows up
-                        ConnectedToServer();
                     }
+                    ConnectedToServer();
                 }
             }
         }
