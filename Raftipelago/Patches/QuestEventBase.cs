@@ -40,8 +40,11 @@ namespace Raftipelago.Patches
 
 				// Trigger notification and Archipelago location check instead
 				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
+				if (Semih_Network.IsHost)
+				{
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				}
 				var localSteamId = ((Semih_Network)typeof(QuestEventBase).GetProperty("Network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance)).LocalSteamID;
-				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, localSteamId, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				return false;

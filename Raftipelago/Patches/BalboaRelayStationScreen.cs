@@ -36,7 +36,10 @@ namespace Raftipelago.Patches
 				{
 					___stationsActivatedText.text = "Location sent";
 					var locationName = "Relay Station quest";
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
+					if (Semih_Network.IsHost)
+					{
+						ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
+					}
 					var fakeSteamID = RAPI.GetLocalPlayer().steamID;
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 						.researchInfoQue.Enqueue(new Notification_Research_Info(locationName, fakeSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));

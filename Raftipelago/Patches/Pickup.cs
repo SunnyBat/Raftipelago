@@ -18,6 +18,7 @@ namespace Raftipelago.Patches
 				___playerAnimator.SetAnimation(PlayerAnimation.Trigger_GrabItem, false);
 			}
 			___soundManager.PlayUI_MoveItem();
+			// RemovePickupItem*() will queue notification as necessary
 			if (note.networkID != null)
 			{
 				if (note.networkID.stopTrackUseRPC)
@@ -29,17 +30,18 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
-			if (noteName == "Tangaroa Next Frequency") // Special condition for victory
-            {
-				ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
-            }
-			else
+			if (Semih_Network.IsHost)
 			{
-				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
+				var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
+				if (noteName == "Tangaroa Next Frequency") // Special condition for victory
+				{
+					ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
+				}
+				else
+				{
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
+				}
 			}
-			(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-				.researchInfoQue.Enqueue(new Notification_Research_Info(noteName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 			return false;
 		}
 	}
@@ -52,7 +54,6 @@ namespace Raftipelago.Patches
 			Network_Player ___playerNetwork)
 		{
 			string pickupName = null;
-			var needsPassthrough = true;
 			if (pickup.PickupName?.StartsWith("Blueprint") ?? false)
 			{
 				pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, pickup.PickupName);
@@ -64,22 +65,28 @@ namespace Raftipelago.Patches
 			if (!string.IsNullOrWhiteSpace(pickupName))
 			{
 				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
-				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ___playerNetwork.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-				needsPassthrough = false;
-			}
-			if (!needsPassthrough)
-			{
+				// RemovePickupItem*() will queue notification as necessary
 				if (pickup.networkID != null)
 				{
-					PickupObjectManager.RemovePickupItem(pickup.networkID);
+					if (pickup.networkID.stopTrackUseRPC)
+					{
+						PickupObjectManager.RemovePickupItemNetwork(pickup.networkID, ___playerNetwork.steamID);
+					}
+					else
+					{
+						PickupObjectManager.RemovePickupItem(pickup.networkID, ___playerNetwork.steamID);
+					}
 				}
 				else
 				{
-					PoolManager.ReturnObject(pickup.gameObject);
+					PoolManager.ReturnObject(pickup.gameObject); // Assuming that this doesn't need any notification
 				}
+				return false;
 			}
-			return needsPassthrough;
+			else
+            {
+				return true;
+            }
 		}
 	}
 }
