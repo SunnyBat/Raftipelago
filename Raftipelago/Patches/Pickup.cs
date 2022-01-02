@@ -30,7 +30,7 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			if (Semih_Network.IsHost)
+			if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
 			{
 				var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
 				if (noteName == "Tangaroa Next Frequency") // Special condition for victory

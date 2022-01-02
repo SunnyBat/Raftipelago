@@ -4,7 +4,7 @@ using Steamworks;
 
 namespace Raftipelago.Patches
 {
-	[HarmonyPatch(typeof(Pickup), "RemovePickupItem", typeof(PickupItem_Networked), typeof(CSteamID))]
+	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked), typeof(CSteamID))]
 	public class HarmonyPatch_PickupObjectManager_RemovePickupItem
 	{
 		[HarmonyPrefix]

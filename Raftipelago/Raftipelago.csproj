@@ -37,12 +37,16 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Behaviors\ArchipelagoDataSync.cs" />
+    <Compile Include="Behaviors\LocationSync.cs" />
     <Compile Include="CommonUtils.cs" />
+    <Compile Include="Data\ArchipelagoDataManager.cs" />
     <Compile Include="Data\AssemblyManager.cs" />
     <Compile Include="Data\EmbeddedFileUtils.cs" />
     <Compile Include="Data\ExternalData.cs" />
     <Compile Include="Data\SpriteManager.cs" />
     <Compile Include="DataGenerator.cs" />
+    <Compile Include="ItemTracker.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\ChatManager.cs" />

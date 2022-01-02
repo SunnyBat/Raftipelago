@@ -26,10 +26,6 @@ namespace Raftipelago.Network
 
         void ToggleDebug();
 
-        void SetAlreadyReceivedItemIds(List<int> resourcePackIds);
-
-        List<int> GetAllReceivedItemIds();
-
         void SetGameCompleted(bool completed);
 
         void Disconnect();
@@ -37,5 +33,9 @@ namespace Raftipelago.Network
         void Heartbeat();
 
         void onUnload();
+
+        Dictionary<int, string> GetAllPlayerIds();
+
+        Dictionary<int, string> GetAllItemIds();
     }
 }

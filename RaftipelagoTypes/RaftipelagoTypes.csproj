@@ -46,6 +46,9 @@
   <ItemGroup>
     <Compile Include="Delegates.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RaftipelagoPacket.cs" />
+    <Compile Include="RaftipelagoPacket_SyncArchipelagoData.cs" />
+    <Compile Include="RaftipelagoPacket_SyncItems.cs" />
     <Compile Include="RGD_Game_Raftipelago.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
