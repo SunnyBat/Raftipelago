@@ -38,6 +38,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Network\Behaviors\ArchipelagoDataSync.cs" />
+    <Compile Include="Network\Behaviors\BehaviourHelper.cs" />
     <Compile Include="Network\Behaviors\ItemSync.cs" />
     <Compile Include="Network\Behaviors\ResendDataBehaviour.cs" />
     <Compile Include="CommonUtils.cs" />

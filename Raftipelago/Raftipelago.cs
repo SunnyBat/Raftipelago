@@ -115,7 +115,7 @@ public class RaftipelagoThree : Mod
 
     public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
     {
-        if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() && Semih_Network.IsHost)
+        if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() && Semih_Network.IsHost && steamid.m_SteamID != RAPI.GetLocalPlayer().steamID.m_SteamID)
         {
             var syncPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData")
                 .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ArchipelagoDataSync>.Value });
