@@ -19,6 +19,7 @@ namespace RaftipelagoTypes
     {
         public RaftipelagoPacket_SyncItems(Messages type, MonoBehaviour_Network behaviour) : base(type, behaviour)
         {
+            this.RaftipelagoMessage = RaftipelagoMessage.SyncItems;
         }
 
         public SyncItemsData[] Items { get; set; }

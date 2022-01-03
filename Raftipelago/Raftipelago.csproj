@@ -38,7 +38,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Behaviors\ArchipelagoDataSync.cs" />
-    <Compile Include="Behaviors\LocationSync.cs" />
+    <Compile Include="Behaviors\ItemSync.cs" />
+    <Compile Include="Behaviors\ResendDataBehaviour.cs" />
     <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\ArchipelagoDataManager.cs" />
     <Compile Include="Data\AssemblyManager.cs" />
@@ -53,6 +54,7 @@
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
+    <Compile Include="Patches\NetworkUpdateManager.cs" />
     <Compile Include="Patches\Pickup.cs" />
     <Compile Include="Patches\PickupObjectManager.cs" />
     <Compile Include="Patches\Pickup_Specific_Blueprint.cs" />

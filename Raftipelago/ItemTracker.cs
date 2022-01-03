@@ -47,7 +47,9 @@ namespace Raftipelago
 
         public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
         {
+            Debug.Log("RIUFCW");
             var sentItemName = ComponentManager<IArchipelagoLink>.Value.GetItemNameFromId(itemId);
+            Debug.Log("RIUFCW2: " + sentItemName);
             if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
                 && !_unlockProgressive(itemId, sentItemName, player)
                 && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
@@ -57,7 +59,7 @@ namespace Raftipelago
             if (Semih_Network.IsHost)
             {
                 var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
-                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<LocationSync>.Value });
+                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSync>.Value });
                 var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
                 var arr = Array.CreateInstance(sid, 1);
                 var itmSend = sid.GetConstructor(new Type[] { }).Invoke(null);
@@ -150,7 +152,7 @@ namespace Raftipelago
             if (foundItem != null)
             {
                 foundItem.settings_recipe.Learned = true;
-                if (_alreadyReceivedItemIds.AddUniqueOnly(itemId)) // We don't want to check with locationId, since we don't want to alert on the same item multiple times
+                if (_alreadyReceivedItemIds.AddUniqueOnly(calculateUniqueIdentifier(itemId, 0))) // We don't want to check with locationId, since we don't want to alert on the same item multiple times
                 {
                     if (showNotification)
                     {
@@ -234,7 +236,11 @@ namespace Raftipelago
 
         public Tuple<int, int> ParseUniqueIdentifier(int identifier)
         {
-            return new Tuple<int, int>((identifier >> 16) & 0xFFFF, identifier & 0xFFFF);
+            var baseItemId = (identifier >> 16) & 0xFFFF;
+            baseItemId += 47000;
+            var baseLocationId = identifier & 0xFFFF;
+            baseLocationId += 48000;
+            return new Tuple<int, int>(baseItemId, baseLocationId);
         }
     }
 }

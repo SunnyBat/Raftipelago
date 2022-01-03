@@ -14,10 +14,21 @@ namespace Raftipelago
         private static Type RGD_Game_Raftipelago_Type;
         private static ConstructorInfo RGD_Game_Raftipelago_ConstructorInfo;
         private static FieldInfo unlockedItemsFieldInfo;
+        private static uint ModNetworkBehaviourIndex = uint.MaxValue;
 
-        private const ulong ArchipelagoIdentifierBit = 0x10000;
+        private const ulong ArchipelagoIdentifierBitMask = 0x10000;
         private const ulong ArchipelagoPlayerIdBitsMask = 0xFFFF;
         private const ulong AllArchipelagoBitsMask = 0x1FFFF;
+
+        public static void Reset()
+        {
+            ModNetworkBehaviourIndex = uint.MaxValue;
+        }
+
+        public static uint GetNetworkBehaviourUniqueIndex()
+        {
+            return ModNetworkBehaviourIndex--;
+        }
 
         public static bool IsNote(LandmarkItem item)
         {
@@ -74,7 +85,7 @@ namespace Raftipelago
                 // XOR to check bits 18-64 are 0 so we know this is considered an invalid SteamID
                 (steamId & (long.MaxValue - AllArchipelagoBitsMask)) == 0
                 // AND to make sure our Archipelago identifier bit is 1 (this means we don't trigger off Steam ID 0)
-                && (steamId & ArchipelagoIdentifierBit) == ArchipelagoIdentifierBit)
+                && (steamId & ArchipelagoIdentifierBitMask) == ArchipelagoIdentifierBitMask)
             {
                 // AND to get the slot number
                 playerId = (int)(steamId & ArchipelagoPlayerIdBitsMask);

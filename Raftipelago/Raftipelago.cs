@@ -32,12 +32,10 @@ public class RaftipelagoThree : Mod
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<ItemTracker>.Value = ComponentManager<ItemTracker>.Value ?? new ItemTracker();
         ComponentManager<ArchipelagoDataManager>.Value = ComponentManager<ArchipelagoDataManager>.Value ?? new ArchipelagoDataManager();
-        ComponentManager<ArchipelagoDataSync>.Value = ComponentManager<ArchipelagoDataSync>.Value ?? new ArchipelagoDataSync();
-        ComponentManager<LocationSync>.Value = ComponentManager<LocationSync>.Value ?? new LocationSync();
-        ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemIds(CommonUtils.GetUnlockedItemPacks(SaveAndLoad.WorldToLoad) ?? new List<int>());
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
+        ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         if (isInWorld())
         {
@@ -60,6 +58,9 @@ public class RaftipelagoThree : Mod
                     .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
             }
             CommonUtils.SetUnlockedItemPacks(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
+            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
+            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ItemSync>.Value);
+            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ResendDataBehaviour>.Value);
         }
         ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
@@ -77,6 +78,8 @@ public class RaftipelagoThree : Mod
 
     public override void WorldEvent_WorldUnloaded()
     {
+        // *Sync objects are automatically cleared from NetworkUpdateManager
+        // We can just leave the values hanging in ComponentManager since they'll be overwritten
         ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(false);
         // Reset completion status since it will be updated upon world load
         ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(false);
@@ -86,7 +89,28 @@ public class RaftipelagoThree : Mod
 
     private static void WorldLoaded_ArchipelagoSetup()
     {
-        ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+        // Always add these so they have the same IDs
+        CommonUtils.Reset();
+        var wrapperObject = new GameObject(); // Required to create proper Behaviour objects (they need a parent)
+        ComponentManager<ArchipelagoDataSync>.Value = (ArchipelagoDataSync)wrapperObject.AddComponent(typeof(ArchipelagoDataSync));
+        NetworkUpdateManager.AddBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
+
+        ComponentManager<ItemSync>.Value = (ItemSync)wrapperObject.AddComponent(typeof(ItemSync));
+        NetworkUpdateManager.AddBehaviour(ComponentManager<ItemSync>.Value);
+
+        ComponentManager<ResendDataBehaviour>.Value = (ResendDataBehaviour)wrapperObject.AddComponent(typeof(ResendDataBehaviour));
+        NetworkUpdateManager.AddBehaviour(ComponentManager<ResendDataBehaviour>.Value);
+
+        if (Semih_Network.IsHost)
+        {
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+        }
+        else
+        {
+            var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
+                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
+            ComponentManager<Semih_Network>.Value.RPC((Message)resendPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+        }
     }
 
     public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
@@ -100,7 +124,7 @@ public class RaftipelagoThree : Mod
             ComponentManager<Semih_Network>.Value.RPC((Message)syncPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 
             var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
-                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<LocationSync>.Value });
+                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSync>.Value });
             var allItemUniqueIdentifiers = ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds();//ParseUniqueIdentifier
             var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
             var arr = Array.CreateInstance(sid, allItemUniqueIdentifiers.Count);
@@ -192,6 +216,16 @@ public class RaftipelagoThree : Mod
         while (quotedValue && currentIndex < arguments.Length);
 
         return valueBuilder.ToString();
+    }
+
+    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
+    [ConsoleCommand("/resync", "Resyncs Archipelago data from server host. Generally unnecessary.")]
+    private static void Command_ResyncData(string[] arguments)
+    {
+        var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
+            .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
+        ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData").GetProperty("RaftipelagoMessage").SetValue(resendPacket, 3);
+        ComponentManager<Semih_Network>.Value.RPC((Message)resendPacket, Target.All, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
     }
 
     // TODO Add to in-game chat as well (keep this implementation to be able to choose either)

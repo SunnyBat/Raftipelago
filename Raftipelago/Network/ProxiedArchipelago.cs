@@ -186,6 +186,8 @@ namespace Raftipelago.Network
 
         public string GetItemNameFromId(int itemId)
         {
+            Debug.Log("GINFID: " + itemId);
+            Debug.Log("GINFID: IITN: " + ComponentManager<ArchipelagoDataManager>.Value?.ItemIdToName?.Count);
             if (IsSuccessfullyConnected())
             {
                 try
@@ -199,7 +201,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                if (_proxyServer == null)
+                if (!Semih_Network.IsHost)
                 {
                     return ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName.GetValueOrDefault(itemId, null);
                 }
@@ -256,7 +258,7 @@ namespace Raftipelago.Network
             shouldPrintDebugMessages = !shouldPrintDebugMessages;
         }
 
-        public Dictionary<int, string> GetAllPlayerIds()
+        public Dictionary<int, string> GetAllItemIds()
         {
             var ret = new Dictionary<int, string>();
             for (int i = 47001; i <= 47228; i++) // TODO Not hardcode
@@ -266,7 +268,7 @@ namespace Raftipelago.Network
             return ret;
         }
 
-        public Dictionary<int, string> GetAllItemIds()
+        public Dictionary<int, string> GetAllPlayerIds()
         {
             var ret = new Dictionary<int, string>();
             for (int i = 1; i <= 2; i++) // TODO Not hardcode
@@ -370,33 +372,34 @@ namespace Raftipelago.Network
 
         private void ConnnectedToServer()
         {
-            if (Semih_Network.IsHost)
-            {
-                var syncPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData")
-                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ArchipelagoDataSync>.Value });
-                syncPacket.GetType().GetProperty("PlayerIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllItemIds());
-                syncPacket.GetType().GetProperty("ItemIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds());
-                ComponentManager<Semih_Network>.Value.RPC((Message)syncPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+            // Send this once ready (verify it's still correct)
+            //if (Semih_Network.IsHost)
+            //{
+            //    var syncPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData")
+            //        .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ArchipelagoDataSync>.Value });
+            //    syncPacket.GetType().GetProperty("PlayerIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllItemIds());
+            //    syncPacket.GetType().GetProperty("ItemIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds());
+            //    ComponentManager<Semih_Network>.Value.RPC((Message)syncPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 
-                var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
-                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<LocationSync>.Value });
-                var allItemUniqueIdentifiers = ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds();//ParseUniqueIdentifier
-                var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
-                var arr = Array.CreateInstance(sid, allItemUniqueIdentifiers.Count);
+            //    var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
+            //        .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSync>.Value });
+            //    var allItemUniqueIdentifiers = ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds();//ParseUniqueIdentifier
+            //    var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
+            //    var arr = Array.CreateInstance(sid, allItemUniqueIdentifiers.Count);
 
-                for (int i = 0; i < allItemUniqueIdentifiers.Count; i++)
-                {
-                    var uid = allItemUniqueIdentifiers[i];
-                    var parsed = ComponentManager<ItemTracker>.Value.ParseUniqueIdentifier(uid);
-                    var itmSend = sid.GetConstructor(new Type[] { }).Invoke(null);
-                    itmSend.GetType().GetProperty("ItemId").SetValue(itmSend, parsed.Item1);
-                    itmSend.GetType().GetProperty("LocationId").SetValue(itmSend, parsed.Item1);
-                    // TODO playerid (info unavailable atm)
-                    arr.SetValue(itmSend, i);
-                }
-                itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);
-                ComponentManager<Semih_Network>.Value.RPC((Message)itemPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-            }
+            //    for (int i = 0; i < allItemUniqueIdentifiers.Count; i++)
+            //    {
+            //        var uid = allItemUniqueIdentifiers[i];
+            //        var parsed = ComponentManager<ItemTracker>.Value.ParseUniqueIdentifier(uid);
+            //        var itmSend = sid.GetConstructor(new Type[] { }).Invoke(null);
+            //        itmSend.GetType().GetProperty("ItemId").SetValue(itmSend, parsed.Item1);
+            //        itmSend.GetType().GetProperty("LocationId").SetValue(itmSend, parsed.Item1);
+            //        // TODO playerid (info unavailable atm)
+            //        arr.SetValue(itmSend, i);
+            //    }
+            //    itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);
+            //    ComponentManager<Semih_Network>.Value.RPC((Message)itemPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+            //}
         }
 
         private void PrintMessage(string msg)

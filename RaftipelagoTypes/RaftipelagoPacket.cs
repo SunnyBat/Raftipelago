@@ -10,7 +10,8 @@ namespace RaftipelagoTypes
     public enum RaftipelagoMessage
     {
         SyncItems = 1,
-        SyncAPData = 2
+        SyncAPData = 2,
+        ResendData = 3
     }
 
     [Serializable]
