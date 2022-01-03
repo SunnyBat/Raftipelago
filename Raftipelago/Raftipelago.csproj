@@ -54,7 +54,6 @@
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
-    <Compile Include="Patches\NetworkUpdateManager.cs" />
     <Compile Include="Patches\Pickup.cs" />
     <Compile Include="Patches\PickupObjectManager.cs" />
     <Compile Include="Patches\Pickup_Specific_Blueprint.cs" />

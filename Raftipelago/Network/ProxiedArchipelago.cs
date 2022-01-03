@@ -186,8 +186,6 @@ namespace Raftipelago.Network
 
         public string GetItemNameFromId(int itemId)
         {
-            Debug.Log("GINFID: " + itemId);
-            Debug.Log("GINFID: IITN: " + ComponentManager<ArchipelagoDataManager>.Value?.ItemIdToName?.Count);
             if (IsSuccessfullyConnected())
             {
                 try
@@ -261,20 +259,38 @@ namespace Raftipelago.Network
         public Dictionary<int, string> GetAllItemIds()
         {
             var ret = new Dictionary<int, string>();
-            for (int i = 47001; i <= 47228; i++) // TODO Not hardcode
+            bool wasSuccessful = true;
+            int currentIndex = 47001; // TODO Constant
+            do
             {
-                ret.Add(i, GetItemNameFromId(i));
-            }
+                try
+                {
+                    ret.Add(currentIndex, GetItemNameFromId(currentIndex));
+                }
+                catch (Exception)
+                {
+                    wasSuccessful = false;
+                }
+            } while (wasSuccessful);
             return ret;
         }
 
         public Dictionary<int, string> GetAllPlayerIds()
         {
             var ret = new Dictionary<int, string>();
-            for (int i = 1; i <= 2; i++) // TODO Not hardcode
+            bool wasSuccessful = true;
+            int currentIndex = 1; // 0 = Server
+            do
             {
-                ret.Add(i, GetNameFromPlayerId(i));
-            }
+                try
+                {
+                    ret.Add(currentIndex, GetNameFromPlayerId(currentIndex));
+                }
+                catch (Exception)
+                {
+                    wasSuccessful = false;
+                }
+            } while (wasSuccessful);
             return ret;
         }
 
