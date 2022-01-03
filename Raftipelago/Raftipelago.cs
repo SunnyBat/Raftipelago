@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 
-public class Raftipelago : Mod
+public class RaftipelagoThree : Mod
 {
     private const string EmbeddedFileDirectory = "Data";
     public const string AppDataFolderName = "Raftipelago";

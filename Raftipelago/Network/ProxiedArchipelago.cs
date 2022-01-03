@@ -209,12 +209,23 @@ namespace Raftipelago.Network
 
         public string GetPlayerAlias(int playerId)
         {
-            if (_proxyServer != null)
+            if (IsSuccessfullyConnected())
             {
-                return (string)_getPlayerAliasMethodInfo.Invoke(_proxyServer, new object[] { playerId });
+                try
+                {
+                    return (string)_getPlayerAliasMethodInfo.Invoke(_proxyServer, new object[] { playerId });
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
             }
             else
             {
+                if (!Semih_Network.IsHost)
+                {
+                    return ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName.GetValueOrDefault(playerId, null);
+                }
                 return null;
             }
         }
@@ -240,15 +251,6 @@ namespace Raftipelago.Network
                     Debug.LogError(e);
                 }
             }
-        }
-
-        public string GetNameFromPlayerId(int playerId)
-        {
-            if (_proxyServer == null)
-            {
-                return ComponentManager<ArchipelagoDataManager>.Value.PlayerNameToId.GetValueOrDefault(playerId, "");
-            }
-            return (string) _getPlayerAliasMethodInfo.Invoke(_proxyServer, new object[] { playerId });
         }
 
         public void ToggleDebug()
@@ -284,7 +286,7 @@ namespace Raftipelago.Network
             {
                 try
                 {
-                    ret.Add(currentIndex, GetNameFromPlayerId(currentIndex));
+                    ret.Add(currentIndex, GetPlayerAlias(currentIndex));
                 }
                 catch (Exception)
                 {

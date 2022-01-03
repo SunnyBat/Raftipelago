@@ -40,7 +40,7 @@ namespace Raftipelago.Patches
 
 				// Trigger notification and Archipelago location check instead
 				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
-				if (Semih_Network.IsHost)
+				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 				}

@@ -23,7 +23,7 @@ namespace Raftipelago.Network.Behaviors
                 var playerToName = (Dictionary<int, string>)_rpPacketType.GetProperty("PlayerIdToName").GetValue(msg);
                 var itemToName = (Dictionary<int, string>)_rpPacketType.GetProperty("ItemIdToName").GetValue(msg);
                 ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName = itemToName;
-                ComponentManager<ArchipelagoDataManager>.Value.PlayerNameToId = playerToName;
+                ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName = playerToName;
                 return true;
             }
             return false;

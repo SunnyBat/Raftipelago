@@ -9,6 +9,6 @@ namespace Raftipelago.Data
     public class ArchipelagoDataManager
     {
         public Dictionary<int, string> ItemIdToName { get; set; }
-        public Dictionary<int, string> PlayerNameToId { get; set; }
+        public Dictionary<int, string> PlayerIdToName { get; set; }
     }
 }

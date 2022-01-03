@@ -47,9 +47,7 @@ namespace Raftipelago
 
         public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
         {
-            Debug.Log("RIUFCW");
             var sentItemName = ComponentManager<IArchipelagoLink>.Value.GetItemNameFromId(itemId);
-            Debug.Log("RIUFCW2: " + sentItemName);
             if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
                 && !_unlockProgressive(itemId, sentItemName, player)
                 && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)

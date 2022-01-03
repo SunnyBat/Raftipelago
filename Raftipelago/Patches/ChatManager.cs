@@ -16,7 +16,7 @@ namespace Raftipelago.Patches
 			bool flag2 = __instance.chatFieldController.HandleChatMessageAsTerminalCommando(text, textWriterSteamID);
 			if (!flag && !flag2)
 			{
-				if (Semih_Network.IsHost)
+				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
 				{
 					if (textWriterSteamID.m_SteamID == __instance.network?.LocalSteamID.m_SteamID) // Local player (host) sending a message
 					{

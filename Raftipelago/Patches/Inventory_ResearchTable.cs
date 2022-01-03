@@ -16,7 +16,6 @@ namespace Raftipelago.Patches
 		public static bool AlwaysReplace(Item_Base item, CSteamID researcherID,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
-			ref string ___eventRef_Learn,
 			ref List<ResearchMenuItem> ___menuItems)
 		{
 			for (int i = 0; i < ___menuItems.Count; i++)
@@ -34,7 +33,7 @@ namespace Raftipelago.Patches
 					else
 					{
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-						if (Semih_Network.IsHost)
+						if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
 						{
 							ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.settings_Inventory.DisplayName);
 						}
