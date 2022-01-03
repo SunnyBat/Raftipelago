@@ -399,6 +399,6 @@ call build.bat
 echo 🔰 =============== 🔰 MOD BUILD SCRIPT 🔰 =============== 🔰
 echo ✔️ Mod successfully built as $(SolutionDir)$(ProjectName).rmod ✔️
 echo ===========================================================
-    </PostBuildEvent>
+call "copyRmodToRML.bat" "$(SolutionDir)"</PostBuildEvent>
   </PropertyGroup>
 </Project>
