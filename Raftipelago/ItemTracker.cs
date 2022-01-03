@@ -47,7 +47,7 @@ namespace Raftipelago
 
         public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
         {
-            var sentItemName = ComponentManager<IArchipelagoLink>.Value.GetItemNameFromId(itemId);
+            var sentItemName = ComponentManager<ArchipelagoDataManager>.Value.GetItemName(itemId);
             if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
                 && !_unlockProgressive(itemId, sentItemName, player)
                 && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
@@ -109,7 +109,7 @@ namespace Raftipelago
                         var itemResult = _unlockItem(itemId, item, fromPlayerId, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
-                            Debug.LogError($"Unable to find {item} ({ComponentManager<IArchipelagoLink>.Value.GetPlayerAlias(fromPlayerId)})");
+                            Debug.LogError($"Unable to find {item} ({ComponentManager<ArchipelagoDataManager>.Value.GetPlayerName(fromPlayerId)})");
                         }
                         else if (itemResult == UnlockResult.NewlyUnlocked)
                         {

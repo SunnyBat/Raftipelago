@@ -42,6 +42,7 @@ namespace Raftipelago.Patches
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
 				}
 			}
+			// TODO Confirm that the above will trigger on host
 			return false;
 		}
 	}
@@ -64,7 +65,10 @@ namespace Raftipelago.Patches
 			}
 			if (!string.IsNullOrWhiteSpace(pickupName))
 			{
-				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
+				{
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				}
 				// RemovePickupItem*() will queue notification as necessary
 				if (pickup.networkID != null)
 				{

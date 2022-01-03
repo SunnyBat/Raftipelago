@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using Raftipelago.Network;
 
 namespace Raftipelago.Patches
@@ -13,7 +14,7 @@ namespace Raftipelago.Patches
 			if (parameter == "RemoteSteamID"
 				&& CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(LocalizationParameters.remoteSteamID.m_SteamID, out int playerId))
 			{
-				__result = ComponentManager<IArchipelagoLink>.Value.GetPlayerAlias(playerId);
+				__result = ComponentManager<ArchipelagoDataManager>.Value.GetPlayerName(playerId);
 				if (__result == null && playerId == 0)
                 {
 					__result = "Server";
