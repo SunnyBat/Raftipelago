@@ -8,7 +8,6 @@ namespace RaftipelagoTypes
     {
         public RaftipelagoPacket_SyncArchipelagoData(Messages type, MonoBehaviour_Network behaviour) : base(type, behaviour)
         {
-            this.RaftipelagoMessage = RaftipelagoMessage.SyncAPData;
         }
 
         public Dictionary<int, string> PlayerIdToName { get; set; }

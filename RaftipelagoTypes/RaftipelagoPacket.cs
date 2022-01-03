@@ -7,20 +7,10 @@ using System.Threading.Tasks;
 namespace RaftipelagoTypes
 {
     [Serializable]
-    public enum RaftipelagoMessage
-    {
-        SyncItems = 1,
-        SyncAPData = 2,
-        ResendData = 3
-    }
-
-    [Serializable]
     public class RaftipelagoPacket : Message_NetworkBehaviour
     {
         public RaftipelagoPacket(Messages type, MonoBehaviour_Network behaviour) : base(type, behaviour)
         {
         }
-
-        public RaftipelagoMessage RaftipelagoMessage { get; set; }
     }
 }

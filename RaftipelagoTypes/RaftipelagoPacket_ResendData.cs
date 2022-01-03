@@ -7,7 +7,6 @@ namespace RaftipelagoTypes
     {
         public RaftipelagoPacket_ResendData(Messages type, MonoBehaviour_Network behaviour) : base(type, behaviour)
         {
-            this.RaftipelagoMessage = RaftipelagoMessage.ResendData;
         }
     }
 }
