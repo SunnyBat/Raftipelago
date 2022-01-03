@@ -54,16 +54,7 @@ namespace Raftipelago.Patches
 		public static bool SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
 			Network_Player ___playerNetwork)
 		{
-			string pickupName = null;
-			if (pickup.PickupName?.StartsWith("Blueprint") ?? false)
-			{
-				pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, pickup.PickupName);
-			}
-			else if (pickup.name == "Pickup_Landmark_Caravan_RocketDoll") // Doesn't have PickupName set for some reason
-			{
-				pickupName = "Blueprint: Firework";
-			}
-			if (!string.IsNullOrWhiteSpace(pickupName))
+			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickup.name, out string pickupName))
 			{
 				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
 				{

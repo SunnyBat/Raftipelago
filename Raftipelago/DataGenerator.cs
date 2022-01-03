@@ -121,18 +121,9 @@ namespace Raftipelago
                     foreach (var landmarkItem in landmark.landmarkItems)
                     {
                         string locName;
-                        if (CommonUtils.IsBlueprint(landmarkItem))
+                        if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                         {
-                            locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings,
-                                landmarkItem.connectedBehaviourID.GetComponent<PickupItem>().PickupName);
-                        }
-                        else if (CommonUtils.IsNote(landmarkItem) || ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name))
-                        {
-                            locName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, landmarkItem.name);
-                        }
-                        else if (landmarkItem.name == "Pickup_Landmark_Caravan_RocketDoll") // Edge cases let's gooooo
-                        {
-                            locName = "Blueprint: Firework";
+                            locName = friendlyName;
                         }
                         else
                         {
