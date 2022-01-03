@@ -1,4 +1,4 @@
-﻿using Raftipelago.Behaviors;
+﻿using Raftipelago.Network.Behaviors;
 using Raftipelago.Data;
 using Raftipelago.Network;
 using Steamworks;

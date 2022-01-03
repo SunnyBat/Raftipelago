@@ -37,9 +37,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Behaviors\ArchipelagoDataSync.cs" />
-    <Compile Include="Behaviors\ItemSync.cs" />
-    <Compile Include="Behaviors\ResendDataBehaviour.cs" />
+    <Compile Include="Network\Behaviors\ArchipelagoDataSync.cs" />
+    <Compile Include="Network\Behaviors\ItemSync.cs" />
+    <Compile Include="Network\Behaviors\ResendDataBehaviour.cs" />
     <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\ArchipelagoDataManager.cs" />
     <Compile Include="Data\AssemblyManager.cs" />

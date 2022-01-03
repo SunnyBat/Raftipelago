@@ -2,9 +2,8 @@
 using Raftipelago.Network;
 using Steamworks;
 using System;
-using UnityEngine;
 
-namespace Raftipelago.Behaviors
+namespace Raftipelago.Network.Behaviors
 {
     [Serializable]
     public class ResendDataBehaviour : MonoBehaviour_Network

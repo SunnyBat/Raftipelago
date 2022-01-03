@@ -2,9 +2,8 @@
 using Steamworks;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-namespace Raftipelago.Behaviors
+namespace Raftipelago.Network.Behaviors
 {
     [Serializable]
     public class ArchipelagoDataSync : MonoBehaviour_Network

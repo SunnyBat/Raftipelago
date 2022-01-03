@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
 using Raftipelago;
-using Raftipelago.Behaviors;
+using Raftipelago.Network.Behaviors;
 using Raftipelago.Data;
 using Raftipelago.Network;
 using Raftipelago.Patches;
