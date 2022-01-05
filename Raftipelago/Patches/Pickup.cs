@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
 using Raftipelago.Network;
+using Steamworks;
 
 namespace Raftipelago.Patches
 {
@@ -30,19 +31,10 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
-			{
-				var noteName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, note.name);
-				if (noteName == "Tangaroa Next Frequency") // Special condition for victory
-				{
-					ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
-				}
-				else
-				{
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(noteName);
-				}
-			}
-			// TODO Confirm that the above will trigger on host
+			else
+            {
+
+            }
 			return false;
 		}
 	}
@@ -54,34 +46,33 @@ namespace Raftipelago.Patches
 		public static bool SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
 			Network_Player ___playerNetwork)
 		{
+			UnityEngine.Debug.Log("PI: " + pickup.name);
 			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickup.name, out string pickupName))
-			{
-				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
+            {
+				UnityEngine.Debug.Log("PI2: " + pickupName);
+				if (pickup.networkID.stopTrackUseRPC)
 				{
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
-				}
-				// RemovePickupItem*() will queue notification as necessary
-				if (pickup.networkID != null)
-				{
-					if (pickup.networkID.stopTrackUseRPC)
+					Message_PickupObjectManager_RemoveItem message = new Message_PickupObjectManager_RemoveItem(
+						Messages.RemoveItem, ComponentManager<PickupObjectManager>.Value, ___playerNetwork.steamID, pickup.networkID.ObjectIndex);
+					if (Semih_Network.IsHost)
 					{
-						PickupObjectManager.RemovePickupItemNetwork(pickup.networkID, ___playerNetwork.steamID);
+						if (PickupObjectManager.RemovePickupItem(pickup.networkID))
+						{
+							ComponentManager<Semih_Network>.Value.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+						}
 					}
 					else
 					{
-						PickupObjectManager.RemovePickupItem(pickup.networkID, ___playerNetwork.steamID);
+						ComponentManager<Semih_Network>.Value.SendP2P(ComponentManager<Semih_Network>.Value.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 					}
 				}
 				else
-				{
-					PoolManager.ReturnObject(pickup.gameObject); // Assuming that this doesn't need any notification
+                {
+					PickupObjectManager.RemovePickupItem(pickup.networkID);
 				}
 				return false;
-			}
-			else
-            {
-				return true;
             }
+			return true;
 		}
 	}
 }

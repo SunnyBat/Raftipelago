@@ -44,9 +44,8 @@ namespace Raftipelago.Patches
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 				}
-				var localSteamId = ((Semih_Network)typeof(QuestEventBase).GetProperty("Network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(__instance)).LocalSteamID;
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, localSteamId, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ComponentManager<Semih_Network>.Value.LocalSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				return false;
 			}
             return true;

@@ -32,7 +32,7 @@ public class RaftipelagoThree : Mod
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<ItemTracker>.Value = ComponentManager<ItemTracker>.Value ?? new ItemTracker();
         ComponentManager<ArchipelagoDataManager>.Value = ComponentManager<ArchipelagoDataManager>.Value ?? new ArchipelagoDataManager();
-        ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemIds(CommonUtils.GetUnlockedItemPacks(SaveAndLoad.WorldToLoad) ?? new List<int>());
+        ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemData(CommonUtils.GetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad) ?? new List<long>());
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
@@ -57,14 +57,13 @@ public class RaftipelagoThree : Mod
                 SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly)
                     .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
             }
-            CommonUtils.SetUnlockedItemPacks(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
+            CommonUtils.SetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ItemSync>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ResendDataBehaviour>.Value);
         }
         ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
-        ComponentManager<ExternalData>.Value = null; // Allows configurations to reload on new load
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
         Debug.Log("Raftipelago has been unloaded.");
     }

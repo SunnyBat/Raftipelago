@@ -40,9 +40,9 @@ namespace Raftipelago.Patches
 					{
 						ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
 					}
-					var fakeSteamID = RAPI.GetLocalPlayer().steamID;
+					// TODO Use ID of player who unlocked rather than local player
 					(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-						.researchInfoQue.Enqueue(new Notification_Research_Info(locationName, fakeSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+						.researchInfoQue.Enqueue(new Notification_Research_Info(locationName, RAPI.GetLocalPlayer().steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				}
 			}
 			previousStationCount = activeStationCount;

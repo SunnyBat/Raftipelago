@@ -10,7 +10,7 @@ namespace RaftipelagoTypes
 	{
 		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks"; // TODO Rename before public release (required for existing saves to work properly)
 
-		public List<int> Raftipelago_ReceivedItems;
+		public List<long> Raftipelago_ReceivedItems;
 
 		public RGD_Game_Raftipelago()
 		{
@@ -34,7 +34,7 @@ namespace RaftipelagoTypes
 		{
 			try
 			{
-				Raftipelago_ReceivedItems = (List<int>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<int>)) ?? new List<int>());
+				Raftipelago_ReceivedItems = (List<long>)(info.GetValue(RaftipelagoItemsFieldName, typeof(List<long>)) ?? new List<long>());
 			}
 			catch (Exception) { } // Raftipelago_ReceivedItems will default to null, signaling that this is not a Raftipelago world (we could use a flag instead)
 		}

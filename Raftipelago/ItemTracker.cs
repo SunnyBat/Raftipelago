@@ -21,20 +21,20 @@ namespace Raftipelago
         /// <summary>
         /// A list of all Item IDs that have already been received. This prevents duplicates.
         /// </summary>
-        private List<int> _alreadyReceivedItemIds = new List<int>();
+        private List<long> _alreadyReceivedItemData = new List<long>();
         /// <summary>
         /// A list of all levels of progressive items received. -1 is none received, 0 is one received, etc
         /// </summary>
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
 
-        public void SetAlreadyReceivedItemIds(List<int> resourcePackIds)
+        public void SetAlreadyReceivedItemData(List<long> resourcePackIds)
         {
-            this._alreadyReceivedItemIds = new List<int>(resourcePackIds);
+            _alreadyReceivedItemData = new List<long>(resourcePackIds);
         }
 
-        public List<int> GetAllReceivedItemIds()
+        public List<long> GetAllReceivedItemIds()
         {
-            return _alreadyReceivedItemIds;
+            return _alreadyReceivedItemData;
         }
 
         public void ResetProgressives()
@@ -49,8 +49,8 @@ namespace Raftipelago
         {
             var sentItemName = ComponentManager<ArchipelagoDataManager>.Value.GetItemName(itemId);
             if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
-                && !_unlockProgressive(itemId, sentItemName, player)
-                && _unlockItem(itemId, sentItemName, player) == UnlockResult.NotFound)
+                && !_unlockProgressive(itemId, locationId, sentItemName, player)
+                && _unlockItem(itemId, sentItemName, locationId, player) == UnlockResult.NotFound)
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
@@ -74,7 +74,7 @@ namespace Raftipelago
         {
             if (sentItemName.StartsWith(ResourcePackIdentifier))
             {
-                if (_alreadyReceivedItemIds.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId)))
+                if (_alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, player)))
                 {
                     var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
                     var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
@@ -97,7 +97,7 @@ namespace Raftipelago
         }
 
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
-        public bool _unlockProgressive(int itemId, string progressiveName, int fromPlayerId)
+        public bool _unlockProgressive(int itemId, int locationId, string progressiveName, int fromPlayerId)
         {
             if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
@@ -106,10 +106,10 @@ namespace Raftipelago
                     bool unlockedAnyItem = false;
                     foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
-                        var itemResult = _unlockItem(itemId, item, fromPlayerId, false);
+                        var itemResult = _unlockItem(itemId, item, locationId, fromPlayerId, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
-                            Debug.LogError($"Unable to find {item} ({ComponentManager<ArchipelagoDataManager>.Value.GetPlayerName(fromPlayerId)})");
+                            Debug.LogError($"Unable to unlock {item} from {progressiveName}");
                         }
                         else if (itemResult == UnlockResult.NewlyUnlocked)
                         {
@@ -122,10 +122,7 @@ namespace Raftipelago
                         _sendResearchNotification(progressiveName, fromPlayerId);
                     }
                 }
-                else
-                {
-                    Debug.Log($"{progressiveName} received, but all items already given");
-                }
+                // else duplicate, ignore
                 return true;
             }
             else
@@ -134,9 +131,9 @@ namespace Raftipelago
             }
         }
 
-        public UnlockResult _unlockItem(int itemId, string itemName, int fromPlayerId, bool showNotification = true)
+        public UnlockResult _unlockItem(int itemId, string itemName, int locationId, int fromPlayerId, bool showNotification = true)
         {
-            var result = _unlockRecipe(itemId, itemName, fromPlayerId, showNotification);
+            var result = _unlockRecipe(itemId, itemName, locationId, fromPlayerId, showNotification);
             if (result == UnlockResult.NotFound)
             {
                 result = _unlockNote(itemName, showNotification);
@@ -144,13 +141,14 @@ namespace Raftipelago
             return result;
         }
 
-        public UnlockResult _unlockRecipe(int itemId, string itemName, int fromPlayerId, bool showNotification)
+        public UnlockResult _unlockRecipe(int itemId, string itemName, int locationId, int fromPlayerId, bool showNotification)
         {
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
             if (foundItem != null)
             {
+                var wasLearned = foundItem.settings_recipe.Learned;
                 foundItem.settings_recipe.Learned = true;
-                if (_alreadyReceivedItemIds.AddUniqueOnly(calculateUniqueIdentifier(itemId, 0))) // We don't want to check with locationId, since we don't want to alert on the same item multiple times
+                if (!wasLearned && _alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, fromPlayerId)))
                 {
                     if (showNotification)
                     {
@@ -181,7 +179,6 @@ namespace Raftipelago
             }
             catch (Exception)
             {
-                //PrintMessage($"Received {displayName} from {GetPlayerAlias(playerId)}");
             }
         }
 
@@ -190,8 +187,7 @@ namespace Raftipelago
             if (ComponentManager<ExternalData>.Value.FriendlyItemNameToUniqueNameMappings.TryGetValue(noteName, out string uniqueNoteName))
             {
                 var notebook = ComponentManager<NoteBook>.Value;
-                var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
-                foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
+                foreach (var nbNote in RAPI.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
                     if (nbNote.name == uniqueNoteName)
                     {
@@ -226,19 +222,23 @@ namespace Raftipelago
         /// <param name="itemId">The Item ID unlocked</param>
         /// <param name="locationId">The Location ID unlocked</param>
         /// <returns></returns>
-        private int calculateUniqueIdentifier(int itemId, int locationId)
+        private long calculateUniqueIdentifier(int itemId, int locationId, int playerId)
         {
-            // First 16 bits = ItemID, last 16 bits = LocationID
-            return (((itemId - 47000) & 0xFFFF) << 16) | ((locationId - 48000) & 0xFFFF);
+            // First 16 bits = blank, second 16 bits = ItemID, third 16 bits = LocationID, last 16 bits = PlayerID
+            long itemIdShifted = ((itemId - 47000) & 0xFFFF) << 24;
+            long locationIdShifted = ((locationId - 48000) & 0xFFFF) << 16;
+            long playerIdShifted = playerId & 0xFFFF;
+            return itemIdShifted | locationIdShifted | playerIdShifted;
         }
 
-        public Tuple<int, int> ParseUniqueIdentifier(int identifier)
+        public Tuple<int, int, int> ParseUniqueIdentifier(long identifier)
         {
-            var baseItemId = (identifier >> 16) & 0xFFFF;
-            baseItemId += 47000;
-            var baseLocationId = identifier & 0xFFFF;
-            baseLocationId += 48000;
-            return new Tuple<int, int>(baseItemId, baseLocationId);
+            var itemId = (identifier >> 24) & 0xFFFF;
+            itemId += 47000;
+            var locationId = (identifier  >> 16) & 0xFFFF;
+            locationId += 48000;
+            var playerId = identifier & 0xFFFF;
+            return new Tuple<int, int, int>((int)itemId, (int)locationId, (int)playerId);
         }
     }
 }

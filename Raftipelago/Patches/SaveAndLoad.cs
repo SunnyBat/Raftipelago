@@ -10,7 +10,7 @@ namespace Raftipelago.Patches
 		[HarmonyPostfix]
 		public static void Postfix(RGD_Game game)
 		{
-			ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemIds(CommonUtils.GetUnlockedItemPacks(game) ?? new List<int>());
+			ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemData(CommonUtils.GetUnlockedItemIdentifiers(game) ?? new List<long>());
 		}
     }
 
@@ -22,7 +22,7 @@ namespace Raftipelago.Patches
 			ref RGD_Game __result)
 		{
 			var newGame = CommonUtils.CreateRaftipelagoGame(__result);
-			CommonUtils.SetUnlockedItemPacks(newGame, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
+			CommonUtils.SetUnlockedItemIdentifiers(newGame, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
 			__result = newGame;
 		}
 	}

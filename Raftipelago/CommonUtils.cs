@@ -137,10 +137,10 @@ namespace Raftipelago
 
         public static bool IsValidRaftipelagoSave(RGD_Game game)
         {
-            return GetUnlockedItemPacks(game)?.Count >= 0;
+            return GetUnlockedItemIdentifiers(game)?.Count >= 0;
         }
 
-        public static List<int> GetUnlockedItemPacks(object gameData)
+        public static List<long> GetUnlockedItemIdentifiers(object gameData)
         {
             if (gameData == null)
             {
@@ -159,10 +159,10 @@ namespace Raftipelago
             {
                 return null;
             }
-            return (List<int>)unlockedItemsFieldInfo.GetValue(gameData);
+            return (List<long>)unlockedItemsFieldInfo.GetValue(gameData);
         }
 
-        public static void SetUnlockedItemPacks(object gameData, List<int> itemPacks)
+        public static void SetUnlockedItemIdentifiers(object gameData, List<long> itemPacks)
         {
             if (gameData == null)
             {
