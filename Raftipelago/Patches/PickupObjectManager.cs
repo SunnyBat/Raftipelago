@@ -17,7 +17,7 @@ namespace Raftipelago.Patches
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
 			{
 				UnityEngine.Debug.Log("RPI2: " + pickupName);
-				if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
+				if (Semih_Network.IsHost)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 					if (pickupName == "Tangaroa Next Frequency") // Special condition for victory

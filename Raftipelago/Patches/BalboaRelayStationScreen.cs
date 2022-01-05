@@ -36,7 +36,7 @@ namespace Raftipelago.Patches
 				{
 					___stationsActivatedText.text = "Location sent";
 					var locationName = "Relay Station quest";
-					if (Semih_Network.IsHost || Semih_Network.InSinglePlayerMode)
+					if (Semih_Network.IsHost)
 					{
 						ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(locationName);
 					}

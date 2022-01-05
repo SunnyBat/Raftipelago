@@ -65,6 +65,7 @@
     <Compile Include="Patches\RGD_Game.cs" />
     <Compile Include="Patches\RGD_ResearchTableWorld.cs" />
     <Compile Include="Patches\SaveAndLoad.cs" />
+    <Compile Include="Patches\Semih_Network.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
   </ItemGroup>

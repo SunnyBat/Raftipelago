@@ -147,7 +147,7 @@ public class RaftipelagoThree : Mod
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
     {
-        if (!Semih_Network.IsHost && !Semih_Network.InSinglePlayerMode)
+        if (!Semih_Network.IsHost && !Semih_Network.InMenuScene)
         {
             Debug.LogError("Only the world host can connect to Archipelago.");
         }
