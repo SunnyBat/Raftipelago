@@ -17,7 +17,7 @@ namespace Raftipelago.Network.Behaviors
                 ComponentManager<Semih_Network>.Value.RPC((Message)syncPacket, toSendTo, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 
                 var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
-                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSync>.Value });
+                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSyncBehaviour>.Value });
                 var allItemUniqueIdentifiers = ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds();
                 var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
                 var arr = Array.CreateInstance(sid, allItemUniqueIdentifiers.Count);
@@ -29,7 +29,7 @@ namespace Raftipelago.Network.Behaviors
                     var itmSend = sid.GetConstructor(new Type[] { }).Invoke(null);
                     itmSend.GetType().GetProperty("ItemId").SetValue(itmSend, parsed.Item1);
                     itmSend.GetType().GetProperty("LocationId").SetValue(itmSend, parsed.Item2);
-                    // TODO playerid (info unavailable atm; change int to long for stored data)
+                    itmSend.GetType().GetProperty("PlayerId").SetValue(itmSend, parsed.Item3);
                     arr.SetValue(itmSend, i);
                 }
                 itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);

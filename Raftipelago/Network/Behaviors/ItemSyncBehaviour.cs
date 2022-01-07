@@ -5,12 +5,12 @@ using System;
 namespace Raftipelago.Network.Behaviors
 {
     [Serializable]
-    public class ItemSync : MonoBehaviour_Network
+    public class ItemSyncBehaviour : MonoBehaviour_Network
     {
         private Type _rpPacketType;
         private Type _syncItemDataArrayType;
 
-        public ItemSync()
+        public ItemSyncBehaviour()
         {
             var asm = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly);
             _rpPacketType = asm.GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems");
