@@ -57,10 +57,12 @@ namespace Raftipelago.Network
             }
             else
             {
+                Debug.Log("Connecting");
                 _resetForNextLoad();
                 _proxyServer = _appDomain.CreateInstanceAndUnwrap("ArchipelagoProxy", ArchipelagoProxyClassNamespaceIdentifier, false, BindingFlags.Default, null, new object[] { URL }, null, null);
                 _hookUpEvents();
                 _connectToArchipelago(username, password);
+                Debug.Log("Connect configured");
             }
         }
 
@@ -422,11 +424,18 @@ namespace Raftipelago.Network
 
         private void PrintMessage(string msg)
         {
-            try
+            if (!Semih_Network.InMenuScene)
             {
-                ComponentManager<ChatManager>.Value.HandleChatMessageInput(msg, CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0));
+                try
+                {
+                    ComponentManager<ChatManager>.Value.HandleChatMessageInput(msg, CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0));
+                }
+                catch (Exception)
+                {
+                    Debug.Log(msg);
+                }
             }
-            catch (Exception)
+            else
             {
                 Debug.Log(msg);
             }

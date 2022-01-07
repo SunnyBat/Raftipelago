@@ -31,10 +31,6 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			else
-            {
-
-            }
 			return false;
 		}
 	}
@@ -44,34 +40,38 @@ namespace Raftipelago.Patches
 	{
 		[HarmonyPrefix]
 		public static bool SometimesReplace(PickupItem pickup, bool forcePickup, bool triggerHandAnimation,
-			Network_Player ___playerNetwork)
+			Pickup __instance,
+			PlayerAnimator ___playerAnimator,
+			Network_Player ___playerNetwork,
+			DisplayTextManager ___displayTextManager)
 		{
-			UnityEngine.Debug.Log("PI: " + pickup.name);
 			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickup.name, out string pickupName))
             {
-				UnityEngine.Debug.Log("PI2: " + pickupName);
-				if (pickup.networkID.stopTrackUseRPC)
+				if (!forcePickup && !pickup.canBePickedUp)
 				{
-					Message_PickupObjectManager_RemoveItem message = new Message_PickupObjectManager_RemoveItem(
-						Messages.RemoveItem, ComponentManager<PickupObjectManager>.Value, ___playerNetwork.steamID, pickup.networkID.ObjectIndex);
-					if (Semih_Network.IsHost)
+					return true;
+				}
+				if (triggerHandAnimation)
+				{
+					___playerAnimator.SetAnimation(PlayerAnimation.Trigger_GrabItem, false);
+				}
+				if (pickup.networkID != null)
+				{
+					if (pickup.networkID.stopTrackUseRPC)
 					{
-						if (PickupObjectManager.RemovePickupItem(pickup.networkID))
-						{
-							ComponentManager<Semih_Network>.Value.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-						}
+						PickupObjectManager.RemovePickupItemNetwork(pickup.networkID, ___playerNetwork.steamID);
 					}
 					else
 					{
-						ComponentManager<Semih_Network>.Value.SendP2P(ComponentManager<Semih_Network>.Value.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+						PickupObjectManager.RemovePickupItem(pickup.networkID, ___playerNetwork.steamID);
 					}
 				}
 				else
-                {
-					PickupObjectManager.RemovePickupItem(pickup.networkID);
+				{
+					PoolManager.ReturnObject(pickup.gameObject);
 				}
-				return false;
-            }
+				___displayTextManager.HideDisplayTexts();
+			}
 			return true;
 		}
 	}

@@ -5,18 +5,36 @@ using Steamworks;
 
 namespace Raftipelago.Patches
 {
-	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked))]
+	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked), typeof(CSteamID))]
 	public class HarmonyPatch_PickupObjectManager_RemovePickupItem
+	{
+		[HarmonyPrefix]
+		public static bool SometimesReplace(PickupItem_Networked pickupNetwork, CSteamID pickupPlayerID,
+			ref bool __result)
+		{
+			if (pickupNetwork != null
+				&& (!Semih_Network.IsHost || pickupNetwork.CanBePickedUp())
+				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
+			{
+				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, pickupPlayerID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+				__result = PickupObjectManager.RemovePickupItem(pickupNetwork);
+				return false;
+			}
+			return true;
+		}
+	}
+
+	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked))]
+	public class HarmonyPatch_PickupObjectManager_RemovePickupItem2
 	{
 		[HarmonyPrefix]
 		public static void NeverReplace(PickupItem_Networked pickupNetwork)
 		{
-			UnityEngine.Debug.Log("RPI: " + pickupNetwork.name);
 			if (pickupNetwork != null
 				&& pickupNetwork.CanBePickedUp()
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
 			{
-				UnityEngine.Debug.Log("RPI2: " + pickupName);
 				if (Semih_Network.IsHost)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
@@ -25,9 +43,6 @@ namespace Raftipelago.Patches
 						ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
 					}
 				}
-				// TODO Display as player who unlocked
-				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, RAPI.GetLocalPlayer().steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 			}
 		}
 	}
