@@ -34,6 +34,7 @@ namespace Raftipelago.Network.Behaviors
                     var itemId = (int)itemType.GetProperty("ItemId").GetValue(nextItem);
                     var locationId = (int)itemType.GetProperty("LocationId").GetValue(nextItem);
                     var playerId = (int)itemType.GetProperty("PlayerId").GetValue(nextItem);
+                    UnityEngine.Debug.Log($"Item received: {itemId}, {locationId}, {playerId}");
                     ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld(itemId, locationId, playerId);
                     currentResult = (bool)moveNextMethodInfo.Invoke(itemsEnumerator, null);
                 }

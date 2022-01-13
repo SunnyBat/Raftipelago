@@ -72,6 +72,7 @@ namespace Raftipelago
 
         public bool _unlockResourcePack(int itemId, int locationId, string sentItemName, int player)
         {
+            Debug.Log($"Unlock: {itemId}, {locationId}, {sentItemName}, {player}");
             if (sentItemName.StartsWith(ResourcePackIdentifier))
             {
                 if (_alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, player)))

@@ -266,12 +266,21 @@ namespace Raftipelago.Network
             {
                 try
                 {
-                    ret.Add(currentIndex, GetItemNameFromId(currentIndex));
+                    var itemName = GetItemNameFromId(currentIndex);
+                    if (!string.IsNullOrWhiteSpace(itemName))
+                    {
+                        ret.Add(currentIndex, GetItemNameFromId(currentIndex));
+                    }
+                    else
+                    {
+                        wasSuccessful = false;
+                    }
                 }
                 catch (Exception)
                 {
                     wasSuccessful = false;
                 }
+                currentIndex++;
             } while (wasSuccessful);
             return ret;
         }
@@ -285,12 +294,21 @@ namespace Raftipelago.Network
             {
                 try
                 {
-                    ret.Add(currentIndex, GetPlayerAlias(currentIndex));
+                    var playerAlias = GetPlayerAlias(currentIndex);
+                    if (!string.IsNullOrWhiteSpace(playerAlias))
+                    {
+                        ret.Add(currentIndex, playerAlias);
+                    }
+                    else
+                    {
+                        wasSuccessful = false;
+                    }
                 }
                 catch (Exception)
                 {
                     wasSuccessful = false;
                 }
+                currentIndex++;
             } while (wasSuccessful);
             return ret;
         }
