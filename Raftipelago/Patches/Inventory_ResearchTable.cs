@@ -36,6 +36,8 @@ namespace Raftipelago.Patches
 						if (Semih_Network.IsHost)
 						{
 							ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(menuItemBase.settings_Inventory.DisplayName);
+							Message_ResearchTable_ResearchOrLearn message = new Message_ResearchTable_ResearchOrLearn(Messages.ResearchTable_Learn, RAPI.GetLocalPlayer(), researcherID, item.UniqueIndex);
+							__instance.network.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 						}
 						___menuItems[i].Learn(); // Overridden to set item as learned and remove researches from research table
 					}

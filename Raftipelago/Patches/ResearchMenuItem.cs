@@ -20,10 +20,8 @@ namespace Raftipelago.Patches
 			{
 				___localPlayer = ComponentManager<Network_Player>.Value;
 			}
-			Message_ResearchTable_ResearchOrLearn message = new Message_ResearchTable_ResearchOrLearn(Messages.ResearchTable_Learn, ___localPlayer, ___localPlayer.steamID, ___item.UniqueIndex);
 			if (Semih_Network.IsHost)
 			{
-				___inventoryRef.network.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 				___inventoryRef.LearnItem(___item, ___localPlayer.steamID);
 				if (___OnLearnedRecipeEvent != null)
 				{
@@ -32,6 +30,7 @@ namespace Raftipelago.Patches
 			}
 			else
 			{
+				Message_ResearchTable_ResearchOrLearn message = new Message_ResearchTable_ResearchOrLearn(Messages.ResearchTable_Learn, ___localPlayer, ___localPlayer.steamID, ___item.UniqueIndex);
 				___inventoryRef.network.SendP2P(___inventoryRef.network.HostID, message, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 			}
 			return false;
