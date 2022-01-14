@@ -8,7 +8,7 @@ namespace Raftipelago.Network.Behaviors
     {
         public static void SendArchipelagoData(Target toSendTo = Target.Other)
         {
-            if (Semih_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected())
+            if (Semih_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() && !Semih_Network.InMenuScene)
             {
                 var syncPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData")
                     .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ArchipelagoDataSync>.Value });

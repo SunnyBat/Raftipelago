@@ -14,7 +14,6 @@ namespace Raftipelago.Network.Behaviors
         {
             var asm = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly);
             _rpPacketType = asm.GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData");
-            UnityEngine.Debug.Log($"rpPacketType: {_rpPacketType}");
             BehaviourIndex = CommonUtils.GetNetworkBehaviourUniqueIndex();
         }
         public override bool Deserialize(Message_NetworkBehaviour msg, CSteamID remoteID)
@@ -23,7 +22,6 @@ namespace Raftipelago.Network.Behaviors
             {
                 var playerToName = (Dictionary<int, string>)_rpPacketType.GetProperty("PlayerIdToName").GetValue(msg);
                 var itemToName = (Dictionary<int, string>)_rpPacketType.GetProperty("ItemIdToName").GetValue(msg);
-                UnityEngine.Debug.Log($"Sync data: {playerToName?.Count}, {itemToName?.Count}");
                 ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName = itemToName;
                 ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName = playerToName;
                 return true;
