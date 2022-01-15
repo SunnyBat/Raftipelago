@@ -62,7 +62,6 @@ namespace Raftipelago.Network
                 _proxyServer = _appDomain.CreateInstanceAndUnwrap("ArchipelagoProxy", ArchipelagoProxyClassNamespaceIdentifier, false, BindingFlags.Default, null, new object[] { URL }, null, null);
                 _hookUpEvents();
                 _connectToArchipelago(username, password);
-                Debug.Log("Connect configured");
             }
         }
 

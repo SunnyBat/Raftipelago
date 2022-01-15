@@ -43,7 +43,6 @@ public class RaftipelagoThree : Mod
             WorldLoaded_ArchipelagoSetup();
         }
         StartCoroutine(serverHeartbeat);
-        Debug.Log("Raftipelago has been loaded!");
     }
 
     public void OnModUnload()
@@ -66,7 +65,6 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
         patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
-        Debug.Log("Raftipelago has been unloaded.");
     }
 
     // This should ONLY be used for Archipelago-related setup; this is called even after
@@ -124,7 +122,7 @@ public class RaftipelagoThree : Mod
         }
         else if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() == true)
         {
-            Debug.LogError("Already connected to Archipelago. Disconnect with /disconnect before attempting to connect to a different server.");
+            Debug.LogError("Already connected to Archipelago. Disconnect with /disconnect before attempting to connect to a different server. Be careful when connecting to different servers with the same world; Archipelago location unlocks are permanent.");
         }
         else if (arguments.Length >= 2)
         {
@@ -138,7 +136,7 @@ public class RaftipelagoThree : Mod
         }
         else
         {
-            Debug.LogError("Usage: <i>/connect (URL) (Username) (Password)</i> -- Password is optional. Parenthesis should be omitted unless part of URL or username. If a value has spaces, use \"\" around it, eg \"My Unique Username\".");
+            Debug.LogError("Usage: <i>/connect (URL) (Username) (Password)</i> -- Password is optional. Parenthesis should be omitted unless part of URL, username, or password. If a value has spaces, use \"\" around it, eg \"My Unique Username\".");
         }
     }
 
@@ -211,7 +209,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/generateItems", "Generates the JSON for Archipelago's Raft item list. Must be loaded into a world to use.")]
+    [ConsoleCommand("/generateItems", "Development-related command. Generates the JSON for Archipelago's Raft item list. Must be loaded into a world to use.")]
     private static void Command_GenerateItems(string[] arguments)
     {
         if (isInWorld())
@@ -224,7 +222,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/generateHiddenItems", "Generates the JSON for Archipelago's Raft item list, but it only gives you items that are not supposed to be included in the Archipelago item list. Must be loaded into a world to use.")]
+    [ConsoleCommand("/generateHiddenItems", "Development-related command. Generates the JSON for Archipelago's Raft item list, but it only gives you items that are not supposed to be included in the Archipelago item list. Must be loaded into a world to use.")]
     private static void Command_GenerateHiddenItems(string[] arguments)
     {
         if (isInWorld())
@@ -237,7 +235,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/generateLocations", "Generates the JSON for Archipelago's Raft location list. Must be loaded into a world to use.")]
+    [ConsoleCommand("/generateLocations", "Development-related command. Generates the JSON for Archipelago's Raft location list. Must be loaded into a world to use.")]
     private static void Command_GenerateLocations(string[] arguments)
     {
         if (isInWorld())
@@ -250,7 +248,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/generateHiddenLocations", "Generates the JSON for Archipelago's Raft location list, but it only gives you inaccessible researches in the Research Table. Must be loaded into a world to use.")]
+    [ConsoleCommand("/generateHiddenLocations", "Development-related command. Generates the JSON for Archipelago's Raft location list, but it only gives you inaccessible researches in the Research Table. Must be loaded into a world to use.")]
     private static void Command_GenerateHiddenLocations(string[] arguments)
     {
         if (isInWorld())
@@ -271,6 +269,6 @@ public class RaftipelagoThree : Mod
 
     private static bool isInWorld()
     {
-        return ComponentManager<CraftingMenu>.Value != null; // TODO Better way to determine?
+        return !Semih_Network.InMenuScene;
     }
 }

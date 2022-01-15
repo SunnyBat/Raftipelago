@@ -73,7 +73,7 @@ namespace Raftipelago.Patches
 						if (researchMenuItem.GetItem().UniqueIndex == item.settings_recipe.BlueprintItem.UniqueIndex)
 						{
 							// This should never happen, but log a message just in case we get one
-							Debug.LogError("Skipping blueprint " + item.UniqueName + " -- This is likely a Raftipelago bug (blueprint items should never be researched by Raft, only Archipelago).");
+							Debug.LogError($"Skipping blueprint {item.UniqueName} -- This is likely a Raftipelago bug (blueprint items should never be researched by Raft, only Archipelago).");
 							break;
 						}
 					}
@@ -98,7 +98,6 @@ namespace Raftipelago.Patches
 			}
 			else
 			{
-				Debug.Log("Can't research " + item.settings_Inventory.DisplayName);
 				__result = false;
 			}
 			return false;
