@@ -26,7 +26,7 @@ namespace Raftipelago.Patches
 					}
 					else if (textWriterSteamID.IsValid()) // Networked player sending a message
 					{
-						ComponentManager<IArchipelagoLink>.Value.SendChatMessage($"(Local Player {SteamFriends.GetFriendPersonaName(textWriterSteamID)}): {text}");
+						ComponentManager<IArchipelagoLink>.Value.SendChatMessage($"(Raft Player {SteamFriends.GetFriendPersonaName(textWriterSteamID)}): {text}");
 					}
 				}
 				else if (CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(textWriterSteamID.m_SteamID, out int playerId)) // Only send Archipelago messages in chat
