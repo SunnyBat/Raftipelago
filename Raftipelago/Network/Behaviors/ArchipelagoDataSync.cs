@@ -22,8 +22,10 @@ namespace Raftipelago.Network.Behaviors
             {
                 var playerToName = (Dictionary<int, string>)_rpPacketType.GetProperty("PlayerIdToName").GetValue(msg);
                 var itemToName = (Dictionary<int, string>)_rpPacketType.GetProperty("ItemIdToName").GetValue(msg);
+                var foundLocations = (List<long>)_rpPacketType.GetProperty("AlreadyUnlockedLocations").GetValue(msg);
                 ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName = itemToName;
                 ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName = playerToName;
+                ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemData(foundLocations);
                 return true;
             }
             return false;

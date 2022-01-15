@@ -12,5 +12,6 @@ namespace RaftipelagoTypes
 
         public Dictionary<int, string> PlayerIdToName { get; set; }
         public Dictionary<int, string> ItemIdToName { get; set; }
+        public List<long> AlreadyUnlockedLocations { get; set; }
     }
 }
