@@ -112,7 +112,6 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
     {
@@ -186,7 +185,6 @@ public class RaftipelagoThree : Mod
         return valueBuilder.ToString();
     }
 
-    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
     [ConsoleCommand("/resync", "Resyncs Archipelago data from server host. Generally unnecessary.")]
     private static void Command_ResyncData(string[] arguments)
     {
@@ -195,7 +193,6 @@ public class RaftipelagoThree : Mod
         ComponentManager<Semih_Network>.Value.RPC((Message)resendPacket, Target.All, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
     }
 
-    // TODO Add to in-game chat as well (keep this implementation to be able to choose either)
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]
     private static void Command_Disconnect(string[] arguments)
     {

@@ -8,7 +8,7 @@ namespace RaftipelagoTypes
 	[Serializable]
 	public class RGD_Game_Raftipelago : RGD_Game
 	{
-		public const string RaftipelagoItemsFieldName = "Raftipelago-ItemPacks"; // TODO Rename before public release (required for existing saves to work properly)
+		public const string RaftipelagoItemsFieldName = "Raftipelago-ReceivedItems";
 
 		public List<long> Raftipelago_ReceivedItems;
 
