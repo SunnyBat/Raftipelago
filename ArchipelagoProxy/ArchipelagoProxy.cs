@@ -151,6 +151,14 @@ namespace ArchipelagoProxy
             _commsThread.Start();
         }
 
+        // https://social.msdn.microsoft.com/Forums/en-US/3ab17b40-546f-4373-8c08-f0f072d818c9/remotingexception-when-raising-events-across-appdomains?forum=netfxremoting
+        // This will make this object stick around forever. This can be a memory leak, however we're going to make these so infrequently that any orphaned instances
+        // should be inconsequential.
+        public override object InitializeLifetimeService()
+        {
+            return null;
+        }
+
         public bool IsSuccessfullyConnected()
         {
             lock (LockForClass)

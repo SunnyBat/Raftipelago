@@ -15,6 +15,11 @@ namespace RaftipelagoTypes
         {
             _delegate = dlgt;
         }
+
+        public override object InitializeLifetimeService()
+        {
+            return null;
+        }
     }
 
     public sealed class SingleArgumentActionHandler<T> : MarshalByRefObject
@@ -30,6 +35,11 @@ namespace RaftipelagoTypes
         {
             _delegate = dlgt;
         }
+
+        public override object InitializeLifetimeService()
+        {
+            return null;
+        }
     }
 
     public sealed class TripleArgumentActionHandler<T, U, V> : MarshalByRefObject
@@ -44,6 +54,11 @@ namespace RaftipelagoTypes
         public TripleArgumentActionHandler(Action<T, U, V> dlgt)
         {
             _delegate = dlgt;
+        }
+
+        public override object InitializeLifetimeService()
+        {
+            return null;
         }
     }
 }
