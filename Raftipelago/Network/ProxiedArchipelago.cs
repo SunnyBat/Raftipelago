@@ -88,7 +88,7 @@ namespace Raftipelago.Network
                     var locationList = new List<string>();
                     locationList.AddRange(ComponentManager<Inventory_ResearchTable>.Value.GetMenuItems()
                         .FindAll(itm => itm.Learned && CommonUtils.IsValidResearchTableItem(itm.GetItem()))
-                        .Select(itm => itm.GetItem().settings_Inventory.DisplayName));
+                        .Select(itm => CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, itm.GetItem().UniqueName)));
                     WorldManager.AllLandmarks.ForEach(landmark =>
                     {
                         foreach (var landmarkItem in landmark.landmarkItems)

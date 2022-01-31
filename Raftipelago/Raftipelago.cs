@@ -219,6 +219,19 @@ public class RaftipelagoThree : Mod
         }
     }
 
+    [ConsoleCommand("/generateLocationsForRaftipelago", "Development-related command. Generates the JSON for Raft's friendly location mappings. Must be generated using the English locale.")]
+    private static void Command_GenerateFriendlyLocations(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateFriendlyLocationList());
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
+        }
+    }
+
     [ConsoleCommand("/generateItems", "Development-related command. Generates the JSON for Archipelago's Raft item list. Must be loaded into a world to use.")]
     private static void Command_GenerateItems(string[] arguments)
     {

@@ -26,8 +26,8 @@ namespace Raftipelago
         public static string GenerateRaftipelagoFriendlyItemList(bool invert = false)
         {
             var craftingMenu = ComponentManager<CraftingMenu>.Value;
-            var allItemData = new StringBuilder();
-            allItemData.Append("{");
+            var friendlyData = new StringBuilder();
+            friendlyData.Append("{");
             var allFriendlyNames = new List<string>();
             var allUniqueNames = new List<string>();
             craftingMenu.AllRecipes.ForEach(recipe =>
@@ -36,7 +36,7 @@ namespace Raftipelago
                 {
                     var friendlyName = recipe.settings_Inventory.DisplayName;
                     var uniqueName = recipe.UniqueName;
-                    _addFriendlyItem(friendlyName, uniqueName, allItemData);
+                    _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
                     if (!allUniqueNames.AddUniqueOnly(uniqueName))
                     {
                         throw new Exception($"{uniqueName} (Friendly name {friendlyName}) is not unique");
@@ -54,20 +54,11 @@ namespace Raftipelago
                 // Don't dupe existing mappings, since we're putting this output right back into the source of these mappings
                 if (allUniqueNames.AddUniqueOnly(uniqueName) && allFriendlyNames.AddUniqueOnly(friendlyName))
                 {
-                    _addFriendlyItem(friendlyName, uniqueName, allItemData);
+                    _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
                 }
             }
-            allItemData.Append("}");
-            return allItemData.ToString();
-        }
-
-        private static void _addFriendlyItem(string friendlyName, string uniqueName, StringBuilder itemData)
-        {
-            if (itemData.Length > 1)
-            {
-                itemData.Append(",");
-            }
-            itemData.Append($"\"{uniqueName}\":\"{friendlyName}\"");
+            friendlyData.Append("}");
+            return friendlyData.ToString();
         }
 
         public static string GenerateRawArchipelagoItemList(bool invert = false)
@@ -137,6 +128,46 @@ namespace Raftipelago
             itemData.Append(",");
             itemData.Append($"\"name\":\"{name}\"");
             itemData.Append("}");
+        }
+
+        public static string GenerateFriendlyLocationList()
+        {
+            var researchTableInventory = ComponentManager<Inventory_ResearchTable>.Value;
+            var friendlyData = new StringBuilder();
+            friendlyData.Append("{");
+            var allFriendlyNames = new List<string>();
+            var allUniqueNames = new List<string>();
+            researchTableInventory.GetMenuItems().ForEach(rmi =>
+            {
+                var baseItem = rmi.GetItem();
+                if (CommonUtils.IsValidResearchTableItem(baseItem))
+                {
+                    var friendlyName = baseItem.settings_Inventory.DisplayName;
+                    var uniqueName = baseItem.UniqueName;
+                    UnityEngine.Debug.Log($"{uniqueName} (Friendly name {friendlyName})");
+                    _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
+                    if (!allUniqueNames.AddUniqueOnly(uniqueName))
+                    {
+                        throw new Exception($"{uniqueName} (Friendly name {friendlyName}) is not unique");
+                    }
+                    if (!allFriendlyNames.AddUniqueOnly(friendlyName))
+                    {
+                        throw new Exception($"{friendlyName} (Unique name {uniqueName}) is not unique");
+                    }
+                }
+            });
+            foreach (var kvp in ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings)
+            {
+                var friendlyName = kvp.Value;
+                var uniqueName = kvp.Key;
+                // Don't dupe existing mappings, since we're putting this output right back into the source of these mappings
+                if (allUniqueNames.AddUniqueOnly(uniqueName) && allFriendlyNames.AddUniqueOnly(friendlyName))
+                {
+                    _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
+                }
+            }
+            friendlyData.Append("}");
+            return friendlyData.ToString();
         }
 
         public static string GenerateLocationList(bool invert = false)
@@ -254,6 +285,15 @@ namespace Raftipelago
                 locData.Append("]");
             }
             locData.Append("}");
+        }
+
+        private static void _addFriendlyMapping(string friendlyName, string uniqueName, StringBuilder itemData)
+        {
+            if (itemData.Length > 1)
+            {
+                itemData.Append(",");
+            }
+            itemData.Append($"\"{uniqueName}\":\"{friendlyName}\"");
         }
     }
 }

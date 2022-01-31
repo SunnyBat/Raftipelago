@@ -35,7 +35,7 @@ namespace Raftipelago.Patches
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 						if (Semih_Network.IsHost)
 						{
-							var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings, menuItemBase.settings_Inventory.DisplayName);
+							var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, menuItemBase.UniqueName);
 							ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(friendlyName);
 							Message_ResearchTable_ResearchOrLearn message = new Message_ResearchTable_ResearchOrLearn(Messages.ResearchTable_Learn, RAPI.GetLocalPlayer(), researcherID, item.UniqueIndex);
 							__instance.network.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
