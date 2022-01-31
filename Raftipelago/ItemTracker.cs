@@ -34,11 +34,16 @@ namespace Raftipelago
 
         public void ResetData()
         {
+            ResetProgressives();
+            _alreadyReceivedItemData.Clear();
+        }
+
+        public void ResetProgressives()
+        {
             foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
             {
                 _progressiveLevels[progressiveName] = -1; // None unlocked = -1
             }
-            _alreadyReceivedItemData.Clear();
         }
 
         public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)

@@ -570,6 +570,11 @@ namespace ArchipelagoProxy
                     }
                     break;
                 case ArchipelagoPacketType.ConnectionRefused:
+                    lock (LockForClass)
+                    {
+                        // Do not attempt to reconnect
+                        _successiveConnectFailures = MAX_RECONNECT_ATTEMPTS;
+                    }
                     var connectionRefusedPacket = (ConnectionRefusedPacket)packet;
                     foreach (var err in connectionRefusedPacket.Errors)
                     {

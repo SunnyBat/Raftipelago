@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using Raftipelago.Network;
 using System.Runtime.Serialization;
 
 namespace Raftipelago.Patches
