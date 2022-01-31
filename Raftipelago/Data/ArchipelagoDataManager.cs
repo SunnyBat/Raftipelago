@@ -27,7 +27,14 @@ namespace Raftipelago.Data
             }
             else
             {
-                return ItemIdToName.GetValueOrDefault(itemId, null);
+                if (ItemIdToName != null)
+                {
+                    return ItemIdToName.GetValueOrDefault(itemId, null);
+                }
+                else
+                {
+                    UnityEngine.Debug.LogError($"ItemIdToName not properly synchronized. Item {itemId} will be swallowed.");
+                }
             }
             return null;
         }

@@ -1,14 +1,9 @@
 ﻿using Raftipelago.Network.Behaviors;
 using Raftipelago.Data;
-using Raftipelago.Network;
 using Steamworks;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Raftipelago
@@ -37,12 +32,13 @@ namespace Raftipelago
             return _alreadyReceivedItemData;
         }
 
-        public void ResetProgressives()
+        public void ResetData()
         {
             foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
             {
                 _progressiveLevels[progressiveName] = -1; // None unlocked = -1
             }
+            _alreadyReceivedItemData.Clear();
         }
 
         public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
@@ -72,7 +68,7 @@ namespace Raftipelago
 
         public bool _unlockResourcePack(int itemId, int locationId, string sentItemName, int player)
         {
-            if (sentItemName.StartsWith(ResourcePackIdentifier))
+            if (sentItemName?.StartsWith(ResourcePackIdentifier) ?? false)
             {
                 if (_alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, player)))
                 {
@@ -99,7 +95,7 @@ namespace Raftipelago
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
         public bool _unlockProgressive(int itemId, int locationId, string progressiveName, int fromPlayerId)
         {
-            if (_progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
+            if (progressiveName != null && _progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
                 if (++_progressiveLevels[progressiveName] < ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName].Length)
                 {
@@ -143,7 +139,8 @@ namespace Raftipelago
 
         public UnlockResult _unlockRecipe(int itemId, string itemName, int locationId, int fromPlayerId, bool showNotification)
         {
-            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.settings_Inventory.DisplayName == itemName);
+            var uniqueItemName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.FriendlyItemNameToUniqueNameMappings, itemName);
+            var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == uniqueItemName);
             if (foundItem != null)
             {
                 var wasLearned = foundItem.settings_recipe.Learned;
@@ -225,15 +222,17 @@ namespace Raftipelago
         private long calculateUniqueIdentifier(int itemId, int locationId, int playerId)
         {
             // First 16 bits = blank, second 16 bits = ItemID, third 16 bits = LocationID, last 16 bits = PlayerID
-            long itemIdShifted = ((itemId - 47000) & 0xFFFF) << 24;
-            long locationIdShifted = ((locationId - 48000) & 0xFFFF) << 16;
+            long itemIdShifted = (itemId - 47000) & 0xFFFF;
+            itemIdShifted <<= 32; // Could also cast full result before shift to long; we shift bits out of number without casting
+            long locationIdShifted = (locationId - 48000) & 0xFFFF;
+            locationIdShifted <<= 16;
             long playerIdShifted = playerId & 0xFFFF;
             return itemIdShifted | locationIdShifted | playerIdShifted;
         }
 
         public Tuple<int, int, int> ParseUniqueIdentifier(long identifier)
         {
-            var itemId = (identifier >> 24) & 0xFFFF;
+            var itemId = (identifier >> 32) & 0xFFFF;
             itemId += 47000;
             var locationId = (identifier  >> 16) & 0xFFFF;
             locationId += 48000;

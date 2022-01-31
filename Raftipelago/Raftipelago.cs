@@ -33,7 +33,7 @@ public class RaftipelagoThree : Mod
         ComponentManager<ItemTracker>.Value = ComponentManager<ItemTracker>.Value ?? new ItemTracker();
         ComponentManager<ArchipelagoDataManager>.Value = ComponentManager<ArchipelagoDataManager>.Value ?? new ArchipelagoDataManager();
         ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemData(CommonUtils.GetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad) ?? new List<long>());
-        ComponentManager<ItemTracker>.Value.ResetProgressives();
+        ComponentManager<ItemTracker>.Value.ResetData();
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
@@ -71,7 +71,7 @@ public class RaftipelagoThree : Mod
     // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
     {
-        ComponentManager<ItemTracker>.Value.ResetProgressives();
+        ComponentManager<ItemTracker>.Value.ResetData();
         WorldLoaded_ArchipelagoSetup();
     }
 
@@ -203,6 +203,19 @@ public class RaftipelagoThree : Mod
         else
         {
             Debug.LogError("Usage: <i>disconnect confirmDisconnect</i>");
+        }
+    }
+
+    [ConsoleCommand("/generateItemsForRaftipelago", "Development-related command. Generates the JSON for Raft's friendly name mappings. Must be generated using the English locale.")]
+    private static void Command_GenerateFriendlyItems(string[] arguments)
+    {
+        if (isInWorld())
+        {
+            Debug.Log(DataGenerator.GenerateRaftipelagoFriendlyItemList());
+        }
+        else
+        {
+            Debug.LogError("Must be loaded into a world to generate item list.");
         }
     }
 

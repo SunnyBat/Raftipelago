@@ -23,6 +23,53 @@ namespace Raftipelago
             // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
         };
 
+        public static string GenerateRaftipelagoFriendlyItemList(bool invert = false)
+        {
+            var craftingMenu = ComponentManager<CraftingMenu>.Value;
+            var allItemData = new StringBuilder();
+            allItemData.Append("{");
+            var allFriendlyNames = new List<string>();
+            var allUniqueNames = new List<string>();
+            craftingMenu.AllRecipes.ForEach(recipe =>
+            {
+                if (CommonUtils.IsValidUnlockableItem(recipe) == !invert)
+                {
+                    var friendlyName = recipe.settings_Inventory.DisplayName;
+                    var uniqueName = recipe.UniqueName;
+                    _addFriendlyItem(friendlyName, uniqueName, allItemData);
+                    if (!allUniqueNames.AddUniqueOnly(uniqueName))
+                    {
+                        throw new Exception($"{uniqueName} (Friendly name {friendlyName}) is not unique");
+                    }
+                    if (!allFriendlyNames.AddUniqueOnly(friendlyName))
+                    {
+                        throw new Exception($"{friendlyName} (Unique name {uniqueName}) is not unique");
+                    }
+                }
+            });
+            foreach (var kvp in ComponentManager<ExternalData>.Value.UniqueItemNameToFriendlyNameMappings)
+            {
+                var friendlyName = kvp.Value;
+                var uniqueName = kvp.Key;
+                // Don't dupe existing mappings, since we're putting this output right back into the source of these mappings
+                if (allUniqueNames.AddUniqueOnly(uniqueName) && allFriendlyNames.AddUniqueOnly(friendlyName))
+                {
+                    _addFriendlyItem(friendlyName, uniqueName, allItemData);
+                }
+            }
+            allItemData.Append("}");
+            return allItemData.ToString();
+        }
+
+        private static void _addFriendlyItem(string friendlyName, string uniqueName, StringBuilder itemData)
+        {
+            if (itemData.Length > 1)
+            {
+                itemData.Append(",");
+            }
+            itemData.Append($"\"{uniqueName}\":\"{friendlyName}\"");
+        }
+
         public static string GenerateRawArchipelagoItemList(bool invert = false)
         {
             var craftingMenu = ComponentManager<CraftingMenu>.Value;

@@ -324,7 +324,7 @@ namespace Raftipelago.Network
         private void _resetForNextLoad(bool isReload = false)
         {
             // Reset progressives on each connect since we'll be rewriting it all
-            ComponentManager<ItemTracker>.Value.ResetProgressives();
+            ComponentManager<ItemTracker>.Value.ResetData();
             if (isReload && hasLoadedRaftWorldBefore && _proxyServer != null) // Don't requeue if never loaded world before -- we'll just duplicate for no reason
             {
                 _requeueAllItemsMethodInfo.Invoke(_proxyServer, null);
