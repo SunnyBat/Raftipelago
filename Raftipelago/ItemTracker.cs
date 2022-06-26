@@ -55,7 +55,7 @@ namespace Raftipelago
             {
                 Debug.LogError($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
-            if (Semih_Network.IsHost)
+            if (Raft_Network.IsHost)
             {
                 var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
                     .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSyncBehaviour>.Value });
@@ -67,7 +67,7 @@ namespace Raftipelago
                 itmSend.GetType().GetProperty("PlayerId").SetValue(itmSend, player);
                 arr.SetValue(itmSend, 0);
                 itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);
-                ComponentManager<Semih_Network>.Value.RPC((Message)itemPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                ComponentManager<Raft_Network>.Value.RPC((Message)itemPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
             }
         }
 

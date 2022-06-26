@@ -21,7 +21,7 @@ namespace Raftipelago.Network.Behaviors
         {
             if (msg.GetType() == _rpPacketType) // RaftipelagoPacket_ResendData
             {
-                if (Semih_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected())
+                if (Raft_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected())
                 {
                     BehaviourHelper.SendArchipelagoData();
                 }

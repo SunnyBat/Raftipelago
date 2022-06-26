@@ -16,12 +16,12 @@ namespace Raftipelago.Patches
 			bool flag2 = __instance.chatFieldController.HandleChatMessageAsTerminalCommando(text, textWriterSteamID);
 			if (!flag && !flag2)
 			{
-				if (Semih_Network.IsHost)
+				if (Raft_Network.IsHost)
 				{
 					if (CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(textWriterSteamID.m_SteamID, out int playerId)) // Archipelago sending a message
 					{
 						Message_IngameChat message = new Message_IngameChat(Messages.Ingame_Chat_Message, __instance, textWriterSteamID, text);
-						ComponentManager<Semih_Network>.Value.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+						ComponentManager<Raft_Network>.Value.RPC(message, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 						__instance.chatFieldController.AddUITextMessage(text, textWriterSteamID);
 					}
 					else if (textWriterSteamID.IsValid()) // Networked player sending a message
@@ -44,7 +44,7 @@ namespace Raftipelago.Patches
 	{
 		[HarmonyPrefix]
 		public static bool AlwaysReplace(string p_message, CSteamID p_steamID,
-			Semih_Network ___network,
+			Raft_Network ___network,
 			ChatManager __instance)
 		{
 			if (___network == null)
@@ -53,7 +53,7 @@ namespace Raftipelago.Patches
 			}
 
 			Message_IngameChat message = new Message_IngameChat(Messages.Ingame_Chat_Message, __instance, p_steamID, p_message);
-			if (Semih_Network.IsHost)
+			if (Raft_Network.IsHost)
 			{
 				ComponentManager<IArchipelagoLink>.Value.SendChatMessage(p_message);
 			}

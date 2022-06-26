@@ -11,7 +11,7 @@ namespace Raftipelago.Data
 
         public string GetItemName(int itemId)
         {
-            if (Semih_Network.IsHost)
+            if (Raft_Network.IsHost)
             {
                 if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected())
                 {
@@ -41,7 +41,7 @@ namespace Raftipelago.Data
 
         public string GetPlayerName(int playerId)
         {
-            if (Semih_Network.IsHost)
+            if (Raft_Network.IsHost)
             {
                 if (ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected())
                 {

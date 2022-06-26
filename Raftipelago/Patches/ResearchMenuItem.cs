@@ -20,7 +20,7 @@ namespace Raftipelago.Patches
 			{
 				___localPlayer = ComponentManager<Network_Player>.Value;
 			}
-			if (Semih_Network.IsHost)
+			if (Raft_Network.IsHost)
 			{
 				___inventoryRef.LearnItem(___item, ___localPlayer.steamID);
 				if (___OnLearnedRecipeEvent != null)

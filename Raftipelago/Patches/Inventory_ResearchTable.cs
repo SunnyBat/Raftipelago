@@ -33,7 +33,7 @@ namespace Raftipelago.Patches
 					else
 					{
 						(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(item.settings_Inventory.DisplayName, researcherID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-						if (Semih_Network.IsHost)
+						if (Raft_Network.IsHost)
 						{
 							var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, menuItemBase.UniqueName);
 							ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(friendlyName);

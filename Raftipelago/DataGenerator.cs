@@ -13,14 +13,16 @@ namespace Raftipelago
         private static string[] ProgressionItemList = new string[] {
             "Battery", "Bolt", "Circuit board", "Hinge", "Receiver", "Antenna", "Smelter", // Radio Tower requirements
             "Engine", "Steering Wheel", // Balboa requirements
-            "Machete", "Basic bow", "Stone arrow", // Balboa completion requirements
+            "Machete", // Balboa completion requirements
             "Zipline tool", // Caravan Island completion requirement
 
             "Vasagatan Frequency", // At Radio Tower
             "Balboa Island Frequency", // At Vasagatan
             "Caravan Island Frequency", // At Balboa Island
-            "Tangaroa Frequency" // At Caravan Island
-            // Tangaroa will likely have a note once further islands are added, but for now is the end of the game
+            "Tangaroa Frequency", // At Caravan Island
+            "Varuna Point Frequency", // At Tangaroa
+            "Temperance Frequency", // At Varuna Point
+            "Utopia Frequency", // At Temperance
         };
 
         public static string GenerateRaftipelagoFriendlyItemList(bool invert = false)
@@ -84,7 +86,7 @@ namespace Raftipelago
                 });
 
                 var notebook = ComponentManager<NoteBook>.Value;
-                var nbNetwork = (Semih_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
+                var nbNetwork = (Raft_Network)typeof(NoteBook).GetField("network", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(notebook);
                 foreach (var nbNote in nbNetwork.GetLocalPlayer().NoteBookUI.GetAllNotes())
                 {
                     if (CommonUtils.IsValidNote(nbNote) || nbNote?.name == "ThumbNailButton_CaravanIsland") // Only include valid story-related notes
@@ -199,13 +201,17 @@ namespace Raftipelago
                     foreach (var landmarkItem in landmark.landmarkItems)
                     {
                         string locName;
+                        if (!_isRaftipelagoLocation(landmarkItem))
+                        {
+                            continue;
+                        }
                         if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                         {
                             locName = friendlyName;
                         }
                         else
                         {
-                            continue;
+                            locName = landmarkItem.name;
                         }
                         var additionalRequirements = ComponentManager<ExternalData>.Value.AdditionalLocationCheckItemRequirements.GetValueOrDefault(locName);
                         var reqList = additionalRequirements == null ? null : new List<string>(additionalRequirements);
@@ -239,8 +245,7 @@ namespace Raftipelago
                     foreach (var landmarkItem in landmark.landmarkItems)
                     {
                         string locName;
-                        if (CommonUtils.IsBlueprint(landmarkItem) || CommonUtils.IsNote(landmarkItem) || landmarkItem.name == "Pickup_Landmark_Caravan_RocketDoll"
-                            || ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name))
+                        if (_isRaftipelagoLocation(landmarkItem))
                         {
                             continue;
                         }
@@ -256,6 +261,11 @@ namespace Raftipelago
             }
             allLocationData.Append("]");
             return allLocationData.ToString();
+        }
+
+        private static bool _isRaftipelagoLocation(LandmarkItem loc)
+        {
+            return ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(loc.name, out string friendlyName);
         }
 
         private static void _addLocation(ref int id, string name, string region, StringBuilder locData, List<string> requiredLocations = null)

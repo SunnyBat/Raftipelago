@@ -8,14 +8,14 @@ namespace Raftipelago.Network.Behaviors
     {
         public static void SendArchipelagoData(Target toSendTo = Target.Other)
         {
-            if (Semih_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() && !Semih_Network.InMenuScene)
+            if (Raft_Network.IsHost && ComponentManager<IArchipelagoLink>.Value.IsSuccessfullyConnected() && !Raft_Network.InMenuScene)
             {
                 var syncPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncArchipelagoData")
                     .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ArchipelagoDataSync>.Value });
                 syncPacket.GetType().GetProperty("ItemIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllItemIds());
                 syncPacket.GetType().GetProperty("PlayerIdToName").SetValue(syncPacket, ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds());
                 syncPacket.GetType().GetProperty("AlreadyUnlockedLocations").SetValue(syncPacket, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
-                ComponentManager<Semih_Network>.Value.RPC((Message)syncPacket, toSendTo, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                ComponentManager<Raft_Network>.Value.RPC((Message)syncPacket, toSendTo, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
 
                 var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
                     .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSyncBehaviour>.Value });
@@ -34,7 +34,7 @@ namespace Raftipelago.Network.Behaviors
                     arr.SetValue(itmSend, i);
                 }
                 itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);
-                ComponentManager<Semih_Network>.Value.RPC((Message)itemPacket, toSendTo, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                ComponentManager<Raft_Network>.Value.RPC((Message)itemPacket, toSendTo, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
             }
         }
     }

@@ -100,7 +100,7 @@ public class RaftipelagoThree : Mod
         ComponentManager<ResendDataBehaviour>.Value = (ResendDataBehaviour)wrapperObject.AddComponent(typeof(ResendDataBehaviour));
         NetworkUpdateManager.AddBehaviour(ComponentManager<ResendDataBehaviour>.Value);
 
-        if (Semih_Network.IsHost)
+        if (Raft_Network.IsHost)
         {
             ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
         }
@@ -108,14 +108,14 @@ public class RaftipelagoThree : Mod
         {
             var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
                 .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
-            ComponentManager<Semih_Network>.Value.RPC((Message)resendPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+            ComponentManager<Raft_Network>.Value.RPC((Message)resendPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
         }
     }
 
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
     {
-        if (!Semih_Network.IsHost && !Semih_Network.InMenuScene)
+        if (!Raft_Network.IsHost && !Raft_Network.InMenuScene)
         {
             Debug.LogError("Only the world host can connect to Archipelago.");
         }
@@ -190,7 +190,7 @@ public class RaftipelagoThree : Mod
     {
         var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
             .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
-        ComponentManager<Semih_Network>.Value.RPC((Message)resendPacket, Target.All, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+        ComponentManager<Raft_Network>.Value.RPC((Message)resendPacket, Target.All, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
     }
 
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]
@@ -206,6 +206,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
+#if true
     [ConsoleCommand("/generateItemsForRaftipelago", "Development-related command. Generates the JSON for Raft's friendly name mappings. Must be generated using the English locale.")]
     private static void Command_GenerateFriendlyItems(string[] arguments)
     {
@@ -283,6 +284,7 @@ public class RaftipelagoThree : Mod
             Debug.LogError("Must be loaded into a world to generate location list.");
         }
     }
+#endif
 
     [ConsoleCommand("/toggleDebug", "Toggles Raftipelago debug prints.")]
     private static void Command_ToggleDebug(string[] arguments)
@@ -292,6 +294,6 @@ public class RaftipelagoThree : Mod
 
     private static bool isInWorld()
     {
-        return !Semih_Network.InMenuScene;
+        return !Raft_Network.InMenuScene;
     }
 }

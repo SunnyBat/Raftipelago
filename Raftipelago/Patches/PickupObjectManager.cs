@@ -13,7 +13,7 @@ namespace Raftipelago.Patches
 			ref bool __result)
 		{
 			if (pickupNetwork != null
-				&& (!Semih_Network.IsHost || pickupNetwork.CanBePickedUp())
+				&& (!Raft_Network.IsHost || pickupNetwork.CanBePickedUp())
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
 			{
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
@@ -35,7 +35,7 @@ namespace Raftipelago.Patches
 				&& pickupNetwork.CanBePickedUp()
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
 			{
-				if (Semih_Network.IsHost)
+				if (Raft_Network.IsHost)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 					if (pickupName == "Tangaroa Next Frequency") // Special condition for victory

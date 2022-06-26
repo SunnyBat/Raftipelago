@@ -197,7 +197,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                if (!Semih_Network.IsHost)
+                if (!Raft_Network.IsHost)
                 {
                     return ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName.GetValueOrDefault(itemId, null);
                 }
@@ -220,7 +220,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                if (!Semih_Network.IsHost)
+                if (!Raft_Network.IsHost)
                 {
                     return ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName.GetValueOrDefault(playerId, null);
                 }
@@ -411,7 +411,7 @@ namespace Raftipelago.Network
 
         private void PrintMessage(string msg)
         {
-            if (!Semih_Network.InMenuScene)
+            if (!Raft_Network.InMenuScene)
             {
                 try
                 {

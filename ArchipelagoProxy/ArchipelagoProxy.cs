@@ -294,7 +294,15 @@ namespace ArchipelagoProxy
 
         public int[] GetAllLocationIdsUnlockedForCurrentWorld()
         {
-            return _session.Locations.AllLocationsChecked.ToArray();
+            // NOTE: This will truncate long values. However, all of Raftipelago's IDs are below Int.MAX_VALUE, so
+            // we can just convert the numbers to an int.
+            return _session.Locations.AllLocationsChecked.Select(loc => {
+                if (loc > int.MaxValue)
+                {
+                    _messageQueue.Enqueue("WARNING: Location " + loc + " is out of assumed range. This will likely break things.");
+                }
+                return (int)loc;
+            }).ToArray();
         }
 
         public void SetIsPlayerInWorld(bool isInWorld, bool forceResync = false)
@@ -334,7 +342,12 @@ namespace ArchipelagoProxy
 
         public int GetLocationIdFromName(string locationName)
         {
-            return _session.Locations.GetLocationIdFromName("Raft", locationName);
+            var locationId = _session.Locations.GetLocationIdFromName("Raft", locationName);
+            if (locationId > int.MaxValue)
+            {
+                _messageQueue.Enqueue("WARNING: Location " + locationId + " is out of assumed range. This will likely break things.");
+            }
+            return (int) locationId;
         }
 
         public string GetItemNameFromId(int itemId)
@@ -486,7 +499,7 @@ namespace ArchipelagoProxy
             }
             if (allLocations.Count > 0)
             {
-                _session.Locations.CompleteLocationChecks(allLocations.ToArray());
+                _session.Locations.CompleteLocationChecks(allLocations.Select(loc => (long) loc).ToArray());
             }
         }
 
@@ -508,7 +521,7 @@ namespace ArchipelagoProxy
                 _lastUsedUsername = username;
                 _lastUsedPassword = password;
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 2, 2), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 3, 4), ItemsHandlingFlags.AllItems, password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");

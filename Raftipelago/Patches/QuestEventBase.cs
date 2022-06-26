@@ -18,7 +18,7 @@ namespace Raftipelago.Patches
 				// We need to complete the quest without giving vanilla rewards, including updating the underlying GameObject's state (to hide it)
 				if (successFull)
 				{
-					if (Semih_Network.IsHost)
+					if (Raft_Network.IsHost)
 					{
 						__instance.CurrentObjectStateIndex++;
 					}
@@ -40,12 +40,12 @@ namespace Raftipelago.Patches
 
 				// Trigger notification and Archipelago location check instead
 				var pickupName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, __instance.name);
-				if (Semih_Network.IsHost)
+				if (Raft_Network.IsHost)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 				}
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
-					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ComponentManager<Semih_Network>.Value.LocalSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
+					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ComponentManager<Raft_Network>.Value.LocalSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				return false;
 			}
             return true;

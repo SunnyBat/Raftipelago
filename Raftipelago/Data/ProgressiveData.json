@@ -3,22 +3,63 @@
     [ "Healing salve" ],
     [ "Good healing salve" ]
   ],
+  "progressive-backpack": [
+    [ "Backpack" ],
+    [ "Big backpack" ]
+  ],
+  "progressive-containers": [
+    [ "Clay bowl" ],
+    [ "Drinking glass" ]
+  ],
+  "progressive-headlight": [
+    [ "Head light" ],
+    [ "Advanced head light" ]
+  ],
+  "progressive-biofuel": [
+    [ "Biofuel refiner" ],
+    [ "Advanced biofuel refiner" ]
+  ],
+  "progressive-bottle": [
+    [ "Empty bottle" ],
+    [ "Empty canteen" ]
+  ],
+  "progressive-grill": [
+    [ "Advanced grill" ],
+    [ "Electric grill" ]
+  ],
   "progressive-purifier": [
     [ "Advanced purifier" ],
     [ "Electric purifier" ]
   ],
   "progressive-crop-plot": [
     [ "Medium crop plot" ],
-    [ "Large crop plot" ]
+    [ "Large crop plot" ],
+    [ "Advanced small crop plot" ],
+    [ "Advanced medium crop plot" ],
+    [ "Advanced large crop plot" ]
   ],
   "progressive-battery": [
     [ "Battery" ],
-    [ "Battery charger" ]
+    [ "Battery charger" ],
+    [ "Advanced Battery" ],
+    [ "Wind turbine" ]
+  ],
+  "progressive-anchor": [
+    [ "Stationary anchor" ],
+    [ "Advanced stationary anchor" ]
   ],
   "progressive-engine": [
     [ "Engine" ],
     [ "Steering Wheel" ],
     [ "Engine controls" ]
+  ],
+  "progressive-scarecrow": [
+    [ "Scarecrow" ],
+    [ "Advanced scarecrow" ]
+  ],
+  "progressive-net": [
+    [ "Simple collection net" ],
+    [ "Advanced collection net" ]
   ],
   "progressive-storage": [
     [ "Storage" ],
@@ -26,21 +67,40 @@
   ],
   "progressive-zipline": [
     [ "Zipline tool" ],
-    [ "Zipline" ]
+    [ "Zipline" ],
+    [ "Electric zipline tool" ]
   ],
   "progressive-metals": [
     [ "Smelter" ],
-    [ "Metal detector" ]
+    [ "Metal detector" ],
+    [ "Electric Smelter" ]
   ],
   "progressive-bow": [
     [ "Basic bow" ],
     [ "Stone arrow" ],
-    [ "Metal arrow" ]
+    [ "Metal arrow" ],
+    [ "Titanium arrow" ]
+  ],
+  "progressive-axe": [
+    [ "Metal axe" ],
+    [ "Titanium axe" ]
+  ],
+  "progressive-hook": [
+    [ "Scrap hook" ],
+    [ "Titanium hook" ]
+  ],
+  "progressive-spear": [
+    [ "Metal spear" ],
+    [ "Machete" ],
+    [ "Titanium sword" ]
   ],
   "progressive-frequency": [
     [ "Vasagatan Frequency" ],
     [ "Balboa Island Frequency" ],
     [ "Caravan Island Frequency" ],
-    [ "Tangaroa Frequency" ]
+    [ "Tangaroa Frequency" ],
+    [ "Varuna Point Frequency" ],
+    [ "Temperance Frequency" ],
+    [ "Utopia Frequency" ]
   ]
 }
