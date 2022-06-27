@@ -284,6 +284,60 @@ public class RaftipelagoThree : Mod
             Debug.LogError("Must be loaded into a world to generate location list.");
         }
     }
+
+    [ConsoleCommand("/generateProgressives", "Development-related command. Generates the JSON for Archipelago's Raft progressives list.")]
+    private static void Command_GenerateProgressives(string[] arguments)
+    {
+        Debug.Log(DataGenerator.GenerateProgressiveList());
+    }
+
+    [ConsoleCommand("/printItems", "Development-related command. Prints a list of items.")]
+    private static void Command_PrintItems(string[] arguments)
+    {
+        var filter = (arguments.Length >= 1 ? arguments[0] : "").ToLower();
+        ItemManager.GetAllItems().ForEach(item =>
+        {
+            if (item?.UniqueName != null && (item.UniqueName.ToLower().Contains(filter) || item.name.ToLower().Contains(filter)))
+            {
+                UnityEngine.Debug.Log($"{item.name} :: {item.UniqueName}");
+            }
+        });
+    }
+
+    [ConsoleCommand("/spawn", "Spawns a landmark, namely any type of island.")]
+    private static void Command_Spawn(string[] arguments)
+    {
+        string text = arguments[0];
+        Array values = Enum.GetValues(typeof(ChunkPointType));
+        int num = 150;
+        if (arguments.Length >= 2 && int.TryParse(arguments[1], out int num2))
+        {
+            num = num2;
+        }
+        foreach (object obj in values)
+        {
+            ChunkPointType pointType = (ChunkPointType)obj;
+            if (text.Contains("clear", StringComparison.OrdinalIgnoreCase) && arguments.Length >= 2)
+            {
+                string text2 = arguments[1];
+                if (text2.Contains("all", StringComparison.OrdinalIgnoreCase))
+                {
+                    ComponentManager<ChunkManager>.Value.ClearAllChunkPoints();
+                    break;
+                }
+                if (pointType.ToString().Contains(text2, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComponentManager<ChunkManager>.Value.ClearChunkPoints(pointType, 0U);
+                    break;
+                }
+            }
+            else if (pointType.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
+            {
+                ComponentManager<ChunkManager>.Value.AddChunkPointCheat(pointType, global::Raft.direction.normalized * (float)num);
+                break;
+            }
+        }
+    }
 #endif
 
     [ConsoleCommand("/toggleDebug", "Toggles Raftipelago debug prints.")]

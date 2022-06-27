@@ -263,6 +263,28 @@ namespace Raftipelago
             return allLocationData.ToString();
         }
 
+        public static string GenerateProgressiveList()
+        {
+            var allProgressiveData = new StringBuilder();
+            allProgressiveData.Append("{");
+            foreach (var progData in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings)
+            {
+                foreach (var progressiveItemList in progData.Value)
+                {
+                    foreach (var progressiveItem in progressiveItemList)
+                    {
+                        if (allProgressiveData.Length > 1)
+                        {
+                            allProgressiveData.Append(",");
+                        }
+                        allProgressiveData.Append($"\"{progressiveItem}\":\"{progData.Key}\"");
+                    }
+                }
+            }
+            allProgressiveData.Append("}");
+            return allProgressiveData.ToString();
+        }
+
         private static bool _isRaftipelagoLocation(LandmarkItem loc)
         {
             return ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(loc.name, out string friendlyName);

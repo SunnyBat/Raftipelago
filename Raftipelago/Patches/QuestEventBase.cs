@@ -50,8 +50,19 @@ namespace Raftipelago.Patches
 			}
 			else if (__instance.name == "QuestInteractable_Utopia_Door_People")
             {
-				UnityEngine.Debug.Log("Game should be completed here!");
+				if (successFull)
+				{
+					UnityEngine.Debug.Log("Game should be completed here!");
+				}
+				else
+				{
+					UnityEngine.Debug.Log("Requirements not met, but the victory object has been interacted with!");
+				}
 				return false;
+            }
+			else
+            {
+				UnityEngine.Debug.Log(__instance.name);
             }
 
 			return true;
