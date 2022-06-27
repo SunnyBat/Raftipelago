@@ -96,7 +96,7 @@ namespace Raftipelago.Network
                             if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf
                                 && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                             {
-                                if (friendlyName == "Tangaroa Next Frequency") // Special condition for victory
+                                if (friendlyName == "Utopia Complete") // Special condition for victory
                                 {
                                     SetGameCompleted(true);
                                 }

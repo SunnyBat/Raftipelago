@@ -31,6 +31,7 @@ namespace Raftipelago.Patches
 		[HarmonyPrefix]
 		public static void NeverReplace(PickupItem_Networked pickupNetwork)
 		{
+			// TODO Change this to whatever is necessary, probably some quest thing
 			if (pickupNetwork != null
 				&& pickupNetwork.CanBePickedUp()
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
@@ -38,8 +39,9 @@ namespace Raftipelago.Patches
 				if (Raft_Network.IsHost)
 				{
 					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
-					if (pickupName == "Tangaroa Next Frequency") // Special condition for victory
+					if (pickupName == "Utopia Complete") // Special condition for victory
 					{
+						UnityEngine.Debug.Log("Wait why is this the way that it is");
 						ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
 					}
 				}

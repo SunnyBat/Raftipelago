@@ -48,7 +48,13 @@ namespace Raftipelago.Patches
 					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ComponentManager<Raft_Network>.Value.LocalSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				return false;
 			}
-            return true;
+			else if (__instance.name == "QuestInteractable_Utopia_Door_People")
+            {
+				UnityEngine.Debug.Log("Game should be completed here!");
+				return false;
+            }
+
+			return true;
 		}
 	}
 }
