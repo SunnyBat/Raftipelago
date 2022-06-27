@@ -8,6 +8,7 @@ namespace Raftipelago.Data
     {
         public Dictionary<int, string> ItemIdToName { get; set; }
         public Dictionary<int, string> PlayerIdToName { get; set; }
+        public Dictionary<string, object> SlotData { get; set; }
 
         public string GetItemName(int itemId)
         {
@@ -57,9 +58,34 @@ namespace Raftipelago.Data
             }
             else
             {
-                return ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName.GetValueOrDefault(playerId, null);
+                return PlayerIdToName.GetValueOrDefault(playerId, null);
             }
             return null;
+        }
+
+        public bool TryGetSlotData<T>(string key, out T obj)
+        {
+            Dictionary<string, object> dictionaryToRead;
+            if (Raft_Network.IsHost)
+            {
+                dictionaryToRead = ComponentManager<IArchipelagoLink>.Value.GetLastLoadedSlotData();
+            }
+            else
+            {
+                dictionaryToRead = SlotData;
+            }
+
+            if (dictionaryToRead != null && dictionaryToRead.TryGetValue(key, out object outVal))
+            {
+                UnityEngine.Debug.Log($"TGSD: {outVal} ({outVal.GetType().FullName}");
+                obj = (T)outVal;
+                return true;
+            }
+            else
+            {
+                obj = default(T);
+                return false;
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using System.Collections.Generic;
 
 namespace Raftipelago.Patches
@@ -11,10 +12,10 @@ namespace Raftipelago.Patches
 			SO_ChunkSpawnRuleAsset __instance,
 			ref Interval_Float __result)
 		{
-			if (__instance.isFrequencyPoint)
+			if (__instance.isFrequencyPoint && ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("IslandGenerationDistance", out double distance))
 			{
-				// TODO Scale minValue and maxValue by some value
-				__result = new Interval_Float(__result.minValue, __result.maxValue);
+				var convertedDistance = (float)distance;
+				__result = new Interval_Float(__result.minValue * convertedDistance, __result.maxValue * convertedDistance);
 			}
 		}
 	}
@@ -29,10 +30,9 @@ namespace Raftipelago.Patches
 			float ___minDistanceToOthers,
 			List<ChunkPointType> ___others)
 		{
-			if (__instance.isFrequencyPoint)
+			if (__instance.isFrequencyPoint && ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("IslandGenerationDistance", out double distance))
 			{
-				// TODO Scale ___minDistanceToOthers by some value
-				__result = !___useMinDistance || !___others.Contains(pointToCompare.rule.ChunkPointType) || pointToCheck.worldPosition.DistanceXZ(pointToCompare.worldPosition) >= ___minDistanceToOthers;
+				__result = !___useMinDistance || !___others.Contains(pointToCompare.rule.ChunkPointType) || pointToCheck.worldPosition.DistanceXZ(pointToCompare.worldPosition) >= ___minDistanceToOthers * distance;
 				return false;
 			}
 			return true;

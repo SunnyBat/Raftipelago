@@ -13,7 +13,7 @@ namespace Raftipelago
         private static string[] ProgressionItemList = new string[] {
             "Battery", "Bolt", "Circuit board", "Hinge", "Receiver", "Antenna", "Smelter", // Radio Tower requirements
             "Engine", "Steering Wheel", // Balboa requirements
-            "Machete", // Balboa completion requirements
+            "Metal spear", "Machete", // Balboa completion requirements (Metal spear = progressive requirement for Machete)
             "Zipline tool", // Caravan Island completion requirement
 
             "Vasagatan Frequency", // At Radio Tower

@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Raftipelago.Data;
 using Steamworks;
 using System.Collections.Generic;
 using UnityEngine;
@@ -46,7 +47,6 @@ namespace Raftipelago.Patches
 			ref CanvasGroup ___canvasgroup,
 			ref Button ___learnButton,
 			ref Text ___learnedText,
-			ref CraftingMenu ___craftingMenu,
 			ref List<BingoMenuItem> ___bingoMenuItems,
 			Inventory_ResearchTable ___inventoryRef)
 		{
@@ -57,53 +57,57 @@ namespace Raftipelago.Patches
 			___learnedText.gameObject.SetActive(true);
 
 			// Addition by Raftipelago
-			var availableResearchItems = (Dictionary<Item_Base, AvaialableResearchItem>)typeof(Inventory_ResearchTable).GetField("availableResearchItems",
-				System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(___inventoryRef);
-			// This will remove the items from the research list. If they are not researched (theoretically this will never happen),
-			// this will just shrug and move on.
-			var researchedItems = ___inventoryRef.GetResearchedItems(); // Pulls direct reference to list, which we can modify
-			var unresearchedItems = new List<Item_Base>();
-			___bingoMenuItems.ForEach(itm =>
+			if (ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("ExpensiveResearch", out long isExpensiveResearchEnabled) && isExpensiveResearchEnabled == 1)
 			{
-				availableResearchItems[itm.BingoItem].SetResearchedState(false);
-				researchedItems.Remove(itm.BingoItem);
-				unresearchedItems.Add(itm.BingoItem);
-			});
-
-			var menuItems = ___inventoryRef.GetMenuItems();
-			menuItems.ForEach(mI =>
-			{
-				if (!mI.Learned)
+				var availableResearchItems = (Dictionary<Item_Base, AvaialableResearchItem>)typeof(Inventory_ResearchTable).GetField("availableResearchItems",
+					System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(___inventoryRef);
+				// This will remove the items from the research list. If they are not researched (theoretically this will never happen),
+				// this will just shrug and move on.
+				var researchedItems = ___inventoryRef.GetResearchedItems(); // Pulls direct reference to list, which we can modify
+				var unresearchedItems = new List<Item_Base>();
+				___bingoMenuItems.ForEach(itm =>
 				{
-					var bingoItems = (List<BingoMenuItem>)typeof(ResearchMenuItem).GetField("bingoMenuItems",
-						System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(mI);
-					// TODO Check bingoState, modify if bingo enabled and we remove an item
-					bingoItems.ForEach(bI =>
-					{
-						if (unresearchedItems.Contains(bI.BingoItem))
-						{
-							// Revert BingoItem state for individual ingredient
-							var itemImage = (Image)typeof(BingoMenuItem).GetField("itemImage",
-								System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(bI);
-							bI.SetBingoState(false);
-							itemImage.color = new Color(1f, 1f, 1f, 0.5f);
+					availableResearchItems[itm.BingoItem].SetResearchedState(false);
+					researchedItems.Remove(itm.BingoItem);
+					unresearchedItems.Add(itm.BingoItem);
+				});
 
-							// Undo Bingo() if item had bingo set before
-							var learnButton = (Button)typeof(ResearchMenuItem).GetField("learnButton",
-								System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(mI);
-							if (learnButton.interactable)
+				// Remove BingoItem from all Research Table items
+				var menuItems = ___inventoryRef.GetMenuItems();
+				menuItems.ForEach(mI =>
+				{
+					if (!mI.Learned)
+					{
+						var bingoItems = (List<BingoMenuItem>)typeof(ResearchMenuItem).GetField("bingoMenuItems",
+							System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(mI);
+						// TODO Check bingoState, modify if bingo enabled and we remove an item
+						bingoItems.ForEach(bI =>
+						{
+							if (unresearchedItems.Contains(bI.BingoItem))
 							{
-								var miItemImage = (Image)typeof(ResearchMenuItem).GetField("itemImage",
+								// Revert BingoItem state for individual ingredient
+								var itemImage = (Image)typeof(BingoMenuItem).GetField("itemImage",
+									System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(bI);
+								bI.SetBingoState(false);
+								itemImage.color = new Color(1f, 1f, 1f, 0.5f);
+
+								// Undo Bingo() if item had bingo set before
+								var learnButton = (Button)typeof(ResearchMenuItem).GetField("learnButton",
 									System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(mI);
-								learnButton.interactable = false;
-								learnButton.gameObject.SetActive(false);
-								miItemImage.sprite = mI.GetItem().settings_Inventory.Sprite;
-								miItemImage.color = new Color(1f, 1f, 1f, 0.5f);
+								if (learnButton.interactable)
+								{
+									var miItemImage = (Image)typeof(ResearchMenuItem).GetField("itemImage",
+										System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(mI);
+									learnButton.interactable = false;
+									learnButton.gameObject.SetActive(false);
+									miItemImage.sprite = mI.GetItem().settings_Inventory.Sprite;
+									miItemImage.color = new Color(1f, 1f, 1f, 0.5f);
+								}
 							}
-						}
-					});
-				}
-			});
+						});
+					}
+				});
+			}
 
 			return false;
 		}

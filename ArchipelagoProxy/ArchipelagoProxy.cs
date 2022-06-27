@@ -83,6 +83,7 @@ namespace ArchipelagoProxy
         private bool _isUserIssuedConnect = false;
         private bool _shouldDisconnect = false;
         private bool _shouldKeepRunning = true;
+        private Dictionary<string, object> _slotData;
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -360,6 +361,11 @@ namespace ArchipelagoProxy
             return _session.Players.GetPlayerAlias(playerId);
         }
 
+        public Dictionary<string, object> GetLastLoadedSlotData()
+        {
+            return _slotData;
+        }
+
         public void Disconnect()
         {
             try
@@ -525,6 +531,7 @@ namespace ArchipelagoProxy
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
+                this._slotData = ((LoginSuccessful)loginResult).SlotData;
                 return true;
             }
             else if (disconnectOnFailure)

@@ -27,8 +27,9 @@ namespace Raftipelago.Network
         private MethodInfo _setIsPlayerInWorldMethodInfo;
         private MethodInfo _sendChatMessageMethodInfo;
         private MethodInfo _locationFromCurrentWorldUnlockedMethodInfo;
-        private MethodInfo _getLocationIdFromNameMethodInfo; 
+        private MethodInfo _getLocationIdFromNameMethodInfo;
         private MethodInfo _getItemNameFromIdMethodInfo;
+        private MethodInfo _getLastLoadedSlotDataMethodInfo;
         private MethodInfo _getPlayerAliasMethodInfo;
         private MethodInfo _setGameCompletedMethodInfo;
         private MethodInfo _requeueAllItemsMethodInfo;
@@ -205,6 +206,18 @@ namespace Raftipelago.Network
             }
         }
 
+        public Dictionary<string, object> GetLastLoadedSlotData()
+        {
+            if (IsSuccessfullyConnected())
+            {
+                return (Dictionary<string, object>)_getLastLoadedSlotDataMethodInfo.Invoke(_proxyServer, new object[0]);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public string GetPlayerAlias(int playerId)
         {
             if (IsSuccessfullyConnected())
@@ -355,6 +368,7 @@ namespace Raftipelago.Network
             _locationFromCurrentWorldUnlockedMethodInfo = proxyServerRef.GetMethod("LocationFromCurrentWorldUnlocked");
             _getLocationIdFromNameMethodInfo = proxyServerRef.GetMethod("GetLocationIdFromName");
             _getItemNameFromIdMethodInfo = proxyServerRef.GetMethod("GetItemNameFromId");
+            _getLastLoadedSlotDataMethodInfo = proxyServerRef.GetMethod("GetLastLoadedSlotData");
             _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
             _setGameCompletedMethodInfo = proxyServerRef.GetMethod("SetGameCompleted");
             _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");

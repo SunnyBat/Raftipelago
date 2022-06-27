@@ -22,6 +22,8 @@ namespace Raftipelago.Network
 
         string GetItemNameFromId(int itemId);
 
+        Dictionary<string, object> GetLastLoadedSlotData();
+
         string GetPlayerAlias(int playerId);
 
         void ToggleDebug();
