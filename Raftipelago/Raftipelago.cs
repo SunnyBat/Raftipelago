@@ -299,7 +299,7 @@ public class RaftipelagoThree : Mod
         {
             if (item?.UniqueName != null && (item.UniqueName.ToLower().Contains(filter) || item.name.ToLower().Contains(filter)))
             {
-                UnityEngine.Debug.Log($"{item.name} :: {item.UniqueName}");
+                Debug.Log($"{item.name} :: {item.UniqueName}");
             }
         });
     }

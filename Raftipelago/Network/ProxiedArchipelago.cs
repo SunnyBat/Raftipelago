@@ -188,7 +188,7 @@ namespace Raftipelago.Network
                     }
                     else
                     {
-                        Debug.Log("Error finding ID for location " + locName + ", event will be swallowed");
+                        Debug.LogError("Error finding ID for location " + locName + ", event will be swallowed");
                     }
                 }
                 if (locationIds.Count > 0)

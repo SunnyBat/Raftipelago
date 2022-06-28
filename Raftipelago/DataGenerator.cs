@@ -146,7 +146,6 @@ namespace Raftipelago
                 {
                     var friendlyName = baseItem.settings_Inventory.DisplayName;
                     var uniqueName = baseItem.UniqueName;
-                    UnityEngine.Debug.Log($"{uniqueName} (Friendly name {friendlyName})");
                     _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
                     if (!allUniqueNames.AddUniqueOnly(uniqueName))
                     {
