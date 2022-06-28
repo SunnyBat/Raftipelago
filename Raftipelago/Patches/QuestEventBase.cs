@@ -52,17 +52,9 @@ namespace Raftipelago.Patches
             {
 				if (successFull)
 				{
-					UnityEngine.Debug.Log("Game should be completed here!");
+					ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(true);
 				}
-				else
-				{
-					UnityEngine.Debug.Log("Requirements not met, but the victory object has been interacted with!");
-				}
-				return false;
-            }
-			else
-            {
-				UnityEngine.Debug.Log(__instance.name);
+				// Let game handle ending scene
             }
 
 			return true;

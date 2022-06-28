@@ -206,7 +206,7 @@ public class RaftipelagoThree : Mod
         }
     }
 
-#if true
+#if false
     [ConsoleCommand("/generateItemsForRaftipelago", "Development-related command. Generates the JSON for Raft's friendly name mappings. Must be generated using the English locale.")]
     private static void Command_GenerateFriendlyItems(string[] arguments)
     {

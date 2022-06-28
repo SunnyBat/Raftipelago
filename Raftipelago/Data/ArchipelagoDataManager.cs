@@ -77,7 +77,6 @@ namespace Raftipelago.Data
 
             if (dictionaryToRead != null && dictionaryToRead.TryGetValue(key, out object outVal))
             {
-                UnityEngine.Debug.Log($"TGSD: {outVal} ({outVal.GetType().FullName}");
                 obj = (T)outVal;
                 return true;
             }
