@@ -97,14 +97,7 @@ namespace Raftipelago.Network
                             if (CommonUtils.IsNoteOrBlueprint(landmarkItem) && !landmarkItem.gameObject.activeSelf
                                 && ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                             {
-                                if (friendlyName == "Utopia Complete") // Special condition for victory
-                                {
-                                    SetGameCompleted(true);
-                                }
-                                else
-                                {
-                                    locationList.Add(friendlyName);
-                                }
+                                locationList.Add(friendlyName);
                             }
                             else if (ComponentManager<ExternalData>.Value.QuestLocations.ContainsKey(landmarkItem.name)) // Friendly names and non-LandmarkItems will be ignored. This is fine.
                             {
@@ -127,11 +120,33 @@ namespace Raftipelago.Network
                                     locationList.Add(specialLocationName);
                                 }
                             }
+                            else if (CommonUtils.IsCharacter(landmarkItem))
+                            {
+                                var characterLandmark = (LandmarkItem_CharacterUnlock)landmarkItem;
+                                var characterUnlock = (CharacterUnlock)typeof(LandmarkItem_CharacterUnlock).GetField("characterUnlock", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(characterLandmark);
+                                var characterModel = (GameObject)typeof(CharacterUnlock).GetField("characterModel", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(characterUnlock);
+                                if (!characterModel.activeSelf)
+                                {
+                                    var characterData = (SO_Character)typeof(CharacterUnlock).GetField("characterToUnlock", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(characterUnlock);
+                                    if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(characterData.name, out string characterFriendlyName))
+                                    {
+                                        locationList.Add(characterFriendlyName);
+                                    }
+                                    else
+                                    {
+                                        Debug.LogError("Unknown character: " + landmarkItem.name);
+                                    }
+                                }
+                            }
                         }
                     });
                     if (CommonUtils.HasFinishedRelayStationQuest())
                     {
                         locationList.Add("Relay Station quest");
+                    }
+                    if (CommonUtils.HasCompletedTheGame())
+                    {
+                        SetGameCompleted(true);
                     }
                     LocationUnlocked(locationList.ToArray());
                 }

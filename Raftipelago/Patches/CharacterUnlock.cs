@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
 using Raftipelago.Network;
+using UnityEngine;
 
 namespace Raftipelago.Patches
 {
@@ -10,9 +11,10 @@ namespace Raftipelago.Patches
 	{
 		[HarmonyPrefix]
 		public static void NeverReplace(Network_Player interactor,
-			SO_Character ___characterToUnlock)
+			SO_Character ___characterToUnlock,
+			GameObject ___characterModel)
 		{
-			if (___characterToUnlock != null)
+			if (___characterToUnlock != null && ___characterModel != null && ___characterModel.activeSelf)
 			{
 				var characterName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, ___characterToUnlock.name);
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(new Notification_Research_Info(characterName, interactor.steamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));

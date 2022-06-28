@@ -24,4 +24,22 @@ namespace Raftipelago.Patches
 			return true;
 		}
 	}
+
+	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked))]
+	public class HarmonyPatch_PickupObjectManager_RemovePickupItem2
+	{
+		[HarmonyPrefix]
+		public static void NeverReplace(PickupItem_Networked pickupNetwork)
+		{
+			if (pickupNetwork != null
+				&& pickupNetwork.CanBePickedUp()
+				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
+			{
+				if (Raft_Network.IsHost)
+				{
+					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
+				}
+			}
+		}
+	}
 }

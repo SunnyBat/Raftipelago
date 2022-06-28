@@ -44,6 +44,10 @@ namespace Raftipelago
         {
             return IsNote(item) || IsBlueprint(item);
         }
+        public static bool IsCharacter(LandmarkItem item)
+        {
+            return item?.name?.StartsWith("CharacterUnlock_") ?? false;
+        }
 
         public static bool IsValidNote(NoteBookNote note)
         {
@@ -119,6 +123,11 @@ namespace Raftipelago
             return QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation1)
                 && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation2)
                 && QuestProgressTracker.HasFinishedQuest(QuestType.BalboaRelayStation3);
+        }
+
+        public static bool HasCompletedTheGame()
+        {
+            return QuestProgressTracker.HasFinishedQuest(QuestType.Utopia_People_Rescued);
         }
 
         public static RGD_Game CreateRaftipelagoGame(RGD_Game baseData)
