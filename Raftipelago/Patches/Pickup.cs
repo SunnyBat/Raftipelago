@@ -31,7 +31,12 @@ namespace Raftipelago.Patches
 					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
 				}
 			}
-			return false;
+			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(note.name, out string friendlyName)
+				&& ComponentManager<ExternalData>.Value.LocationsToSuppress.Contains(friendlyName))
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 

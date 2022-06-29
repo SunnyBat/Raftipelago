@@ -144,7 +144,7 @@ namespace Raftipelago
                 var baseItem = rmi.GetItem();
                 if (CommonUtils.IsValidResearchTableItem(baseItem))
                 {
-                    var friendlyName = baseItem.settings_Inventory.DisplayName;
+                    var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, baseItem.UniqueName);
                     var uniqueName = baseItem.UniqueName;
                     _addFriendlyMapping(friendlyName, uniqueName, friendlyData);
                     if (!allUniqueNames.AddUniqueOnly(uniqueName))
@@ -191,7 +191,8 @@ namespace Raftipelago
                             var baseBingoItem = (Item_Base)typeof(BingoMenuItem).GetField("bingoItem", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bingoMenuItem);
                             researchItems.Add(baseBingoItem.UniqueName);
                         }
-                        _addLocation(ref currentId, baseItem.settings_Inventory.DisplayName, "ResearchTable", allLocationData, researchItems);
+                        var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, baseItem.UniqueName);
+                        _addLocation(ref currentId, friendlyName, "ResearchTable", allLocationData, researchItems);
                     }
                 });
                 WorldManager.AllLandmarks.ForEach(landmark =>
@@ -204,7 +205,21 @@ namespace Raftipelago
                         {
                             continue;
                         }
-                        if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
+                        if (CommonUtils.IsCharacter(landmarkItem))
+                        {
+                            var characterLandmark = (LandmarkItem_CharacterUnlock)landmarkItem;
+                            var characterUnlock = (CharacterUnlock)typeof(LandmarkItem_CharacterUnlock).GetField("characterUnlock", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(characterLandmark);
+                            var characterData = (SO_Character)typeof(CharacterUnlock).GetField("characterToUnlock", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(characterUnlock);
+                            if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(characterData.name, out string characterFriendlyName))
+                            {
+                                locName = characterFriendlyName;
+                            }
+                            else
+                            {
+                                locName = landmarkItem.name;
+                            }
+                        }
+                        else if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(landmarkItem.name, out string friendlyName))
                         {
                             locName = friendlyName;
                         }
@@ -235,7 +250,8 @@ namespace Raftipelago
                     var baseItem = rmi.GetItem();
                     if (baseItem.settings_recipe.HiddenInResearchTable || baseItem.settings_recipe.LearnedViaBlueprint)
                     {
-                        _addLocation(ref currentId, baseItem.settings_Inventory.DisplayName, "ResearchTable", allLocationData);
+                        var friendlyName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings, baseItem.UniqueName);
+                        _addLocation(ref currentId, friendlyName, "ResearchTable", allLocationData);
                     }
                 });
                 WorldManager.AllLandmarks.ForEach(landmark =>
@@ -286,7 +302,7 @@ namespace Raftipelago
 
         private static bool _isRaftipelagoLocation(LandmarkItem loc)
         {
-            return ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(loc.name, out string friendlyName);
+            return ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(loc.name, out string friendlyName) || CommonUtils.IsCharacter(loc);
         }
 
         private static void _addLocation(ref int id, string name, string region, StringBuilder locData, List<string> requiredLocations = null)

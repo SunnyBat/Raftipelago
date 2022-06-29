@@ -19,7 +19,10 @@ namespace Raftipelago.Patches
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, pickupPlayerID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
 				__result = PickupObjectManager.RemovePickupItem(pickupNetwork);
-				return false;
+				if (ComponentManager<ExternalData>.Value.LocationsToSuppress.Contains(pickupName))
+				{
+					return false;
+				}
 			}
 			return true;
 		}
@@ -31,14 +34,12 @@ namespace Raftipelago.Patches
 		[HarmonyPrefix]
 		public static void NeverReplace(PickupItem_Networked pickupNetwork)
 		{
-			if (pickupNetwork != null
+			if (Raft_Network.IsHost
+				&& pickupNetwork != null
 				&& pickupNetwork.CanBePickedUp()
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
 			{
-				if (Raft_Network.IsHost)
-				{
-					ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
-				}
+				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 			}
 		}
 	}

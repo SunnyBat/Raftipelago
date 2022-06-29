@@ -88,6 +88,7 @@
     <None Include="Data\FriendlyRegions.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Data\LocationsToSuppress.json" />
     <None Include="Data\Newtonsoft.Json.dll.copyonly">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

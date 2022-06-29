@@ -27,6 +27,7 @@ namespace Raftipelago.Data
         /// </summary>
         public ReadOnlyDictionary<string, string[][]> ProgressiveTechnologyMappings { get; private set; }
         public ReadOnlyDictionary<string, string[]> QuestLocations { get; private set; }
+        public ReadOnlyCollection<string> LocationsToSuppress { get; private set; }
 
         public ExternalData(EmbeddedFileUtils utils)
         {
@@ -36,6 +37,7 @@ namespace Raftipelago.Data
             _loadAdditionalLocationRequirements(utils);
             _loadProgressiveData(utils);
             _loadQuestLocations(utils);
+            _loadLocationToSuppress(utils);
         }
 
         private void _loadItems(EmbeddedFileUtils utils)
@@ -80,6 +82,13 @@ namespace Raftipelago.Data
             var rawMappings = utils.ReadTextFile("Data", "QuestLocations.json");
             var parsedMappings = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(rawMappings);
             QuestLocations = new ReadOnlyDictionary<string, string[]>(parsedMappings);
+        }
+
+        private void _loadLocationToSuppress(EmbeddedFileUtils utils)
+        {
+            var rawList = utils.ReadTextFile("Data", "LocationsToSuppress.json");
+            var parsedList = JsonConvert.DeserializeObject<List<string>>(rawList);
+            LocationsToSuppress = new ReadOnlyCollection<string>(parsedList);
         }
 
         private Dictionary<T, T> _inverseDictionary<T>(Dictionary<T, T> dict)

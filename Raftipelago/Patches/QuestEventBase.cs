@@ -46,7 +46,10 @@ namespace Raftipelago.Patches
 				}
 				(ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research)
 					.researchInfoQue.Enqueue(new Notification_Research_Info(pickupName, ComponentManager<Raft_Network>.Value.LocalSteamID, ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
-				return false;
+				if (ComponentManager<ExternalData>.Value.LocationsToSuppress.Contains(pickupName))
+				{
+					return false;
+				}
 			}
 			else if (__instance.name == "QuestInteractable_Utopia_Door_People")
             {

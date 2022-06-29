@@ -51,7 +51,7 @@ namespace Raftipelago
 
         public static bool IsValidNote(NoteBookNote note)
         {
-            return (note?.name?.Contains("NoteBookNote") ?? false) && !note.name.Contains("StarSign");
+            return note?.name?.Contains("NoteBookNote") ?? false;
         }
 
         public static bool IsValidUnlockableItem(Item_Base item)
