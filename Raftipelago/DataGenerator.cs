@@ -23,6 +23,9 @@ namespace Raftipelago
             "Varuna Point Frequency", // At Tangaroa
             "Temperance Frequency", // At Varuna Point
             "Utopia Frequency", // At Temperance
+
+            // Archipelago-specific progression requirements -- tests fail without these
+            "Shovel", "Net launcher", "Net canister", "Shear", "Grass plot"
         };
 
         public static string GenerateRaftipelagoFriendlyItemList(bool invert = false)
