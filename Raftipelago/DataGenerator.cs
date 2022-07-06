@@ -25,7 +25,7 @@ namespace Raftipelago
             "Utopia Frequency", // At Temperance
 
             // Archipelago-specific progression requirements -- tests fail without these
-            "Shovel", "Net launcher", "Net canister", "Shear", "Grass plot", "Metal detector"
+            "Shovel", "Net launcher", "Net canister", "Shear", "Grass plot", "Metal detector", "Empty bottle"
         };
 
         public static string GenerateRaftipelagoFriendlyItemList(bool invert = false)
