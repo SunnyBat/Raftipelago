@@ -4,7 +4,6 @@ using Steamworks;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using UnityEngine;
 
 namespace Raftipelago
 {
@@ -24,16 +23,19 @@ namespace Raftipelago
 
         public void SetAlreadyReceivedItemData(List<long> resourcePackIds)
         {
+            Logger.Debug($"Setting item data: {string.Join(",", resourcePackIds?.ToArray())}");
             _alreadyReceivedItemData = new List<long>(resourcePackIds);
         }
 
         public List<long> GetAllReceivedItemIds()
         {
+            Logger.Debug($"Already received IDs: {string.Join(",", _alreadyReceivedItemData?.ToArray())}");
             return _alreadyReceivedItemData;
         }
 
         public void ResetData()
         {
+            Logger.Debug("Resetting item data");
             ResetProgressives();
             _alreadyReceivedItemData.Clear();
         }
@@ -53,7 +55,7 @@ namespace Raftipelago
                 && !_unlockProgressive(itemId, locationId, sentItemName, player)
                 && _unlockItem(itemId, sentItemName, locationId, player) == UnlockResult.NotFound)
             {
-                Debug.LogError($"Unable to find {sentItemName} ({itemId}, {locationId})");
+                Logger.Error($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
             if (Raft_Network.IsHost)
             {
@@ -75,12 +77,16 @@ namespace Raftipelago
         {
             if (sentItemName?.StartsWith(ResourcePackIdentifier) ?? false)
             {
-                if (_alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, player)))
+                Logger.Trace($"Resource Pack identified: {sentItemName}");
+                var resourcePackId = calculateUniqueIdentifier(itemId, locationId, player);
+                if (_alreadyReceivedItemData.AddUniqueOnly(resourcePackId))
                 {
+                    Logger.Trace($"Resource Pack ID: {resourcePackId}");
                     var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
                     var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
                     if (resourcePackMatch.Success && int.TryParse(resourcePackMatch.Groups[1].Value, out int itemCount))
                     {
+                        Logger.Info($"Resource Pack received: {itemCount} {resourcePackMatch.Groups[2].Value}");
                         RAPI.GetLocalPlayer().Inventory.AddItem(resourcePackMatch.Groups[2].Value, itemCount);
                         (ComponentManager<NotificationManager>.Value.ShowNotification("Research") as Notification_Research).researchInfoQue.Enqueue(
                             new Notification_Research_Info(itemCommand,
@@ -89,9 +95,10 @@ namespace Raftipelago
                     }
                     else
                     {
-                        Debug.LogError("Could not parse resource command " + itemCommand);
+                        Logger.Error("Could not parse resource command " + itemCommand);
                     }
                 }
+                Logger.Info($"Resource Pack {sentItemName} ({resourcePackId}) already received, swallowing");
                 return true;
             }
             return false;
@@ -110,11 +117,16 @@ namespace Raftipelago
                         var itemResult = _unlockItem(itemId, item, locationId, fromPlayerId, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
-                            Debug.LogError($"Unable to unlock {item} from {progressiveName}");
+                            Logger.Error($"Unable to unlock {item} from {progressiveName}");
                         }
                         else if (itemResult == UnlockResult.NewlyUnlocked)
                         {
+                            Logger.Info($"Unlocking {item} from {progressiveName}");
                             unlockedAnyItem = true;
+                        }
+                        else if (itemResult == UnlockResult.AlreadyUnlocked)
+                        {
+                            Logger.Debug($"{item} already unlocked from {progressiveName}");
                         }
                     }
 
@@ -124,10 +136,13 @@ namespace Raftipelago
                     }
                 }
                 // else duplicate, ignore
+                Logger.Debug($"{progressiveName} is duplicate, swallowing");
                 return true;
             }
             else
             {
+                // Item is likely not progressive, ignore
+                Logger.Trace($"Progressive unable to be unlocked. ItemID {itemId} | LocationID {locationId} | progressiveName {progressiveName} | fromPlayerId {fromPlayerId}");
                 return false;
             }
         }
@@ -179,8 +194,9 @@ namespace Raftipelago
                         CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(playerId),
                         ComponentManager<SpriteManager>.Value.GetArchipelagoSprite()));
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Logger.Warn("Error sending research notification: " + e.Message);
             }
         }
 

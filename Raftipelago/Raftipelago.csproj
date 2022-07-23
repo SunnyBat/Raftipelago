@@ -37,6 +37,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Logger.cs" />
     <Compile Include="Network\Behaviors\ArchipelagoDataSync.cs" />
     <Compile Include="Network\Behaviors\BehaviourHelper.cs" />
     <Compile Include="Network\Behaviors\ItemSyncBehaviour.cs" />

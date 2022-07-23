@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
+using System;
 using System.Collections.Generic;
 
 namespace Raftipelago.Patches
@@ -14,6 +15,13 @@ namespace Raftipelago.Patches
 		{
 			if (__instance.isFrequencyPoint && ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("IslandGenerationDistance", out long distance))
 			{
+				if (__instance.ChunkPointType == ChunkPointType.Landmark_Utopia)
+                {
+					// Utopia spawns inside Temperance if loaded when at Temperance and at 1/4 spawn distance. Prevent this from happening.
+					// In the future, we should be able to detect if this is going to happen and increase the distance that way (throw this
+					// into DoesPointPassSpawnRules())
+					distance = (long)Math.Max(distance, 4.0);
+                }
 				var convertedDistance = (float)(distance / 8.0);
 				__result = new Interval_Float(__result.minValue * convertedDistance, __result.maxValue * convertedDistance);
 			}

@@ -36,7 +36,6 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
 
-        private bool shouldPrintDebugMessages = false;
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
         {
@@ -279,11 +278,6 @@ namespace Raftipelago.Network
             }
         }
 
-        public void ToggleDebug()
-        {
-            shouldPrintDebugMessages = !shouldPrintDebugMessages;
-        }
-
         public Dictionary<int, string> GetAllItemIds()
         {
             var ret = new Dictionary<int, string>();
@@ -400,7 +394,7 @@ namespace Raftipelago.Network
             _proxyServerType.GetMethod("AddPrintMessageEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddDebugMessageEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)DebugMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)Logger.Debug, "SingleArgumentActionHandler`1", typeof(string)) });
         }
 
         private object GetNewEventObject<T>(T arg, string typeName, params Type[] genericTypes)
@@ -452,14 +446,6 @@ namespace Raftipelago.Network
                 }
             }
             else
-            {
-                Debug.Log(msg);
-            }
-        }
-
-        private void DebugMessage(string msg)
-        {
-            if (shouldPrintDebugMessages)
             {
                 Debug.Log(msg);
             }

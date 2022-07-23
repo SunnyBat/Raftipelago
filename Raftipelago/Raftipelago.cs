@@ -38,7 +38,7 @@ public class RaftipelagoThree : Mod
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
-        if (isInWorld())
+        if (_isInWorld())
         {
             WorldLoaded_ArchipelagoSetup();
         }
@@ -49,15 +49,18 @@ public class RaftipelagoThree : Mod
     {
         StopCoroutine(serverHeartbeat);
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
-        if (isInWorld())
+        if (_isInWorld())
         {
             if (SaveAndLoad.WorldToLoad == null)
             {
-                // WorldToLoad is only used on world load, we can modify it without consequence
+                Raftipelago.Logger.Debug("SaveAndLoad.WorldToLoad is null, generating");
+                // WorldToLoad is only referenced on world load, we can modify it without consequence
                 SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly)
                     .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
             }
             CommonUtils.SetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
+            ComponentManager<ItemTracker>.Value.ResetData();
+            Raftipelago.Logger.Debug($"Set SaveAndLoad.WorldToLoad identifiers to [{string.Join(",", CommonUtils.GetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad))}]");
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ItemSyncBehaviour>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ResendDataBehaviour>.Value);
@@ -71,12 +74,13 @@ public class RaftipelagoThree : Mod
     // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
     {
-        ComponentManager<ItemTracker>.Value.ResetData();
+        Raftipelago.Logger.Trace("World loaded");
         WorldLoaded_ArchipelagoSetup();
     }
 
     public override void WorldEvent_WorldUnloaded()
     {
+        Raftipelago.Logger.Trace("World unloaded");
         // *Sync objects are automatically cleared from NetworkUpdateManager
         // We can just leave the values hanging in ComponentManager since they'll be overwritten
         ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(false);
@@ -84,6 +88,8 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value.SetGameCompleted(false);
         // Reset station count when world unloaded so we don't trigger on reload into a different world
         HarmonyPatch_BalboaRelayStationScreen_RefreshScreen.previousStationCount = -1;
+        // Rreset ItemTracker unlocks so we don't trigger on reload into a different world
+        ComponentManager<ItemTracker>.Value.ResetData();
     }
 
     private static void WorldLoaded_ArchipelagoSetup()
@@ -102,10 +108,12 @@ public class RaftipelagoThree : Mod
 
         if (Raft_Network.IsHost)
         {
+            Raftipelago.Logger.Debug("Is world host");
             ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
         }
         else
         {
+            Raftipelago.Logger.Debug("Not world host");
             var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
                 .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
             ComponentManager<Raft_Network>.Value.RPC((Message)resendPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
@@ -128,61 +136,15 @@ public class RaftipelagoThree : Mod
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
             string serverAddress = arguments[0];
             int currentIndex = 1;
-            string username = readNextValue(arguments, ref currentIndex);
-            string password = readNextValue(arguments, ref currentIndex);
+            string username = _readNextValue(arguments, ref currentIndex);
+            string password = _readNextValue(arguments, ref currentIndex);
             ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
-            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(isInWorld());
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
         }
         else
         {
             Debug.LogError("Usage: <i>/connect (URL) (Username) (Password)</i> -- Password is optional. Parenthesis should be omitted unless part of URL, username, or password. If a value has spaces, use \"\" around it, eg \"My Unique Username\".");
         }
-    }
-
-    private static string readNextValue(string[] arguments, ref int currentIndex)
-    {
-        if (currentIndex >= arguments.Length)
-        {
-            return null;
-        }
-        StringBuilder valueBuilder = new StringBuilder();
-        bool quotedValue = false;
-        do
-        {
-            if (arguments[currentIndex].StartsWith("\""))
-            {
-                if (arguments[currentIndex].EndsWith("\"")) // Account for "MyValue"
-                {
-                    valueBuilder.Append(arguments[currentIndex].Substring(1, arguments[currentIndex].Length - 2));
-                }
-                else // "My Value[...]"
-                {
-                    quotedValue = true;
-                    valueBuilder.Append(arguments[currentIndex].Substring(1));
-                }
-            }
-            else
-            {
-                if (quotedValue)
-                {
-                    valueBuilder.Append(" "); // This may have been more than one space -- this is unavoidable without char substitutes. Not in scope at the moment.
-                }
-
-                if (quotedValue && arguments[currentIndex].EndsWith("\"")) // "My Value[...]"
-                {
-                    valueBuilder.Append(arguments[currentIndex].Substring(0, arguments[currentIndex].Length - 1));
-                    quotedValue = false;
-                }
-                else // Non-quoted, or potentially MyValue" -- this may be a typo, but the mod will just do as it's told
-                {
-                    valueBuilder.Append(arguments[currentIndex]);
-                }
-            }
-            currentIndex++;
-        }
-        while (quotedValue && currentIndex < arguments.Length);
-
-        return valueBuilder.ToString();
     }
 
     [ConsoleCommand("/resync", "Resyncs Archipelago data from server host. Generally unnecessary.")]
@@ -203,6 +165,34 @@ public class RaftipelagoThree : Mod
         else
         {
             Debug.LogError("Usage: <i>disconnect confirmDisconnect</i>");
+        }
+    }
+
+    [ConsoleCommand("/setRaftipelagoLogLevel", "Set the logging level for Raftipelago. Valid values are 1-6, with 1 being Trace and 6 being Fatal.")]
+    private static void Command_SetLogLevel(string[] arguments)
+    {
+        if (arguments.Length == 1 && Enum.TryParse<Raftipelago.Logger.LogLevel>(arguments[0], out var logLevel) && Enum.IsDefined(typeof(Raftipelago.Logger.LogLevel), logLevel))
+        {
+            Raftipelago.Logger.SetLogLevel(logLevel);
+            Debug.Log("Set log level to " + logLevel.ToString());
+        }
+        else
+        {
+            Debug.LogError("Usage: <i>setRaftipelagoLogLevel #</i> where # is between 1 (Trace) and 6 (Fatal)");
+        }
+    }
+
+    [ConsoleCommand("/setRaftipelagoStackLevel", "Set the stack level for Raftipelago logging. Valid values are 1-5, with 1 being Full and 5 being None")]
+    private static void Command_SetStackLevel(string[] arguments)
+    {
+        if (arguments.Length == 1 && Enum.TryParse<Raftipelago.Logger.StackLevel>(arguments[0], out var stackLevel) && Enum.IsDefined(typeof(Raftipelago.Logger.StackLevel), stackLevel))
+        {
+            Raftipelago.Logger.SetStackLevel(stackLevel);
+            Debug.Log("Set stack level to " + stackLevel.ToString());
+        }
+        else
+        {
+            Debug.LogError("Usage: <i>setRaftipelagoLogLevel #</i> where # is between 1 (Full) and 5 (None)");
         }
     }
 
@@ -340,13 +330,53 @@ public class RaftipelagoThree : Mod
     }
 #endif
 
-    [ConsoleCommand("/toggleDebug", "Toggles Raftipelago debug prints.")]
-    private static void Command_ToggleDebug(string[] arguments)
+    private static string _readNextValue(string[] arguments, ref int currentIndex)
     {
-        ComponentManager<IArchipelagoLink>.Value.ToggleDebug();
+        if (currentIndex >= arguments.Length)
+        {
+            return null;
+        }
+        StringBuilder valueBuilder = new StringBuilder();
+        bool quotedValue = false;
+        do
+        {
+            if (arguments[currentIndex].StartsWith("\""))
+            {
+                if (arguments[currentIndex].EndsWith("\"")) // Account for "MyValue"
+                {
+                    valueBuilder.Append(arguments[currentIndex].Substring(1, arguments[currentIndex].Length - 2));
+                }
+                else // "My Value[...]"
+                {
+                    quotedValue = true;
+                    valueBuilder.Append(arguments[currentIndex].Substring(1));
+                }
+            }
+            else
+            {
+                if (quotedValue)
+                {
+                    valueBuilder.Append(" "); // This may have been more than one space -- this is unavoidable without char substitutes. Not in scope at the moment.
+                }
+
+                if (quotedValue && arguments[currentIndex].EndsWith("\"")) // "My Value[...]"
+                {
+                    valueBuilder.Append(arguments[currentIndex].Substring(0, arguments[currentIndex].Length - 1));
+                    quotedValue = false;
+                }
+                else // Non-quoted, or potentially MyValue" -- this may be a typo, but the mod will just do as it's told
+                {
+                    valueBuilder.Append(arguments[currentIndex]);
+                }
+            }
+            currentIndex++;
+        }
+        while (quotedValue && currentIndex < arguments.Length);
+
+        return valueBuilder.ToString();
     }
 
-    private static bool isInWorld()
+    private static bool _isInWorld()
     {
         return !Raft_Network.InMenuScene;
     }

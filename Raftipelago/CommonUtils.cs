@@ -153,6 +153,7 @@ namespace Raftipelago
         {
             if (gameData == null)
             {
+                Logger.Debug("gameData is null");
                 return null;
             }
             if (RGD_Game_Raftipelago_Type == null)
@@ -166,15 +167,19 @@ namespace Raftipelago
 
             if (gameData.GetType() != RGD_Game_Raftipelago_Type)
             {
+                Logger.Debug("gameData is not Raftipelago save type");
                 return null;
             }
-            return (List<long>)unlockedItemsFieldInfo.GetValue(gameData);
+            var resultingValue = unlockedItemsFieldInfo.GetValue(gameData);
+            Logger.Debug($"Value from world is {(resultingValue == null ? "invalid" : $"[{string.Join(",", (List<long>)resultingValue)}]")}");
+            return new List<long>((List<long>)unlockedItemsFieldInfo.GetValue(gameData));
         }
 
         public static void SetUnlockedItemIdentifiers(object gameData, List<long> itemPacks)
         {
             if (gameData == null)
             {
+                Logger.Debug("gameData is null");
                 return;
             }
             if (RGD_Game_Raftipelago_Type == null)
@@ -188,9 +193,10 @@ namespace Raftipelago
 
             if (gameData.GetType() != RGD_Game_Raftipelago_Type)
             {
+                Logger.Debug("gameData is not Raftipelago save type");
                 return;
             }
-            unlockedItemsFieldInfo.SetValue(gameData, itemPacks);
+            unlockedItemsFieldInfo.SetValue(gameData, new List<long>(itemPacks));
         }
     }
 }

@@ -26,8 +26,6 @@ namespace Raftipelago.Network
 
         string GetPlayerAlias(int playerId);
 
-        void ToggleDebug();
-
         void SetGameCompleted(bool completed);
 
         void Disconnect();
