@@ -2,6 +2,7 @@
 using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Models;
 using Archipelago.MultiClient.Net.Packets;
+using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
 using Newtonsoft.Json;
 using RaftipelagoTypes;
 using System;
@@ -19,10 +20,12 @@ namespace ArchipelagoProxy
         private const int TIME_BETWEEN_UPDATES_MS = 100;
         private const int TIME_BETWEEN_RECONNECTS = 2500;
         private const int MAX_RECONNECT_ATTEMPTS = 5;
+        private const string DEATH_LINK_TAG = "DeathLink";
 
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
         private readonly ArchipelagoSession _session;
+        private readonly DeathLinkService _deathLink;
         private readonly Thread _commsThread;
 
         // Lock for all non-thread-safe objects
@@ -148,6 +151,7 @@ namespace ArchipelagoProxy
                     _debugQueue.Enqueue($"Disconnected from server.");
                 }
             };
+            _deathLink = _session.CreateDeathLinkServiceAndEnable();
             _commsThread = new Thread(new ThreadStart(_runCommsThread));
             _commsThread.Start();
         }
@@ -379,6 +383,33 @@ namespace ArchipelagoProxy
             catch (Exception)
             {
                 _messageQueue.Enqueue("Error occurred while disconnecting from server. You may have already been disconnected.");
+            }
+        }
+
+        public void AddDeathLinkHandler(Action deathLinkHandler)
+        {
+            if (deathLinkHandler != null)
+            {
+                lock (LockForClass)
+                {
+                    _deathLink.OnDeathLinkReceived += (deathLinkObject) =>
+                    {
+                        if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
+                        {
+                            _chatQueue.Enqueue($"{deathLinkObject.Source} died to {deathLinkObject.Cause}");
+                            deathLinkHandler.Invoke();
+                        }
+                    };
+                }
+            }
+        }
+
+        public void SendDeathLinkIfNecessary(string cause)
+        {
+            if (IsSuccessfullyConnected() && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1)
+                && !string.IsNullOrWhiteSpace(cause))
+            {
+                _deathLink.SendDeathLink(new DeathLink(_session.Players.GetPlayerName(_session.ConnectionInfo.Slot), cause));
             }
         }
 

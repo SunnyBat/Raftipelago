@@ -41,6 +41,7 @@
     <Compile Include="Network\Behaviors\ArchipelagoDataSync.cs" />
     <Compile Include="Network\Behaviors\BehaviourHelper.cs" />
     <Compile Include="Network\Behaviors\ItemSyncBehaviour.cs" />
+    <Compile Include="Network\Behaviors\DeathLinkBehaviour.cs" />
     <Compile Include="Network\Behaviors\ResendDataBehaviour.cs" />
     <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\ArchipelagoDataManager.cs" />
@@ -54,6 +55,7 @@
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\CharacterUnlock.cs" />
     <Compile Include="Patches\ChatManager.cs" />
+    <Compile Include="Patches\PlayerStats.cs" />
     <Compile Include="Patches\SO_ChunkSpawnRuleAsset.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
     <Compile Include="Patches\LoadGame_Selection.cs" />

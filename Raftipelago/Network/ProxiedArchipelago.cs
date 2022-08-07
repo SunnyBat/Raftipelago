@@ -35,6 +35,7 @@ namespace Raftipelago.Network
         private MethodInfo _requeueAllItemsMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
+        private MethodInfo _sendDeathLinkIfNecessaryMethodInfo;
 
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
@@ -334,6 +335,14 @@ namespace Raftipelago.Network
             return ret;
         }
 
+        public void PlayerDied(string cause)
+        {
+            if (_proxyServer != null)
+            {
+                _sendDeathLinkIfNecessaryMethodInfo.Invoke(_proxyServer, new object[] { cause });
+            }
+        }
+
         private void _initAppDomain()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -383,18 +392,30 @@ namespace Raftipelago.Network
             _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
+            _sendDeathLinkIfNecessaryMethodInfo = proxyServerRef.GetMethod("SendDeathLinkIfNecessary");
         }
 
         private void _hookUpEvents()
         {
             // Events for data sent to us
-            _proxyServerType.GetMethod("AddConnectedToServerEvent").Invoke(_proxyServer, new object[] { GetNewEventObject((Action)ConnnectedToServer, "ActionHandler") });
+            _proxyServerType.GetMethod("AddConnectedToServerEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action>(ConnnectedToServer, "ActionHandler") });
             _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<int, int, int>)ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<int, int, int>>(ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
             _proxyServerType.GetMethod("AddPrintMessageEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddDebugMessageEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject((Action<string>)Logger.Debug, "SingleArgumentActionHandler`1", typeof(string)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(Logger.Debug, "SingleArgumentActionHandler`1", typeof(string)) });
+            _proxyServerType.GetMethod("AddDeathLinkHandler")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action>(_deathLinkReceived, "ActionHandler") });
+        }
+
+        private void _deathLinkReceived()
+        {
+            RAPI.GetLocalPlayer().Kill();
+            var deathLinkPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_DeathLink")
+                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<DeathLinkBehaviour>.Value });
+            ComponentManager<Raft_Network>.Value.RPC((Message)deathLinkPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
         }
 
         private object GetNewEventObject<T>(T arg, string typeName, params Type[] genericTypes)

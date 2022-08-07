@@ -49,6 +49,7 @@
     <Compile Include="RaftipelagoPacket.cs" />
     <Compile Include="RaftipelagoPacket_ResendData.cs" />
     <Compile Include="RaftipelagoPacket_SyncArchipelagoData.cs" />
+    <Compile Include="RaftipelagoPacket_DeathLink.cs" />
     <Compile Include="RaftipelagoPacket_SyncItems.cs" />
     <Compile Include="RGD_Game_Raftipelago.cs" />
   </ItemGroup>

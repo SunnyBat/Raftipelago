@@ -60,10 +60,10 @@ public class RaftipelagoThree : Mod
             }
             CommonUtils.SetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
             ComponentManager<ItemTracker>.Value.ResetData();
-            Raftipelago.Logger.Debug($"Set SaveAndLoad.WorldToLoad identifiers to [{string.Join(",", CommonUtils.GetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad))}]");
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ItemSyncBehaviour>.Value);
             NetworkUpdateManager.RemoveBehaviour(ComponentManager<ResendDataBehaviour>.Value);
+            NetworkUpdateManager.RemoveBehaviour(ComponentManager<DeathLinkBehaviour>.Value);
         }
         ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
@@ -105,6 +105,9 @@ public class RaftipelagoThree : Mod
 
         ComponentManager<ResendDataBehaviour>.Value = (ResendDataBehaviour)wrapperObject.AddComponent(typeof(ResendDataBehaviour));
         NetworkUpdateManager.AddBehaviour(ComponentManager<ResendDataBehaviour>.Value);
+
+        ComponentManager<DeathLinkBehaviour>.Value = (DeathLinkBehaviour)wrapperObject.AddComponent(typeof(DeathLinkBehaviour));
+        NetworkUpdateManager.AddBehaviour(ComponentManager<DeathLinkBehaviour>.Value);
 
         if (Raft_Network.IsHost)
         {

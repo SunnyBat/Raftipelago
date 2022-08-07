@@ -37,5 +37,7 @@ namespace Raftipelago.Network
         Dictionary<int, string> GetAllPlayerIds();
 
         Dictionary<int, string> GetAllItemIds();
+
+        void PlayerDied(string cause);
     }
 }
