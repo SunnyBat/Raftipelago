@@ -10,8 +10,9 @@ namespace Raftipelago.Patches
 		public static void NeverReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, SO_Buff buffAsset,
 			PlayerStats __instance)
 		{
-			if (Raft_Network.IsHost && __instance.IsDead)
+			if (!Raft_Network.InMenuScene && Raft_Network.IsHost && __instance.IsDead)
 			{
+				Logger.Debug("DEATH");
 				switch (damageInflictorEntityType)
 				{
 					case EntityType.Player:

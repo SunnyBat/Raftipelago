@@ -136,13 +136,18 @@ public class RaftipelagoThree : Mod
         }
         else if (arguments.Length >= 2)
         {
+            Raftipelago.Logger.Debug("Disconnecting");
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
+            Raftipelago.Logger.Debug("Reading args");
             string serverAddress = arguments[0];
             int currentIndex = 1;
             string username = _readNextValue(arguments, ref currentIndex);
             string password = _readNextValue(arguments, ref currentIndex);
+            Raftipelago.Logger.Debug("Connecting");
             ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
-            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
+            Raftipelago.Logger.Debug("Postconnect");
+            //ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
+            Raftipelago.Logger.Debug("Connect command sent");
         }
         else
         {

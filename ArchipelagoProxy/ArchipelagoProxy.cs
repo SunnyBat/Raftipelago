@@ -107,6 +107,8 @@ namespace ArchipelagoProxy
             {
                 _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
             }
+            
+            _deathLink = new DeathLinkService(_session.Socket, _session.ConnectionInfo, _session.DataStorage);
             _session.Items.ItemReceived += itemHelper =>
             {
                 try
@@ -141,8 +143,6 @@ namespace ArchipelagoProxy
                 }
                 _messageQueue.Enqueue($"Disconnected from server with reason \"{closedReason}\"");
             };
-            _deathLink = _session.CreateDeathLinkService();
-            _deathLink.EnableDeathLink(); // TODO Do we enable/disable on world load/unload or always keep active?
             _commsThread = new Thread(new ThreadStart(_runCommsThread));
             _commsThread.Start();
         }
@@ -379,7 +379,7 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void AddDeathLinkHandler(Action deathLinkHandler)
+        public void AddDeathLinkHandler(ActionHandler deathLinkHandler)
         {
             if (deathLinkHandler != null)
             {
@@ -556,6 +556,7 @@ namespace ArchipelagoProxy
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
                 this._slotData = ((LoginSuccessful)loginResult).SlotData;
+                _deathLink.EnableDeathLink(); // TODO Do we enable/disable on world load/unload or always keep active?
                 return true;
             }
             else if (disconnectOnFailure)

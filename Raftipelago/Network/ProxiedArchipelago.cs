@@ -274,7 +274,7 @@ namespace Raftipelago.Network
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError(e);
+                    Logger.Error(e.Message);
                 }
             }
         }
@@ -410,14 +410,6 @@ namespace Raftipelago.Network
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action>(_deathLinkReceived, "ActionHandler") });
         }
 
-        private void _deathLinkReceived()
-        {
-            RAPI.GetLocalPlayer().Kill();
-            var deathLinkPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_DeathLink")
-                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<DeathLinkBehaviour>.Value });
-            ComponentManager<Raft_Network>.Value.RPC((Message)deathLinkPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-        }
-
         private object GetNewEventObject<T>(T arg, string typeName, params Type[] genericTypes)
         {
             var raftipelagoTypes = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly);
@@ -431,6 +423,15 @@ namespace Raftipelago.Network
             {
                 return typeInfo.GetConstructor(constructorArgTypes).Invoke(new object[] { arg });
             }
+        }
+
+        private void _deathLinkReceived()
+        {
+            Logger.Trace("_deathLinkReceived");
+            RAPI.GetLocalPlayer().Kill();
+            var deathLinkPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_DeathLink")
+                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<DeathLinkBehaviour>.Value });
+            ComponentManager<Raft_Network>.Value.RPC((Message)deathLinkPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
         }
 
         private void _connectToArchipelago(string username, string password)
