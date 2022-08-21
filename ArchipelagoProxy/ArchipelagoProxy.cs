@@ -132,26 +132,17 @@ namespace ArchipelagoProxy
                     _successiveConnectFailures = 0;
                 }
             };
-            _session.Socket.SocketClosed += closedEventArgs =>
+            _session.Socket.SocketClosed += closedReason =>
             {
                 lock (LockForClass)
                 {
                     _isSuccessfullyConnected = false;
                     _triggeredConnectedAction = false;
                 }
-                if (!closedEventArgs.WasClean) // We assume that this will not happen because of incorrect login info
-                {
-                    if (closedEventArgs.Reason != "An exception has occurred while attempting to connect.") // We handle connection issue notifications outside of here, don't print while reconnecting
-                    {
-                        _messageQueue.Enqueue($"Disconnected from server with reason \"{closedEventArgs.Reason}\" ({closedEventArgs.Code})");
-                    }
-                }
-                else
-                {
-                    _debugQueue.Enqueue($"Disconnected from server.");
-                }
+                _messageQueue.Enqueue($"Disconnected from server with reason \"{closedReason}\"");
             };
-            _deathLink = _session.CreateDeathLinkServiceAndEnable();
+            _deathLink = _session.CreateDeathLinkService();
+            _deathLink.EnableDeathLink(); // TODO Do we enable/disable on world load/unload or always keep active?
             _commsThread = new Thread(new ThreadStart(_runCommsThread));
             _commsThread.Start();
         }
@@ -222,7 +213,9 @@ namespace ArchipelagoProxy
                 {
                     while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                     {
-                        RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player);
+                        // TODO Convert these APIs to long
+                        // Requires refactoring on ProxiedArchipelago and throughout Raftipelago...
+                        RaftItemUnlockedForCurrentWorld((int)res.Item, (int)res.Location, res.Player);
                     }
                 }
                 if (!triggeredConnectedAction)
@@ -558,7 +551,7 @@ namespace ArchipelagoProxy
                 _lastUsedUsername = username;
                 _lastUsedPassword = password;
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, new Version(0, 3, 4), ItemsHandlingFlags.AllItems, password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, ItemsHandlingFlags.AllItems, version: new Version(0, 3, 4), password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");

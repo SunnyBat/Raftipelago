@@ -77,14 +77,21 @@ namespace Raftipelago.Data
 
             if (dictionaryToRead != null && dictionaryToRead.TryGetValue(key, out object outVal))
             {
-                obj = (T)outVal;
-                return true;
+                try
+                {
+                    obj = (T)outVal;
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Logger.Error(e.Message);
+                    Logger.Debug("Expected type:" + typeof(T));
+                    Logger.Debug("Actual type:" + outVal.GetType());
+                }
             }
-            else
-            {
-                obj = default(T);
-                return false;
-            }
+
+            obj = default(T);
+            return false;
         }
     }
 }
