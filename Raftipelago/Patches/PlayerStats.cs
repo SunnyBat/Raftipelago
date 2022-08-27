@@ -12,7 +12,7 @@ namespace Raftipelago.Patches
 		{
 			if (!Raft_Network.InMenuScene && Raft_Network.IsHost && __instance.IsDead)
 			{
-				Logger.Debug("DEATH");
+				Logger.Debug("Player killed by damage");
 				switch (damageInflictorEntityType)
 				{
 					case EntityType.Player:
@@ -22,7 +22,7 @@ namespace Raftipelago.Patches
 						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Lost too much health");
 						break;
 					case EntityType.FallDamage:
-						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Fell too far");
+						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Fell too hard");
 						break;
 					case EntityType.Environment:
 						ComponentManager<IArchipelagoLink>.Value.PlayerDied("The environment");

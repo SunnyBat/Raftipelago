@@ -337,6 +337,7 @@ namespace Raftipelago.Network
 
         public void PlayerDied(string cause)
         {
+            Logger.Debug("PlayerDied: " + cause);
             if (_proxyServer != null)
             {
                 _sendDeathLinkIfNecessaryMethodInfo.Invoke(_proxyServer, new object[] { cause });

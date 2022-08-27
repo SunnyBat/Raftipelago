@@ -55,6 +55,7 @@
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\CharacterUnlock.cs" />
     <Compile Include="Patches\ChatManager.cs" />
+    <Compile Include="Patches\Player.cs" />
     <Compile Include="Patches\PlayerStats.cs" />
     <Compile Include="Patches\SO_ChunkSpawnRuleAsset.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
