@@ -57,6 +57,10 @@ namespace Raftipelago
             {
                 Logger.Error($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
+            else
+            {
+                Logger.Trace($"Unlocked {itemId}::{locationId}::{player}");
+            }
             if (Raft_Network.IsHost)
             {
                 var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
@@ -163,6 +167,7 @@ namespace Raftipelago
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == uniqueItemName);
             if (foundItem != null)
             {
+                Logger.Trace($"Item found: {itemId} => {uniqueItemName}");
                 var wasLearned = foundItem.settings_recipe.Learned;
                 foundItem.settings_recipe.Learned = true;
                 if (!wasLearned && _alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, fromPlayerId)))

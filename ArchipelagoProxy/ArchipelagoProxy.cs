@@ -119,6 +119,7 @@ namespace ArchipelagoProxy
             {
                 try
                 {
+                    _debugQueue.Enqueue("ItemHelper processing");
                     while (itemHelper.Any()) // Generally will only be one but might as well loop
                     {
                         _debugQueue.Enqueue("ItemHelper received item");
