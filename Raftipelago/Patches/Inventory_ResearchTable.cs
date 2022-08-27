@@ -65,7 +65,6 @@ namespace Raftipelago.Patches
 			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
 				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
-				___researchedItems.Add(item);
 				if (item.settings_recipe.IsBlueprint)
 				{
 					for (int i = 0; i < ___menuItems.Count; i++)
@@ -75,7 +74,8 @@ namespace Raftipelago.Patches
 						{
 							// This should never happen, but log a message just in case we get one
 							Logger.Error($"Skipping blueprint {item.UniqueName} -- This is likely a Raftipelago bug (blueprint items should never be researched by Raft, only Archipelago).");
-							break;
+							__result = false;
+							return false;
 						}
 					}
 				}
@@ -94,6 +94,7 @@ namespace Raftipelago.Patches
 						Logger.Error("Unable to find research item " + item.settings_Inventory.DisplayName);
                     }
 				}
+				___researchedItems.Add(item);
 				__instance.SortMenuItems();
 				__result = true;
 			}
@@ -102,6 +103,17 @@ namespace Raftipelago.Patches
 				Logger.Trace("Cannot research " + item.settings_Inventory.DisplayName);
 				__result = false;
 			}
+			return false;
+		}
+	}
+	[HarmonyPatch(typeof(Inventory_ResearchTable), "ResearchBlueprint", typeof(Item_Base))]
+	public class HarmonyPatch_Inventory_ResearchTable_ResearchBlueprint
+	{
+		[HarmonyPrefix]
+		public static bool AlwaysReplace(Item_Base blueprintItem,
+			ref bool __result)
+		{
+			__result = false;
 			return false;
 		}
 	}
