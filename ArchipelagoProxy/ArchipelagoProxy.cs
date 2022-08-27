@@ -25,12 +25,14 @@ namespace ArchipelagoProxy
         private readonly Regex PortFinderRegex = new Regex(@":(\d+)");
 
         private readonly ArchipelagoSession _session;
-        private readonly DeathLinkService _deathLink;
         private readonly Thread _commsThread;
 
         // Lock for all non-thread-safe objects
         // We use a private object so we don't have to worry about other threads locking this ArchipelagoProxy instance object
         private readonly object LockForClass = new object();
+
+        private DeathLinkService _deathLink;
+        private ActionHandler _deathLinkHandler;
 
         // === Server -> Client Events ===
 
@@ -91,7 +93,7 @@ namespace ArchipelagoProxy
         {
             if (urlToHost.Contains(":"))
             {
-                var indexOfColon = urlToHost.IndexOf(":");
+                var indexOfColon = urlToHost.LastIndexOf(":");
                 var hostAddress = urlToHost.Substring(0, indexOfColon); // Assumes no additional path is required in URL; if there is, we need to slice :port out instead
                 var portStr = PortFinderRegex.Match(urlToHost).Groups[1].Value;
                 if (int.TryParse(portStr, out int port))
@@ -108,7 +110,6 @@ namespace ArchipelagoProxy
                 _session = ArchipelagoSessionFactory.CreateSession(urlToHost);
             }
             
-            _deathLink = new DeathLinkService(_session.Socket, _session.ConnectionInfo, _session.DataStorage);
             _session.Items.ItemReceived += itemHelper =>
             {
                 try
@@ -141,7 +142,10 @@ namespace ArchipelagoProxy
                     _isSuccessfullyConnected = false;
                     _triggeredConnectedAction = false;
                 }
-                _messageQueue.Enqueue($"Disconnected from server with reason \"{closedReason}\"");
+                if (!string.IsNullOrWhiteSpace(closedReason))
+                {
+                    _messageQueue.Enqueue($"Disconnected from server with reason \"{closedReason}\"");
+                }
             };
             _commsThread = new Thread(new ThreadStart(_runCommsThread));
             _commsThread.Start();
@@ -385,21 +389,18 @@ namespace ArchipelagoProxy
             {
                 lock (LockForClass)
                 {
-                    _deathLink.OnDeathLinkReceived += (deathLinkObject) =>
+                    _deathLinkHandler = deathLinkHandler;
+                    if (_deathLink != null)
                     {
-                        if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
-                        {
-                            _chatQueue.Enqueue($"{deathLinkObject.Source} died to {deathLinkObject.Cause}");
-                            deathLinkHandler.Invoke();
-                        }
-                    };
+                        _deathLink.OnDeathLinkReceived += _generateDeathLinkHandlerCallback(deathLinkHandler);
+                    }
                 }
             }
         }
 
         public void SendDeathLinkIfNecessary(string cause)
         {
-            if (IsSuccessfullyConnected() && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1)
+            if (_deathLink != null && IsSuccessfullyConnected() && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1)
                 && !string.IsNullOrWhiteSpace(cause))
             {
                 _deathLink.SendDeathLink(new DeathLink(_session.Players.GetPlayerName(_session.ConnectionInfo.Slot), cause));
@@ -555,8 +556,23 @@ namespace ArchipelagoProxy
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
-                this._slotData = ((LoginSuccessful)loginResult).SlotData;
-                _deathLink.EnableDeathLink(); // TODO Do we enable/disable on world load/unload or always keep active?
+                _slotData = ((LoginSuccessful)loginResult).SlotData;
+                try
+                {
+                    if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
+                    {
+                        _deathLink = _session.CreateDeathLinkService();
+                        _deathLink.EnableDeathLink();
+                        if (_deathLinkHandler != null)
+                        {
+                            _deathLink.OnDeathLinkReceived += _generateDeathLinkHandlerCallback(_deathLinkHandler);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _debugQueue.Enqueue("Unable to enable DeathLink: " + ex.Message);
+                }
                 return true;
             }
             else if (disconnectOnFailure)
@@ -578,6 +594,18 @@ namespace ArchipelagoProxy
             var timeTakenToRun = (int)(DateTime.Now - startTime).TotalMilliseconds;
             var timeToSleep = Math.Max(0, durationInMillis - timeTakenToRun);
             Thread.Sleep(timeToSleep);
+        }
+
+        private DeathLinkService.DeathLinkReceivedHandler _generateDeathLinkHandlerCallback(ActionHandler deathLinkHandler)
+        {
+            return (deathLinkObject) =>
+            {
+                if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
+                {
+                    _chatQueue.Enqueue($"{deathLinkObject.Source} died to {deathLinkObject.Cause}");
+                    deathLinkHandler.Invoke();
+                }
+            };
         }
 
         private void _addNameIfInvalid(object action, string name, List<string> addTo)
