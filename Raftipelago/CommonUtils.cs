@@ -171,7 +171,7 @@ namespace Raftipelago
                 return null;
             }
             var resultingValue = unlockedItemsFieldInfo.GetValue(gameData);
-            Logger.Debug($"Value from world is {(resultingValue == null ? "invalid" : $"[{string.Join(",", (List<long>)resultingValue)}]")}");
+            Logger.Trace($"Value from world is {(resultingValue == null ? "invalid" : $"[{string.Join(",", (List<long>)resultingValue)}]")}");
             return new List<long>((List<long>)unlockedItemsFieldInfo.GetValue(gameData));
         }
 

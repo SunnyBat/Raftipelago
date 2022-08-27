@@ -45,6 +45,10 @@ namespace ArchipelagoProxy
         /// </summary>
         private event Action<int, int, int> RaftItemUnlockedForCurrentWorld;
         /// <summary>
+        /// Called for error events. These are errors that should be communicated to the user. Must only be called from main Unity thread.
+        /// </summary>
+        private event Action<string> ErrorMessage;
+        /// <summary>
         /// Called when a message is received. This can be a chat message, an item received message, etc. Must only be called from main Unity thread.
         /// </summary>
         private event Action<string> PrintMessage;
@@ -58,6 +62,7 @@ namespace ArchipelagoProxy
         // main Unity thread that will dequeue these objects and trigger the appropriate events. Because
         // of this, these queues need to be thread-safe.
         private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
+        private ConcurrentQueue<string> _errorQueue = new ConcurrentQueue<string>();
         private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
         private ConcurrentQueue<string> _debugQueue = new ConcurrentQueue<string>();
 
@@ -116,12 +121,13 @@ namespace ArchipelagoProxy
                 {
                     while (itemHelper.Any()) // Generally will only be one but might as well loop
                     {
+                        _debugQueue.Enqueue("ItemHelper received item");
                         _itemReceivedQueue.Enqueue(itemHelper.DequeueItem());
                     }
                 }
                 catch (Exception e)
                 {
-                    _messageQueue.Enqueue(e.Message);
+                    _errorQueue.Enqueue(e.Message);
                 }
             };
             _session.Socket.PacketReceived += packet =>
@@ -191,6 +197,10 @@ namespace ArchipelagoProxy
 
         public void Heartbeat()
         {
+            while (_errorQueue.TryDequeue(out string nextMessage))
+            {
+                ErrorMessage(nextMessage);
+            }
             while (_messageQueue.TryDequeue(out string nextMessage))
             {
                 PrintMessage(nextMessage);
@@ -255,6 +265,17 @@ namespace ArchipelagoProxy
             }
         }
 
+        public void AddErrorMessageEvent(SingleArgumentActionHandler<string> newEvent)
+        {
+            if (newEvent != null)
+            {
+                lock (LockForClass)
+                {
+                    ErrorMessage += (string arg1) => newEvent.Invoke(arg1);
+                }
+            }
+        }
+
         public void AddPrintMessageEvent(SingleArgumentActionHandler<string> newEvent)
         {
             if (newEvent != null)
@@ -301,7 +322,7 @@ namespace ArchipelagoProxy
             return _session.Locations.AllLocationsChecked.Select(loc => {
                 if (loc > int.MaxValue)
                 {
-                    _messageQueue.Enqueue("WARNING: Location " + loc + " is out of assumed range. This will likely break things.");
+                    _errorQueue.Enqueue("Location " + loc + " is out of assumed range. This will likely break things.");
                 }
                 return (int)loc;
             }).ToArray();
@@ -327,6 +348,7 @@ namespace ArchipelagoProxy
             var invalidMethodNames = new List<string>();
             _addNameIfInvalid(ConnectedToServer, "ConnectedToServer", invalidMethodNames);
             _addNameIfInvalid(RaftItemUnlockedForCurrentWorld, "RaftItemUnlockedForCurrentWorld", invalidMethodNames);
+            _addNameIfInvalid(ErrorMessage, "ErrorMessage", invalidMethodNames);
             _addNameIfInvalid(PrintMessage, "PrintMessage", invalidMethodNames);
             if (invalidMethodNames.Count > 0)
             {
@@ -347,7 +369,7 @@ namespace ArchipelagoProxy
             var locationId = _session.Locations.GetLocationIdFromName("Raft", locationName);
             if (locationId > int.MaxValue)
             {
-                _messageQueue.Enqueue("WARNING: Location " + locationId + " is out of assumed range. This will likely break things.");
+                _errorQueue.Enqueue("Location " + locationId + " is out of assumed range. This will likely break things.");
             }
             return (int) locationId;
         }
@@ -410,7 +432,7 @@ namespace ArchipelagoProxy
             }
             catch (Exception e)
             {
-                _debugQueue.Enqueue("Could not send DeathLink: " + e);
+                _errorQueue.Enqueue("Could not send DeathLink: " + e);
             }
         }
 
@@ -435,7 +457,7 @@ namespace ArchipelagoProxy
                 }
                 catch (Exception e)
                 {
-                    _debugQueue.Enqueue(e.ToString());
+                    _errorQueue.Enqueue(e.ToString());
                 }
 
                 _sleepForMillis(startTime, TIME_BETWEEN_UPDATES_MS);
@@ -582,13 +604,13 @@ namespace ArchipelagoProxy
                 }
                 catch (Exception ex)
                 {
-                    _debugQueue.Enqueue("Unable to enable DeathLink: " + ex.Message);
+                    _errorQueue.Enqueue("Unable to enable DeathLink: " + ex.Message);
                 }
                 return true;
             }
             else if (disconnectOnFailure)
             {
-                _messageQueue.Enqueue("Failed to connect to Archipelago");
+                _errorQueue.Enqueue("Failed to connect to Archipelago");
                 try
                 {
                     _session.Socket.Disconnect();
@@ -619,7 +641,7 @@ namespace ArchipelagoProxy
             }
             catch (Exception e)
             {
-                _debugQueue.Enqueue("Could not handle death link: " + e.Message);
+                _errorQueue.Enqueue("Could not handle death link: " + e.Message);
             }
         }
 
@@ -669,22 +691,22 @@ namespace ArchipelagoProxy
                         switch (err)
                         {
                             case ConnectionRefusedError.InvalidSlot:
-                                _messageQueue.Enqueue("Error connecting: Username not found.");
+                                _errorQueue.Enqueue("Error connecting: Username not found.");
                                 break;
                             case ConnectionRefusedError.InvalidGame:
-                                _messageQueue.Enqueue("Error connecting: Invalid game. Server likely does not support Raft.");
+                                _errorQueue.Enqueue("Error connecting: Invalid game. Server likely does not support Raft.");
                                 break;
                             case ConnectionRefusedError.InvalidPassword:
-                                _messageQueue.Enqueue("Error connecting: Invalid password.");
+                                _errorQueue.Enqueue("Error connecting: Invalid password.");
                                 break;
                             case ConnectionRefusedError.SlotAlreadyTaken:
-                                _messageQueue.Enqueue("Error connecting: Someone else is already connected with this username (slot already taken).");
+                                _errorQueue.Enqueue("Error connecting: Someone else is already connected with this username (slot already taken).");
                                 break;
                             case ConnectionRefusedError.IncompatibleVersion:
-                                _messageQueue.Enqueue("Error connecting: Incompatible versions between Archipelago and Raftipelago.");
+                                _errorQueue.Enqueue("Error connecting: Incompatible versions between Archipelago and Raftipelago.");
                                 break;
                             default:
-                                _messageQueue.Enqueue("Error connecting: Unknown reason.");
+                                _errorQueue.Enqueue("Error connecting: Unknown reason.");
                                 break;
                         }
                     }
@@ -695,6 +717,13 @@ namespace ArchipelagoProxy
                 case ArchipelagoPacketType.DataPackage:
                     // Do nothing, we're handling elsewhere (but keep case here so we know to mark packet as handled)
                     break;
+                case ArchipelagoPacketType.Bounced:
+                    var convertedPacket = (BouncedPacket)packet;
+                    if (convertedPacket.Tags != null && convertedPacket.Tags.Contains(DEATH_LINK_TAG)) // Ignore DeathLink packets
+                    {
+                        break;
+                    }
+                    goto default;
                 default:
                     _debugQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
                     break;

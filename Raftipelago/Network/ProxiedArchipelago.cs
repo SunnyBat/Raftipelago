@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text.RegularExpressions;
 using UnityEngine;
 
 namespace Raftipelago.Network
@@ -403,6 +402,8 @@ namespace Raftipelago.Network
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action>(ConnnectedToServer, "ActionHandler") });
             _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<int, int, int>>(ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
+            _proxyServerType.GetMethod("AddErrorMessageEvent")
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(Logger.Error, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddPrintMessageEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddDebugMessageEvent")
