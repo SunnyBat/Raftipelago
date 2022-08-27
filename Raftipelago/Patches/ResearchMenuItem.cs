@@ -43,6 +43,7 @@ namespace Raftipelago.Patches
 	{
 		[HarmonyPrefix]
 		public static bool AlwaysReplace(
+			ref Item_Base ___item,
 			ref bool ___learned,
 			ref CanvasGroup ___canvasgroup,
 			ref Button ___learnButton,
@@ -55,9 +56,14 @@ namespace Raftipelago.Patches
 			___canvasgroup.alpha = 0.5f;
 			___learnButton.gameObject.SetActive(false);
 			___learnedText.gameObject.SetActive(true);
+			// Research Decorations as normal, as they're not part of Raftipelago right now
+			if (___item.settings_recipe.CraftingCategory == CraftingCategory.Decorations)
+            {
+				___item.settings_recipe.Learned = true;
+            }
 
 			// Addition by Raftipelago
-			if (ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("ExpensiveResearch", out long isExpensiveResearchEnabled) && isExpensiveResearchEnabled == 1)
+			if (ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("ExpensiveResearch", out bool isExpensiveResearchEnabled) && isExpensiveResearchEnabled)
 			{
 				var availableResearchItems = (Dictionary<Item_Base, AvaialableResearchItem>)typeof(Inventory_ResearchTable).GetField("availableResearchItems",
 					System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(___inventoryRef);

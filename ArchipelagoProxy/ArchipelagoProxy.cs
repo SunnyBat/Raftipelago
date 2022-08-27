@@ -32,7 +32,7 @@ namespace ArchipelagoProxy
         private readonly object LockForClass = new object();
 
         private DeathLinkService _deathLink;
-        private ActionHandler _deathLinkHandler;
+        private ActionHandler _deathLinkHandlerFromClient;
 
         // === Server -> Client Events ===
 
@@ -389,10 +389,10 @@ namespace ArchipelagoProxy
             {
                 lock (LockForClass)
                 {
-                    _deathLinkHandler = deathLinkHandler;
+                    _deathLinkHandlerFromClient = deathLinkHandler;
                     if (_deathLink != null)
                     {
-                        _deathLink.OnDeathLinkReceived += _generateDeathLinkHandlerCallback(deathLinkHandler);
+                        _deathLink.OnDeathLinkReceived += _handleDeathLink;
                     }
                 }
             }
@@ -400,10 +400,17 @@ namespace ArchipelagoProxy
 
         public void SendDeathLinkIfNecessary(string cause)
         {
-            if (_deathLink != null && IsSuccessfullyConnected() && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1)
-                && !string.IsNullOrWhiteSpace(cause))
+            try
             {
-                _deathLink.SendDeathLink(new DeathLink(_session.Players.GetPlayerName(_session.ConnectionInfo.Slot), cause));
+                if (_deathLink != null && IsSuccessfullyConnected() && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled)
+                    && !string.IsNullOrWhiteSpace(cause))
+                {
+                    _deathLink.SendDeathLink(new DeathLink(_session.Players.GetPlayerName(_session.ConnectionInfo.Slot), cause));
+                }
+            }
+            catch (Exception e)
+            {
+                _debugQueue.Enqueue("Could not send DeathLink: " + e);
             }
         }
 
@@ -559,14 +566,18 @@ namespace ArchipelagoProxy
                 _slotData = ((LoginSuccessful)loginResult).SlotData;
                 try
                 {
-                    if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
+                    if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled))
                     {
-                        _deathLink = _session.CreateDeathLinkService();
-                        _deathLink.EnableDeathLink();
-                        if (_deathLinkHandler != null)
+                        var deathLinkService = _session.CreateDeathLinkService();
+                        lock (LockForClass)
                         {
-                            _deathLink.OnDeathLinkReceived += _generateDeathLinkHandlerCallback(_deathLinkHandler);
+                            _deathLink = deathLinkService;
+                            if (_deathLinkHandlerFromClient != null)
+                            {
+                                _deathLink.OnDeathLinkReceived += _handleDeathLink;
+                            }
                         }
+                        _deathLink.EnableDeathLink();
                     }
                 }
                 catch (Exception ex)
@@ -596,16 +607,20 @@ namespace ArchipelagoProxy
             Thread.Sleep(timeToSleep);
         }
 
-        private DeathLinkService.DeathLinkReceivedHandler _generateDeathLinkHandlerCallback(ActionHandler deathLinkHandler)
+        private void _handleDeathLink(DeathLink deathLinkObject)
         {
-            return (deathLinkObject) =>
+            try
             {
-                if (_slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((long)isDeathLinkEnabled == 1))
+                if (_deathLinkHandlerFromClient != null && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled))
                 {
                     _chatQueue.Enqueue($"{deathLinkObject.Source} died to {deathLinkObject.Cause}");
-                    deathLinkHandler.Invoke();
+                    _deathLinkHandlerFromClient.Invoke();
                 }
-            };
+            }
+            catch (Exception e)
+            {
+                _debugQueue.Enqueue("Could not handle death link: " + e.Message);
+            }
         }
 
         private void _addNameIfInvalid(object action, string name, List<string> addTo)
