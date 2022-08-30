@@ -1,6 +1,4 @@
-﻿using Raftipelago.Network.Behaviors;
-using Raftipelago.Data;
-using Steamworks;
+﻿using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -165,7 +163,7 @@ namespace Raftipelago.Network
             }
         }
 
-        public void LocationUnlocked(params int[] locationIds)
+        public void LocationUnlocked(params long[] locationIds)
         {
             if (_proxyServer != null)
             {
@@ -177,10 +175,10 @@ namespace Raftipelago.Network
         {
             if (_proxyServer != null)
             {
-                List<int> locationIds = new List<int>();
+                List<long> locationIds = new List<long>();
                 foreach (var locName in locationNames)
                 {
-                    var locationId = (int)_getLocationIdFromNameMethodInfo.Invoke(_proxyServer, new object[] { locName });
+                    var locationId = (long)_getLocationIdFromNameMethodInfo.Invoke(_proxyServer, new object[] { locName });
                     if (locationId != -1)
                     {
                         locationIds.Add(locationId);
@@ -197,7 +195,7 @@ namespace Raftipelago.Network
             }
         }
 
-        public string GetItemNameFromId(int itemId)
+        public string GetItemNameFromId(long itemId)
         {
             if (IsSuccessfullyConnected())
             {
@@ -278,9 +276,9 @@ namespace Raftipelago.Network
             }
         }
 
-        public Dictionary<int, string> GetAllItemIds()
+        public Dictionary<long, string> GetAllItemIds()
         {
-            var ret = new Dictionary<int, string>();
+            var ret = new Dictionary<long, string>();
             bool wasSuccessful = true;
             int currentIndex = 47001; // TODO Constant
             do
@@ -401,7 +399,8 @@ namespace Raftipelago.Network
             _proxyServerType.GetMethod("AddConnectedToServerEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action>(ConnnectedToServer, "ActionHandler") });
             _proxyServerType.GetMethod("AddRaftItemUnlockedForCurrentWorldEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<int, int, int>>(ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld, "TripleArgumentActionHandler`3", typeof(int), typeof(int), typeof(int)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<long, long, int, int>>(ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld,
+                    "QuadroupleArgumentActionHandler`4", typeof(long), typeof(long), typeof(int), typeof(int)) });
             _proxyServerType.GetMethod("AddErrorMessageEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(Logger.Error, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddPrintMessageEvent")
@@ -431,9 +430,7 @@ namespace Raftipelago.Network
         {
             Logger.Trace("_deathLinkReceived");
             RAPI.GetLocalPlayer().Kill();
-            var deathLinkPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_DeathLink")
-                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<DeathLinkBehaviour>.Value });
-            ComponentManager<Raft_Network>.Value.RPC((Message)deathLinkPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+            ComponentManager<MultiplayerComms>.Value.SendDeathLink();
         }
 
         private void _connectToArchipelago(string username, string password)
@@ -453,7 +450,6 @@ namespace Raftipelago.Network
 
         private void ConnnectedToServer()
         {
-            BehaviourHelper.SendArchipelagoData();
         }
 
         private void PrintMessage(string msg)

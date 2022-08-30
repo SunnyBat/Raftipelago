@@ -1,14 +1,11 @@
 ﻿using HarmonyLib;
 using Raftipelago;
-using Raftipelago.Network.Behaviors;
 using Raftipelago.Data;
 using Raftipelago.Network;
 using Raftipelago.Patches;
 using Raftipelago.UnityScripts;
-using Steamworks;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -16,6 +13,9 @@ using UnityEngine;
 
 public class RaftipelagoThree : Mod
 {
+    // Sets ModUtils class to handle sending/receiving data (so everything's not shoved into this one class)
+    private static MultiplayerComms ModUtils_Reciever = ComponentManager<MultiplayerComms>.Value = new MultiplayerComms();
+
     private const string EmbeddedFileDirectory = "Data";
     public const string AppDataFolderName = "Raftipelago";
 
@@ -23,6 +23,12 @@ public class RaftipelagoThree : Mod
     private IEnumerator serverHeartbeat;
     public void Start()
     {
+        if (_isInWorld())
+        {
+            base.UnloadMod();
+            throw new Exception("Raftipelago must be loaded in main menu.");
+        }
+        ModUtils_Reciever.RegisterSerializers();
         string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
@@ -33,15 +39,10 @@ public class RaftipelagoThree : Mod
         ComponentManager<ItemTracker>.Value = ComponentManager<ItemTracker>.Value ?? new ItemTracker();
         ComponentManager<ArchipelagoDataManager>.Value = ComponentManager<ArchipelagoDataManager>.Value ?? new ArchipelagoDataManager();
         ComponentManager<ItemTracker>.Value.ResetData();
-        ComponentManager<ItemTracker>.Value.SetAlreadyReceivedItemData(CommonUtils.GetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad) ?? new List<long>());
         patcher = new Harmony("com.github.sunnybat.raftipelago");
         patcher.PatchAll(Assembly.GetExecutingAssembly());
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
-        if (_isInWorld())
-        {
-            WorldLoaded_ArchipelagoSetup();
-        }
         StartCoroutine(serverHeartbeat);
     }
 
@@ -58,12 +59,7 @@ public class RaftipelagoThree : Mod
                 SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly)
                     .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
             }
-            CommonUtils.SetUnlockedItemIdentifiers(SaveAndLoad.WorldToLoad, ComponentManager<ItemTracker>.Value.GetAllReceivedItemIds());
             ComponentManager<ItemTracker>.Value.ResetData();
-            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
-            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ItemSyncBehaviour>.Value);
-            NetworkUpdateManager.RemoveBehaviour(ComponentManager<ResendDataBehaviour>.Value);
-            NetworkUpdateManager.RemoveBehaviour(ComponentManager<DeathLinkBehaviour>.Value);
         }
         ComponentManager<IArchipelagoLink>.Value?.onUnload();
         ComponentManager<IArchipelagoLink>.Value = null;
@@ -75,7 +71,16 @@ public class RaftipelagoThree : Mod
     public override void WorldEvent_WorldLoaded()
     {
         Raftipelago.Logger.Trace("World loaded");
-        WorldLoaded_ArchipelagoSetup();
+        // Always add these so they have the same IDs
+        if (Raft_Network.IsHost)
+        {
+            Raftipelago.Logger.Debug("Is world host");
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
+        }
+        else
+        {
+            Raftipelago.Logger.Debug("Not world host");
+        }
     }
 
     public override void WorldEvent_WorldUnloaded()
@@ -90,37 +95,6 @@ public class RaftipelagoThree : Mod
         HarmonyPatch_BalboaRelayStationScreen_RefreshScreen.previousStationCount = -1;
         // Rreset ItemTracker unlocks so we don't trigger on reload into a different world
         ComponentManager<ItemTracker>.Value.ResetData();
-    }
-
-    private static void WorldLoaded_ArchipelagoSetup()
-    {
-        // Always add these so they have the same IDs
-        CommonUtils.Reset();
-        var wrapperObject = new GameObject(); // Required to create proper Behaviour objects (they need a parent)
-        ComponentManager<ArchipelagoDataSync>.Value = (ArchipelagoDataSync)wrapperObject.AddComponent(typeof(ArchipelagoDataSync));
-        NetworkUpdateManager.AddBehaviour(ComponentManager<ArchipelagoDataSync>.Value);
-
-        ComponentManager<ItemSyncBehaviour>.Value = (ItemSyncBehaviour)wrapperObject.AddComponent(typeof(ItemSyncBehaviour));
-        NetworkUpdateManager.AddBehaviour(ComponentManager<ItemSyncBehaviour>.Value);
-
-        ComponentManager<ResendDataBehaviour>.Value = (ResendDataBehaviour)wrapperObject.AddComponent(typeof(ResendDataBehaviour));
-        NetworkUpdateManager.AddBehaviour(ComponentManager<ResendDataBehaviour>.Value);
-
-        ComponentManager<DeathLinkBehaviour>.Value = (DeathLinkBehaviour)wrapperObject.AddComponent(typeof(DeathLinkBehaviour));
-        NetworkUpdateManager.AddBehaviour(ComponentManager<DeathLinkBehaviour>.Value);
-
-        if (Raft_Network.IsHost)
-        {
-            Raftipelago.Logger.Debug("Is world host");
-            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
-        }
-        else
-        {
-            Raftipelago.Logger.Debug("Not world host");
-            var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
-                .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
-            ComponentManager<Raft_Network>.Value.RPC((Message)resendPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
-        }
     }
 
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
@@ -158,9 +132,7 @@ public class RaftipelagoThree : Mod
     [ConsoleCommand("/resync", "Resyncs Archipelago data from server host. Generally unnecessary.")]
     private static void Command_ResyncData(string[] arguments)
     {
-        var resendPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_ResendData")
-            .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ResendDataBehaviour>.Value });
-        ComponentManager<Raft_Network>.Value.RPC((Message)resendPacket, Target.All, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+        ComponentManager<MultiplayerComms>.Value.SendArchipelagoData();
     }
 
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]

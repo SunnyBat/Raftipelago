@@ -38,11 +38,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Logger.cs" />
-    <Compile Include="Network\Behaviors\ArchipelagoDataSync.cs" />
-    <Compile Include="Network\Behaviors\BehaviourHelper.cs" />
-    <Compile Include="Network\Behaviors\ItemSyncBehaviour.cs" />
-    <Compile Include="Network\Behaviors\DeathLinkBehaviour.cs" />
-    <Compile Include="Network\Behaviors\ResendDataBehaviour.cs" />
     <Compile Include="CommonUtils.cs" />
     <Compile Include="Data\ArchipelagoDataManager.cs" />
     <Compile Include="Data\AssemblyManager.cs" />
@@ -52,6 +47,7 @@
     <Compile Include="DataGenerator.cs" />
     <Compile Include="ItemTracker.cs" />
     <Compile Include="Network\IArchipelagoLink.cs" />
+    <Compile Include="Network\MultiplayerComms.cs" />
     <Compile Include="Patches\BalboaRelayStationScreen.cs" />
     <Compile Include="Patches\CharacterUnlock.cs" />
     <Compile Include="Patches\ChatManager.cs" />
@@ -59,7 +55,6 @@
     <Compile Include="Patches\PlayerStats.cs" />
     <Compile Include="Patches\SO_ChunkSpawnRuleAsset.cs" />
     <Compile Include="Patches\Inventory_ResearchTable.cs" />
-    <Compile Include="Patches\LoadGame_Selection.cs" />
     <Compile Include="Patches\LocalizationParameters.cs" />
     <Compile Include="Patches\Pickup.cs" />
     <Compile Include="Patches\PickupObjectManager.cs" />
@@ -68,9 +63,7 @@
     <Compile Include="Patches\QuestEventBase.cs" />
     <Compile Include="Patches\ResearchMenuItem.cs" />
     <Compile Include="Network\ProxiedArchipelago.cs" />
-    <Compile Include="Patches\RGD_Game.cs" />
     <Compile Include="Patches\RGD_ResearchTableWorld.cs" />
-    <Compile Include="Patches\SaveAndLoad.cs" />
     <Compile Include="Patches\Raft_Network.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />

@@ -6,11 +6,11 @@ namespace Raftipelago.Data
 {
     public class ArchipelagoDataManager
     {
-        public Dictionary<int, string> ItemIdToName { get; set; }
+        public Dictionary<long, string> ItemIdToName { get; set; }
         public Dictionary<int, string> PlayerIdToName { get; set; }
         public Dictionary<string, object> SlotData { get; set; }
 
-        public string GetItemName(int itemId)
+        public string GetItemName(long itemId)
         {
             if (Raft_Network.IsHost)
             {
@@ -34,7 +34,7 @@ namespace Raftipelago.Data
                 }
                 else
                 {
-                    UnityEngine.Debug.LogError($"ItemIdToName not properly synchronized. Item {itemId} will be swallowed.");
+                    Logger.Error($"ItemIdToName not properly synchronized. Item {itemId} will be swallowed.");
                 }
             }
             return null;

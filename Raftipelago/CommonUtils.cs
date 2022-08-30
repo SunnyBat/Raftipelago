@@ -11,24 +11,9 @@ namespace Raftipelago
     // in our code. Because of this, extensions should not be used for Raft classes.
     public class CommonUtils
     {
-        private static Type RGD_Game_Raftipelago_Type;
-        private static ConstructorInfo RGD_Game_Raftipelago_ConstructorInfo;
-        private static FieldInfo unlockedItemsFieldInfo;
-        private static uint ModNetworkBehaviourIndex = uint.MaxValue;
-
         private const ulong ArchipelagoIdentifierBitMask = 0x10000;
         private const ulong ArchipelagoPlayerIdBitsMask = 0xFFFF;
-        private const ulong AllArchipelagoBitsMask = 0x1FFFF;
-
-        public static void Reset()
-        {
-            ModNetworkBehaviourIndex = uint.MaxValue;
-        }
-
-        public static uint GetNetworkBehaviourUniqueIndex()
-        {
-            return ModNetworkBehaviourIndex--;
-        }
+        private const ulong AllArchipelagoBitsMask = ArchipelagoIdentifierBitMask | ArchipelagoPlayerIdBitsMask;
 
         public static bool IsNote(LandmarkItem item)
         {
@@ -128,75 +113,6 @@ namespace Raftipelago
         public static bool HasCompletedTheGame()
         {
             return QuestProgressTracker.HasFinishedQuest(QuestType.Utopia_People_Rescued);
-        }
-
-        public static RGD_Game CreateRaftipelagoGame(RGD_Game baseData)
-        {
-            if (RGD_Game_Raftipelago_Type == null)
-            {
-                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
-            }
-            if (RGD_Game_Raftipelago_ConstructorInfo == null)
-            {
-                RGD_Game_Raftipelago_ConstructorInfo = RGD_Game_Raftipelago_Type.GetConstructor(new Type[] { typeof(RGD_Game) });
-            }
-            var newGame = (RGD_Game)RGD_Game_Raftipelago_ConstructorInfo.Invoke(new object[] { baseData });
-            return newGame;
-        }
-
-        public static bool IsValidRaftipelagoSave(RGD_Game game)
-        {
-            return GetUnlockedItemIdentifiers(game)?.Count >= 0;
-        }
-
-        public static List<long> GetUnlockedItemIdentifiers(object gameData)
-        {
-            if (gameData == null)
-            {
-                Logger.Debug("gameData is null");
-                return null;
-            }
-            if (RGD_Game_Raftipelago_Type == null)
-            {
-                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
-            }
-            if (unlockedItemsFieldInfo == null)
-            {
-                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ReceivedItems");
-            }
-
-            if (gameData.GetType() != RGD_Game_Raftipelago_Type)
-            {
-                Logger.Debug("gameData is not Raftipelago save type");
-                return null;
-            }
-            var resultingValue = unlockedItemsFieldInfo.GetValue(gameData);
-            Logger.Trace($"Value from world is {(resultingValue == null ? "invalid" : $"[{string.Join(",", (List<long>)resultingValue)}]")}");
-            return new List<long>((List<long>)unlockedItemsFieldInfo.GetValue(gameData));
-        }
-
-        public static void SetUnlockedItemIdentifiers(object gameData, List<long> itemPacks)
-        {
-            if (gameData == null)
-            {
-                Logger.Debug("gameData is null");
-                return;
-            }
-            if (RGD_Game_Raftipelago_Type == null)
-            {
-                RGD_Game_Raftipelago_Type = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RGD_Game_Raftipelago");
-            }
-            if (unlockedItemsFieldInfo == null)
-            {
-                unlockedItemsFieldInfo = RGD_Game_Raftipelago_Type.GetField("Raftipelago_ReceivedItems");
-            }
-
-            if (gameData.GetType() != RGD_Game_Raftipelago_Type)
-            {
-                Logger.Debug("gameData is not Raftipelago save type");
-                return;
-            }
-            unlockedItemsFieldInfo.SetValue(gameData, new List<long>(itemPacks));
         }
     }
 }

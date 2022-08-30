@@ -16,11 +16,11 @@ namespace Raftipelago.Network
 
         void SendChatMessage(string message);
 
-        void LocationUnlocked(params int[] locationId);
+        void LocationUnlocked(params long[] locationId);
 
         void LocationUnlocked(params string[] locationName);
 
-        string GetItemNameFromId(int itemId);
+        string GetItemNameFromId(long itemId);
 
         Dictionary<string, object> GetLastLoadedSlotData();
 
@@ -36,7 +36,7 @@ namespace Raftipelago.Network
 
         Dictionary<int, string> GetAllPlayerIds();
 
-        Dictionary<int, string> GetAllItemIds();
+        Dictionary<long, string> GetAllItemIds();
 
         void PlayerDied(string cause);
     }

@@ -1,9 +1,8 @@
-﻿using Raftipelago.Network.Behaviors;
-using Raftipelago.Data;
-using Steamworks;
+﻿using Raftipelago.Data;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Raftipelago.Network;
 
 namespace Raftipelago
 {
@@ -13,31 +12,20 @@ namespace Raftipelago
         private readonly Regex ResourcePackCommandRegex = new Regex(@"^\s*(\d+)\s+(.*)$");
 
         /// <summary>
-        /// A list of all Item IDs that have already been received. This prevents duplicates.
+        /// The index up to which items have been processed
         /// </summary>
-        private List<long> _alreadyReceivedItemData = new List<long>();
+        public int CurrentReceivedItemIndex { get; set; }
+
         /// <summary>
         /// A list of all levels of progressive items received. -1 is none received, 0 is one received, etc
         /// </summary>
         private Dictionary<string, int> _progressiveLevels = new Dictionary<string, int>();
 
-        public void SetAlreadyReceivedItemData(List<long> resourcePackIds)
-        {
-            Logger.Debug($"Setting item data: {string.Join(",", resourcePackIds?.ToArray())}");
-            _alreadyReceivedItemData = new List<long>(resourcePackIds);
-        }
-
-        public List<long> GetAllReceivedItemIds()
-        {
-            Logger.Debug($"Already received IDs: {string.Join(",", _alreadyReceivedItemData?.ToArray())}");
-            return _alreadyReceivedItemData;
-        }
-
         public void ResetData()
         {
             Logger.Debug("Resetting item data");
             ResetProgressives();
-            _alreadyReceivedItemData.Clear();
+            CurrentReceivedItemIndex = 0;
         }
 
         public void ResetProgressives()
@@ -48,44 +36,37 @@ namespace Raftipelago
             }
         }
 
-        public void RaftItemUnlockedForCurrentWorld(int itemId, int locationId, int player)
+        public void RaftItemUnlockedForCurrentWorld(long itemId, long locationId, int player, int itemIndex)
         {
             var sentItemName = ComponentManager<ArchipelagoDataManager>.Value.GetItemName(itemId);
-            if (!_unlockResourcePack(itemId, locationId, sentItemName, player)
-                && !_unlockProgressive(itemId, locationId, sentItemName, player)
-                && _unlockItem(itemId, sentItemName, locationId, player) == UnlockResult.NotFound)
+            bool unlockingForFirstTime = CurrentReceivedItemIndex < itemIndex;
+            if (!_unlockResourcePack(itemId, locationId, sentItemName, player, unlockingForFirstTime)
+                && !_unlockProgressive(itemId, locationId, sentItemName, player, unlockingForFirstTime)
+                && _unlockItem(itemId, sentItemName, locationId, player, unlockingForFirstTime) == UnlockResult.NotFound)
             {
                 Logger.Error($"Unable to find {sentItemName} ({itemId}, {locationId})");
             }
             else
             {
-                Logger.Trace($"Unlocked {itemId}::{locationId}::{player}");
+                Logger.Trace($"Unlocked {itemId}::{locationId}::{player} ({itemIndex})");
             }
             if (Raft_Network.IsHost)
             {
-                var itemPacket = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.RaftipelagoPacket_SyncItems")
-                    .GetConstructor(new Type[] { typeof(Messages), typeof(MonoBehaviour_Network) }).Invoke(new object[] { Messages.NOTHING, ComponentManager<ItemSyncBehaviour>.Value });
-                var sid = ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly).GetType("RaftipelagoTypes.SyncItemsData");
-                var arr = Array.CreateInstance(sid, 1);
-                var itmSend = sid.GetConstructor(new Type[] { }).Invoke(null);
-                itmSend.GetType().GetProperty("ItemId").SetValue(itmSend, itemId);
-                itmSend.GetType().GetProperty("LocationId").SetValue(itmSend, locationId);
-                itmSend.GetType().GetProperty("PlayerId").SetValue(itmSend, player);
-                arr.SetValue(itmSend, 0);
-                itemPacket.GetType().GetProperty("Items").SetValue(itemPacket, arr);
-                ComponentManager<Raft_Network>.Value.RPC((Message)itemPacket, Target.Other, EP2PSend.k_EP2PSendReliable, NetworkChannel.Channel_Game);
+                ComponentManager<MultiplayerComms>.Value.SendItem(itemId, locationId, player, itemIndex);
+            }
+            if (unlockingForFirstTime)
+            {
+                CurrentReceivedItemIndex = itemIndex;
             }
         }
 
-        public bool _unlockResourcePack(int itemId, int locationId, string sentItemName, int player)
+        public bool _unlockResourcePack(long itemId, long locationId, string sentItemName, int player, bool unlockingForFirstTime)
         {
             if (sentItemName?.StartsWith(ResourcePackIdentifier) ?? false)
             {
                 Logger.Trace($"Resource Pack identified: {sentItemName}");
-                var resourcePackId = calculateUniqueIdentifier(itemId, locationId, player);
-                if (_alreadyReceivedItemData.AddUniqueOnly(resourcePackId))
+                if (unlockingForFirstTime)
                 {
-                    Logger.Trace($"Resource Pack ID: {resourcePackId}");
                     var itemCommand = sentItemName.Substring(ResourcePackIdentifier.Length);
                     var resourcePackMatch = ResourcePackCommandRegex.Match(itemCommand);
                     if (resourcePackMatch.Success && int.TryParse(resourcePackMatch.Groups[1].Value, out int itemCount))
@@ -102,14 +83,14 @@ namespace Raftipelago
                         Logger.Error("Could not parse resource command " + itemCommand);
                     }
                 }
-                Logger.Info($"Resource Pack {sentItemName} ({resourcePackId}) already received, swallowing");
+                Logger.Debug($"Resource Pack {sentItemName} already received, swallowing");
                 return true;
             }
             return false;
         }
 
         // TODO Optimize -- we loop for every unlocked item, we can loop once for all unlocks
-        public bool _unlockProgressive(int itemId, int locationId, string progressiveName, int fromPlayerId)
+        public bool _unlockProgressive(long itemId, long locationId, string progressiveName, int fromPlayerId, bool unlockingForFirstTime)
         {
             if (progressiveName != null && _progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
@@ -130,7 +111,7 @@ namespace Raftipelago
                         }
                         else if (itemResult == UnlockResult.AlreadyUnlocked)
                         {
-                            Logger.Debug($"{item} already unlocked from {progressiveName}");
+                            Logger.Info($"{item} already unlocked from {progressiveName}");
                         }
                     }
 
@@ -140,7 +121,7 @@ namespace Raftipelago
                     }
                 }
                 // else duplicate, ignore
-                Logger.Debug($"{progressiveName} is duplicate, swallowing");
+                Logger.Info($"{progressiveName} is duplicate, swallowing");
                 return true;
             }
             else
@@ -151,9 +132,9 @@ namespace Raftipelago
             }
         }
 
-        public UnlockResult _unlockItem(int itemId, string itemName, int locationId, int fromPlayerId, bool showNotification = true)
+        public UnlockResult _unlockItem(long itemId, string itemName, long locationId, int fromPlayerId, bool unlockingForFirstTime, bool showNotification = true)
         {
-            var result = _unlockRecipe(itemId, itemName, locationId, fromPlayerId, showNotification);
+            var result = _unlockRecipe(itemId, itemName, locationId, fromPlayerId, unlockingForFirstTime, showNotification);
             if (result == UnlockResult.NotFound)
             {
                 result = _unlockNote(itemName, showNotification);
@@ -161,7 +142,7 @@ namespace Raftipelago
             return result;
         }
 
-        public UnlockResult _unlockRecipe(int itemId, string itemName, int locationId, int fromPlayerId, bool showNotification)
+        public UnlockResult _unlockRecipe(long itemId, string itemName, long locationId, int fromPlayerId, bool unlockingForFirstTime, bool showNotification)
         {
             var uniqueItemName = CommonUtils.TryGetOrKey(ComponentManager<ExternalData>.Value.FriendlyItemNameToUniqueNameMappings, itemName);
             var foundItem = ComponentManager<CraftingMenu>.Value.AllRecipes.Find(itm => itm.UniqueName == uniqueItemName);
@@ -170,8 +151,9 @@ namespace Raftipelago
                 Logger.Trace($"Item found: {itemId} => {uniqueItemName}");
                 var wasLearned = foundItem.settings_recipe.Learned;
                 foundItem.settings_recipe.Learned = true;
-                if (!wasLearned && _alreadyReceivedItemData.AddUniqueOnly(calculateUniqueIdentifier(itemId, locationId, fromPlayerId)))
+                if (!wasLearned && unlockingForFirstTime)
                 {
+                    Logger.Info($"Unlocking new item: {itemId} => {uniqueItemName}");
                     if (showNotification)
                     {
                         _sendResearchNotification(foundItem.settings_Inventory.DisplayName, fromPlayerId);
@@ -184,6 +166,7 @@ namespace Raftipelago
                 }
                 else
                 {
+                    Logger.Info($"Item already unlocked: {itemId} => {uniqueItemName}");
                     return UnlockResult.AlreadyUnlocked;
                 }
             }
@@ -237,33 +220,6 @@ namespace Raftipelago
             NotFound = 1,
             AlreadyUnlocked = 2,
             NewlyUnlocked = 3
-        }
-
-        /// <summary>
-        /// Runs off of the assumption that we have a limited ID set for items and locations.
-        /// </summary>
-        /// <param name="itemId">The Item ID unlocked</param>
-        /// <param name="locationId">The Location ID unlocked</param>
-        /// <returns></returns>
-        private long calculateUniqueIdentifier(int itemId, int locationId, int playerId)
-        {
-            // First 16 bits = blank, second 16 bits = ItemID, third 16 bits = LocationID, last 16 bits = PlayerID
-            long itemIdShifted = (itemId - 47000) & 0xFFFF;
-            itemIdShifted <<= 32; // Could also cast full result before shift to long; we shift bits out of number without casting
-            long locationIdShifted = (locationId - 48000) & 0xFFFF;
-            locationIdShifted <<= 16;
-            long playerIdShifted = playerId & 0xFFFF;
-            return itemIdShifted | locationIdShifted | playerIdShifted;
-        }
-
-        public Tuple<int, int, int> ParseUniqueIdentifier(long identifier)
-        {
-            var itemId = (identifier >> 32) & 0xFFFF;
-            itemId += 47000;
-            var locationId = (identifier  >> 16) & 0xFFFF;
-            locationId += 48000;
-            var playerId = identifier & 0xFFFF;
-            return new Tuple<int, int, int>((int)itemId, (int)locationId, (int)playerId);
         }
     }
 }

@@ -61,4 +61,24 @@ namespace RaftipelagoTypes
             return null;
         }
     }
+
+    public sealed class QuadroupleArgumentActionHandler<T, U, V, W> : MarshalByRefObject
+    {
+        public void Invoke(T arg1, U arg2, V arg3, W arg4)
+        {
+            _delegate(arg1, arg2, arg3, arg4);
+        }
+
+        private Action<T, U, V, W> _delegate;
+
+        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt)
+        {
+            _delegate = dlgt;
+        }
+
+        public override object InitializeLifetimeService()
+        {
+            return null;
+        }
+    }
 }

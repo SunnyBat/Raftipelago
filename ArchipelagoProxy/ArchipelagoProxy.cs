@@ -43,7 +43,7 @@ namespace ArchipelagoProxy
         /// <summary>
         /// Called when a new Raft item is unlocked for the current world. Must only be called from main Unity thread.
         /// </summary>
-        private event Action<int, int, int> RaftItemUnlockedForCurrentWorld;
+        private event Action<long, long, int, int> RaftItemUnlockedForCurrentWorld;
         /// <summary>
         /// Called for error events. These are errors that should be communicated to the user. Must only be called from main Unity thread.
         /// </summary>
@@ -72,7 +72,7 @@ namespace ArchipelagoProxy
         // We use these so the main Unity thread doesn't block while we're sending packets.
         // Instead, we queue up everything we need, then flush them every so often on
         // a separate thread.
-        private ConcurrentQueue<int> _locationUnlockQueue = new ConcurrentQueue<int>();
+        private ConcurrentQueue<long> _locationUnlockQueue = new ConcurrentQueue<long>();
         private ConcurrentQueue<string> _chatQueue = new ConcurrentQueue<string>();
 
         private bool _isGameCompleted = false; // Edge case of not connected, complete game, connect
@@ -94,6 +94,8 @@ namespace ArchipelagoProxy
         private bool _shouldDisconnect = false;
         private bool _shouldKeepRunning = true;
         private Dictionary<string, object> _slotData;
+        private int _receivedItemCount = 0;
+
         public ArchipelagoProxy(string urlToHost)
         {
             if (urlToHost.Contains(":"))
@@ -188,6 +190,7 @@ namespace ArchipelagoProxy
             {
                 if (_isSuccessfullyConnected)
                 {
+                    _receivedItemCount = 0; // Reset item count
                     foreach (var item in _session.Items.AllItemsReceived)
                     {
                         _itemReceivedQueue.Enqueue(item);
@@ -228,9 +231,7 @@ namespace ArchipelagoProxy
                 {
                     while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
                     {
-                        // TODO Convert these APIs to long
-                        // Requires refactoring on ProxiedArchipelago and throughout Raftipelago...
-                        RaftItemUnlockedForCurrentWorld((int)res.Item, (int)res.Location, res.Player);
+                        RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player, ++_receivedItemCount);
                     }
                 }
                 if (!triggeredConnectedAction)
@@ -255,13 +256,13 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void AddRaftItemUnlockedForCurrentWorldEvent(TripleArgumentActionHandler<int, int, int> newEvent)
+        public void AddRaftItemUnlockedForCurrentWorldEvent(QuadroupleArgumentActionHandler<long, long, int, int> newEvent)
         {
             if (newEvent != null)
             {
                 lock (LockForClass)
                 {
-                    RaftItemUnlockedForCurrentWorld += (int arg1, int arg2, int arg3) => newEvent.Invoke(arg1, arg2, arg3);
+                    RaftItemUnlockedForCurrentWorld += (long arg1, long arg2, int arg3, int arg4) => newEvent.Invoke(arg1, arg2, arg3, arg4);
                 }
             }
         }
@@ -308,7 +309,7 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void LocationFromCurrentWorldUnlocked(params int[] locationIds)
+        public void LocationFromCurrentWorldUnlocked(params long[] locationIds)
         {
             foreach (var locId in locationIds)
             {
@@ -316,17 +317,9 @@ namespace ArchipelagoProxy
             }
         }
 
-        public int[] GetAllLocationIdsUnlockedForCurrentWorld()
+        public long[] GetAllLocationIdsUnlockedForCurrentWorld()
         {
-            // NOTE: This will truncate long values. However, all of Raftipelago's IDs are below Int.MAX_VALUE, so
-            // we can just convert the numbers to an int.
-            return _session.Locations.AllLocationsChecked.Select(loc => {
-                if (loc > int.MaxValue)
-                {
-                    _errorQueue.Enqueue("Location " + loc + " is out of assumed range. This will likely break things.");
-                }
-                return (int)loc;
-            }).ToArray();
+            return _session.Locations.AllLocationsChecked.ToArray();
         }
 
         public void SetIsPlayerInWorld(bool isInWorld, bool forceResync = false)
@@ -365,17 +358,12 @@ namespace ArchipelagoProxy
             }
         }
 
-        public int GetLocationIdFromName(string locationName)
+        public long GetLocationIdFromName(string locationName)
         {
-            var locationId = _session.Locations.GetLocationIdFromName("Raft", locationName);
-            if (locationId > int.MaxValue)
-            {
-                _errorQueue.Enqueue("Location " + locationId + " is out of assumed range. This will likely break things.");
-            }
-            return (int) locationId;
+            return _session.Locations.GetLocationIdFromName("Raft", locationName);
         }
 
-        public string GetItemNameFromId(int itemId)
+        public string GetItemNameFromId(long itemId)
         {
             return _session.Items.GetItemName(itemId);
         }
@@ -553,14 +541,14 @@ namespace ArchipelagoProxy
 
         private void _comms_sendLocations()
         {
-            List<int> allLocations = new List<int>();
-            while (_locationUnlockQueue.TryDequeue(out int nextLocation))
+            List<long> allLocations = new List<long>();
+            while (_locationUnlockQueue.TryDequeue(out long nextLocation))
             {
                 allLocations.Add(nextLocation);
             }
             if (allLocations.Count > 0)
             {
-                _session.Locations.CompleteLocationChecks(allLocations.Select(loc => (long) loc).ToArray());
+                _session.Locations.CompleteLocationChecks(allLocations.ToArray());
             }
         }
 
@@ -738,9 +726,9 @@ namespace ArchipelagoProxy
                 case JsonMessagePartType.PlayerId:
                     return _session.Players.GetPlayerName(int.Parse(data.Text)); // TODO Error handling
                 case JsonMessagePartType.ItemId:
-                    return _session.Items.GetItemName(int.Parse(data.Text)); // TODO Error handling
+                    return _session.Items.GetItemName(long.Parse(data.Text)); // TODO Error handling
                 case JsonMessagePartType.LocationId:
-                    return _session.Locations.GetLocationNameFromId(int.Parse(data.Text));
+                    return _session.Locations.GetLocationNameFromId(long.Parse(data.Text));
                 case JsonMessagePartType.Color:
                     return ""; // TODO Color? Ignoring for now
                 case JsonMessagePartType.PlayerName: // Explicitly calling out expected strings to just return data for
