@@ -10,6 +10,7 @@ namespace Raftipelago.Network
 {
     public class MultiplayerComms
     {
+        private const string ModUtils_OldSlug = "2.1.0"; // Effectively versioning for ModUtils RGD data
         private const NetworkChannel ModUtils_Channel = (NetworkChannel)47000;
         private Dictionary<long, int> PlayerItemIndeces = new Dictionary<long, int>();
         private Type _RGD_Raftipelago_Type;
@@ -195,7 +196,8 @@ namespace Raftipelago.Network
             RAPI.SendNetworkMessage(message, channel: (int)ModUtils_Channel);
         }
 
-        private void ModUtils_RegisterSerializer(Type type, Func<object, byte[]> toBytes, Func<byte[], object> fromBytes)
+        // This MUST be static
+        private static void ModUtils_RegisterSerializer(Type type, Func<object, byte[]> toBytes, Func<byte[], object> fromBytes)
         {
             // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
             // this in the constructor; trigger this on mod start
@@ -280,55 +282,55 @@ namespace Raftipelago.Network
                 return new List<T>();
             }
         }
-    }
 
-    internal class Message_ArchipelagoData : Message
-    {
-        public Dictionary<long, string> ItemIdToNameMap { get; private set; }
-        public Dictionary<int, string> PlayerIdToNameMap { get; private set; }
-        public Dictionary<string, object> SlotData { get; private set; }
-        public Dictionary<long, int> CurrentReceivedItemIndeces { get; private set; }
-        public Message_ArchipelagoData(
-            Dictionary<long, string> itemIdToNameMap,
-            Dictionary<int, string> playerIdToNameMap,
-            Dictionary<string, object> slotData,
-            Dictionary<long, int> currentReceivedItemIndeces
-            ) : base(RaftipelagoMessageTypes.ARCHIPELAGO_DATA)
+        private class Message_ArchipelagoData : Message
         {
-            ItemIdToNameMap = itemIdToNameMap;
-            PlayerIdToNameMap = playerIdToNameMap;
-            SlotData = slotData;
-            CurrentReceivedItemIndeces = currentReceivedItemIndeces;
+            public Dictionary<long, string> ItemIdToNameMap { get; private set; }
+            public Dictionary<int, string> PlayerIdToNameMap { get; private set; }
+            public Dictionary<string, object> SlotData { get; private set; }
+            public Dictionary<long, int> CurrentReceivedItemIndeces { get; private set; }
+            public Message_ArchipelagoData(
+                Dictionary<long, string> itemIdToNameMap,
+                Dictionary<int, string> playerIdToNameMap,
+                Dictionary<string, object> slotData,
+                Dictionary<long, int> currentReceivedItemIndeces
+                ) : base(RaftipelagoMessageTypes.ARCHIPELAGO_DATA)
+            {
+                ItemIdToNameMap = itemIdToNameMap;
+                PlayerIdToNameMap = playerIdToNameMap;
+                SlotData = slotData;
+                CurrentReceivedItemIndeces = currentReceivedItemIndeces;
+            }
         }
-    }
 
-    internal class Message_ArchipelagoItemsReceived : Message
-    {
-        public List<long> ItemIds { get; private set; }
-        public List<long> LocationIds { get; private set; }
-        public List<int> PlayerIds { get; private set; }
-        public List<int> CurrentItemIndexes { get; private set; }
-
-        public Message_ArchipelagoItemsReceived(List<long> itemIds, List<long> locationIds, List<int> playerIds, List<int> currentItemIndexes) : base(RaftipelagoMessageTypes.ITEM_RECEIVED)
+        private class Message_ArchipelagoItemsReceived : Message
         {
-            ItemIds = itemIds;
-            LocationIds = locationIds;
-            PlayerIds = playerIds;
-            CurrentItemIndexes = currentItemIndexes;
-        }
-    }
+            public List<long> ItemIds { get; private set; }
+            public List<long> LocationIds { get; private set; }
+            public List<int> PlayerIds { get; private set; }
+            public List<int> CurrentItemIndexes { get; private set; }
 
-    internal class Message_ArchipelagoDeathLink : Message
-    {
-        public Message_ArchipelagoDeathLink() : base(RaftipelagoMessageTypes.DEATHLINK_RECEIVED)
+            public Message_ArchipelagoItemsReceived(List<long> itemIds, List<long> locationIds, List<int> playerIds, List<int> currentItemIndexes) : base(RaftipelagoMessageTypes.ITEM_RECEIVED)
+            {
+                ItemIds = itemIds;
+                LocationIds = locationIds;
+                PlayerIds = playerIds;
+                CurrentItemIndexes = currentItemIndexes;
+            }
+        }
+
+        private class Message_ArchipelagoDeathLink : Message
         {
+            public Message_ArchipelagoDeathLink() : base(RaftipelagoMessageTypes.DEATHLINK_RECEIVED)
+            {
+            }
         }
-    }
 
-    internal class RaftipelagoMessageTypes
-    {
-        public const Messages ARCHIPELAGO_DATA = (Messages)47500;
-        public const Messages ITEM_RECEIVED = (Messages)47501;
-        public const Messages DEATHLINK_RECEIVED = (Messages)47502;
+        private class RaftipelagoMessageTypes
+        {
+            public const Messages ARCHIPELAGO_DATA = (Messages)47500;
+            public const Messages ITEM_RECEIVED = (Messages)47501;
+            public const Messages DEATHLINK_RECEIVED = (Messages)47502;
+        }
     }
 }
