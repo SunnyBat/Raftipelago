@@ -16,14 +16,6 @@ namespace Raftipelago.Network
         private FieldInfo _playerIndecesFieldInfo;
         public MultiplayerComms()
         {
-            //var channelsClass = typeof(ModUtilsChannels);
-            //var fields = channelsClass.GetFields(BindingFlags.Public | BindingFlags.Static);
-            //ModUtils_Channel = new long[fields.Length];
-            //for (int i = 0; i < fields.Length; i++)
-            //{
-            //    ModUtils_Channel[i] = (long)fields[i].GetRawConstantValue();
-            //}
-            //Logger.Debug($"Registering channels {ModUtils_Channel}");
         }
 
         public void RegisterSerializers()
@@ -48,7 +40,7 @@ namespace Raftipelago.Network
             {
                 switch (message.Type)
                 {
-                    case ModUtilsChannels.ARCHIPELAGO_DATA:
+                    case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
                         if (message is Message_ArchipelagoData)
                         {
                             Logger.Debug("AP data received");
@@ -71,7 +63,7 @@ namespace Raftipelago.Network
                             Logger.Error($"AP data received, but invalid message given ({message.GetType()})");
                         }
                         break;
-                    case ModUtilsChannels.ITEM_RECEIVED:
+                    case RaftipelagoMessageTypes.ITEM_RECEIVED:
                         if (message is Message_ArchipelagoItemsReceived)
                         {
                             var convertedMessage = message as Message_ArchipelagoItemsReceived;
@@ -98,7 +90,7 @@ namespace Raftipelago.Network
                             Logger.Error($"AP item received, but invalid message given ({message.GetType()})");
                         }
                         break;
-                    case ModUtilsChannels.DEATHLINK_RECEIVED:
+                    case RaftipelagoMessageTypes.DEATHLINK_RECEIVED:
                         if (message is Message_ArchipelagoDeathLink)
                         {
                             Logger.Trace($"DeathLink received, killing player");
@@ -203,11 +195,11 @@ namespace Raftipelago.Network
             RAPI.SendNetworkMessage(message, channel: (int)ModUtils_Channel);
         }
 
-        private static void ModUtils_RegisterSerializer(Type type, Func<object, byte[]> toBytes, Func<byte[], object> fromBytes)
+        private void ModUtils_RegisterSerializer(Type type, Func<object, byte[]> toBytes, Func<byte[], object> fromBytes)
         {
             // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
             // this in the constructor; trigger this on mod start
-            throw new Exception("ModUtils did not replace RegisterSerializer() -- mod likely not loaded.");
+            throw new NotImplementedException("ModUtils did not replace RegisterSerializer() -- mod likely not loaded.");
         }
 
         private void _loadCommonTypes()
@@ -301,7 +293,7 @@ namespace Raftipelago.Network
             Dictionary<int, string> playerIdToNameMap,
             Dictionary<string, object> slotData,
             Dictionary<long, int> currentReceivedItemIndeces
-            ) : base(ModUtilsChannels.ARCHIPELAGO_DATA)
+            ) : base(RaftipelagoMessageTypes.ARCHIPELAGO_DATA)
         {
             ItemIdToNameMap = itemIdToNameMap;
             PlayerIdToNameMap = playerIdToNameMap;
@@ -317,7 +309,7 @@ namespace Raftipelago.Network
         public List<int> PlayerIds { get; private set; }
         public List<int> CurrentItemIndexes { get; private set; }
 
-        public Message_ArchipelagoItemsReceived(List<long> itemIds, List<long> locationIds, List<int> playerIds, List<int> currentItemIndexes) : base(ModUtilsChannels.ITEM_RECEIVED)
+        public Message_ArchipelagoItemsReceived(List<long> itemIds, List<long> locationIds, List<int> playerIds, List<int> currentItemIndexes) : base(RaftipelagoMessageTypes.ITEM_RECEIVED)
         {
             ItemIds = itemIds;
             LocationIds = locationIds;
@@ -328,12 +320,12 @@ namespace Raftipelago.Network
 
     internal class Message_ArchipelagoDeathLink : Message
     {
-        public Message_ArchipelagoDeathLink() : base(ModUtilsChannels.DEATHLINK_RECEIVED)
+        public Message_ArchipelagoDeathLink() : base(RaftipelagoMessageTypes.DEATHLINK_RECEIVED)
         {
         }
     }
 
-    internal class ModUtilsChannels
+    internal class RaftipelagoMessageTypes
     {
         public const Messages ARCHIPELAGO_DATA = (Messages)47500;
         public const Messages ITEM_RECEIVED = (Messages)47501;
