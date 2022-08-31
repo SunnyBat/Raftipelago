@@ -21,19 +21,29 @@ public class RaftipelagoThree : Mod
 
     private Harmony patcher;
     private IEnumerator serverHeartbeat;
+
     public void Start()
     {
-        if (_isInWorld())
-        {
-            base.UnloadMod();
-            throw new Exception("Raftipelago must be loaded in main menu.");
-        }
-        ModUtils_Reciever.RegisterSerializers();
+        //if (_isInWorld())
+        //{
+        //    base.UnloadMod();
+        //    throw new Exception("Raftipelago must be loaded in main menu.");
+        //}
         string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
-        ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         // We only need to load assemblies once; Raft needs to be restarted to load new versions, so we just keep the instance around forever
+        ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<AssemblyManager>.Value = ComponentManager<AssemblyManager>.Value ?? new AssemblyManager(EmbeddedFileDirectory, proxyServerDirectory);
+        try
+        {
+            ModUtils_Reciever.RegisterData();
+        }
+        catch (Exception e)
+        {
+            Raftipelago.Logger.Trace("ERROR");
+            //base.UnloadMod();
+            throw e;
+        }
         ComponentManager<ExternalData>.Value = ComponentManager<ExternalData>.Value ?? new ExternalData(ComponentManager<EmbeddedFileUtils>.Value);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
         ComponentManager<ItemTracker>.Value = ComponentManager<ItemTracker>.Value ?? new ItemTracker();
@@ -52,13 +62,6 @@ public class RaftipelagoThree : Mod
         ComponentManager<IArchipelagoLink>.Value?.Disconnect();
         if (_isInWorld())
         {
-            if (SaveAndLoad.WorldToLoad == null)
-            {
-                Raftipelago.Logger.Debug("SaveAndLoad.WorldToLoad is null, generating");
-                // WorldToLoad is only referenced on world load, we can modify it without consequence
-                SaveAndLoad.WorldToLoad = (RGD_Game)ComponentManager<AssemblyManager>.Value.GetAssembly(AssemblyManager.RaftipelagoTypesAssembly)
-                    .GetType("RaftipelagoTypes.RGD_Game_Raftipelago").GetConstructor(new Type[] {}).Invoke(null);
-            }
             ComponentManager<ItemTracker>.Value.ResetData();
         }
         ComponentManager<IArchipelagoLink>.Value?.onUnload();

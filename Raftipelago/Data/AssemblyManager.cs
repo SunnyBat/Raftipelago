@@ -55,10 +55,13 @@ namespace Raftipelago.Data
             // then something's wrong.
             try
             {
+                Logger.Trace("Loading DLL " + fileName);
                 var assemblyData = ComponentManager<EmbeddedFileUtils>.Value.ReadRawFile(fromFolderPath, fileName);
+                Logger.Trace("DLL loaded from embedded file.");
                 if (assemblyData.Length > 0)
                 {
                     File.WriteAllBytes(outputFilePath, assemblyData);
+                    Logger.Trace("DLL loaded.");
                 }
                 else
                 {
