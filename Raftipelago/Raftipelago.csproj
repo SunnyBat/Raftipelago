@@ -65,6 +65,7 @@
     <Compile Include="Network\ProxiedArchipelago.cs" />
     <Compile Include="Patches\RGD_ResearchTableWorld.cs" />
     <Compile Include="Patches\Raft_Network.cs" />
+    <Compile Include="Patches\TradingPost.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
   </ItemGroup>
