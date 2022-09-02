@@ -186,7 +186,7 @@ namespace ArchipelagoProxy
 
         public void RequeueAllItems()
         {
-            lock(LockForClass)
+            lock (LockForClass)
             {
                 if (_isSuccessfullyConnected)
                 {
@@ -197,6 +197,23 @@ namespace ArchipelagoProxy
                     }
                 }
             }
+        }
+
+        public object[] GetAllItems()
+        {
+            List<long> itemIds = new List<long>();
+            List<long> locationIds = new List<long>();
+            List<int> playerIds = new List<int>();
+            List<int> itemIndeces = new List<int>();
+            for (int i = 0; i < _session.Items.AllItemsReceived.Count; i++)
+            {
+                var item = _session.Items.AllItemsReceived[i];
+                itemIds.Add(item.Item);
+                locationIds.Add(item.Location);
+                playerIds.Add(item.Player);
+                itemIndeces.Add(i);
+            }
+            return new object[] { itemIds, locationIds, playerIds, itemIndeces };
         }
 
         public void Heartbeat()

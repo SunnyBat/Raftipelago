@@ -30,6 +30,7 @@ namespace Raftipelago.Network
         private MethodInfo _getPlayerAliasMethodInfo;
         private MethodInfo _setGameCompletedMethodInfo;
         private MethodInfo _requeueAllItemsMethodInfo;
+        private MethodInfo _getAllItemsMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
         private MethodInfo _sendDeathLinkIfNecessaryMethodInfo;
@@ -341,6 +342,15 @@ namespace Raftipelago.Network
             }
         }
 
+        public object[] GetAllItems()
+        {
+            if (_proxyServer != null)
+            {
+                return (object[]) _getAllItemsMethodInfo.Invoke(_proxyServer, new object[] { });
+            }
+            return null;
+        }
+
         private void _initAppDomain()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -388,6 +398,7 @@ namespace Raftipelago.Network
             _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
             _setGameCompletedMethodInfo = proxyServerRef.GetMethod("SetGameCompleted");
             _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");
+            _getAllItemsMethodInfo = proxyServerRef.GetMethod("GetAllItems");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
             _sendDeathLinkIfNecessaryMethodInfo = proxyServerRef.GetMethod("SendDeathLinkIfNecessary");

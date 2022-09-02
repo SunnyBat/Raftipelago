@@ -5,9 +5,9 @@ namespace RaftipelagoTypes
 {
     public class RaftipelagoMessageTypes
     {
-        public const Messages ARCHIPELAGO_DATA = (Messages)47500;
-        public const Messages ITEM_RECEIVED = (Messages)47501;
-        public const Messages DEATHLINK_RECEIVED = (Messages)47502;
+        public const Messages ARCHIPELAGO_DATA = (Messages)471;
+        public const Messages ITEM_RECEIVED = (Messages)472;
+        public const Messages DEATHLINK_RECEIVED = (Messages)473;
     }
 
     [Serializable]

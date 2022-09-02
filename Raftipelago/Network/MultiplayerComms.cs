@@ -64,6 +64,7 @@ namespace Raftipelago.Network
             // Host ignores all AP-related packets, as the host is the one initially receiving them
             if (!Raft_Network.IsHost && channel == ModUtils_Channel)
             {
+                Logger.Debug($"Packet received ({message.Type})");
                 switch (message.Type)
                 {
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
@@ -133,6 +134,10 @@ namespace Raftipelago.Network
                         break;
                 }
             }
+            else
+            {
+                Logger.Debug($"Packet received but ignoring ({channel})");
+            }
             return true;
         }
 
@@ -199,22 +204,35 @@ namespace Raftipelago.Network
         public void SendArchipelagoData()
         {
             sendMessage(_generateArchipelagoDataMessage());
+            var objects = ComponentManager<IArchipelagoLink>.Value.GetAllItems();
+            if (objects != null)
+            {
+                Logger.Debug("Sending all items");
+                SendItems((List<long>)objects[0], (List<long>)objects[1], (List<int>)objects[2], (List<int>)objects[3]);
+            }
+            else
+            {
+                Logger.Debug("Unable to send all items");
+            }
         }
 
         public void SendItem(long itemId, long locationId, int playerId, int itemIndex)
         {
+            Logger.Debug($"Sending item {itemId} :: {locationId} :: {playerId} :: {itemIndex}");
             _updateConnectedPlayerItemIndeces(itemIndex);
             sendMessage((Message)_Type_Message_ArchipelagoItemsReceived.GetConstructor(new Type[] { typeof(List<long>), typeof(List<long>), typeof(List<int>), typeof(List<int>) }).Invoke(new object[] { new List<long>() { itemId }, new List<long>() { locationId }, new List<int>() { playerId }, new List<int>() { itemIndex } }));
         }
 
         public void SendItems(List<long> itemIds, List<long> locationIds, List<int> playerIds, List<int> itemIndeces)
         {
+            Logger.Debug($"Sending item count {itemIds.Count}");
             _updateConnectedPlayerItemIndeces(itemIndeces.Max());
             sendMessage((Message)_Type_Message_ArchipelagoItemsReceived.GetConstructor(new Type[] { typeof(List<long>), typeof(List<long>), typeof(List<int>), typeof(List<int>) }).Invoke(new object[] { itemIds, locationIds, playerIds, itemIndeces }));
         }
 
         public void SendDeathLink()
         {
+            Logger.Debug($"Sending DeathLink");
             sendMessage((Message)_Type_Message_ArchipelagoDeathLink.GetConstructor(new Type[0]).Invoke(new object[0]));
         }
 
@@ -300,9 +318,9 @@ namespace Raftipelago.Network
         }
         private class RaftipelagoMessageTypes
         {
-            public const Messages ARCHIPELAGO_DATA = (Messages)47500;
-            public const Messages ITEM_RECEIVED = (Messages)47501;
-            public const Messages DEATHLINK_RECEIVED = (Messages)47502;
+            public const Messages ARCHIPELAGO_DATA = (Messages)471;
+            public const Messages ITEM_RECEIVED = (Messages)472;
+            public const Messages DEATHLINK_RECEIVED = (Messages)473;
         }
     }
 }
