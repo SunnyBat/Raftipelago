@@ -40,6 +40,14 @@ namespace Raftipelago.Network
 
         void PlayerDied(string cause);
 
-        object[] GetAllItems();
+        SplitArchipelagoItemData GetAllItems();
+    }
+
+    public class SplitArchipelagoItemData
+    {
+        public List<long> itemIds { get; set; }
+        public List<long> locationIds { get; set; }
+        public List<int> playerIDs { get; set; }
+        public List<int> itemIndices { get; set; }
     }
 }

@@ -30,7 +30,7 @@ namespace Raftipelago.Network
         private MethodInfo _getPlayerAliasMethodInfo;
         private MethodInfo _setGameCompletedMethodInfo;
         private MethodInfo _requeueAllItemsMethodInfo;
-        private MethodInfo _getAllItemsMethodInfo;
+        private MethodInfo _getAllReceivedItemsMethodInfo;
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
         private MethodInfo _sendDeathLinkIfNecessaryMethodInfo;
@@ -336,17 +336,29 @@ namespace Raftipelago.Network
         public void PlayerDied(string cause)
         {
             Logger.Debug("PlayerDied: " + cause);
+            RAPI.GetLocalPlayer().Kill(); // In case of multiplayer
+            ComponentManager<MultiplayerComms>.Value.SendDeathLink();
             if (_proxyServer != null)
             {
                 _sendDeathLinkIfNecessaryMethodInfo.Invoke(_proxyServer, new object[] { cause });
             }
         }
 
-        public object[] GetAllItems()
+        public SplitArchipelagoItemData GetAllItems()
         {
             if (_proxyServer != null)
             {
-                return (object[]) _getAllItemsMethodInfo.Invoke(_proxyServer, new object[] { });
+                var results = (object[]) _getAllReceivedItemsMethodInfo.Invoke(_proxyServer, new object[] { });
+                if (results != null && results.Length == 4)
+                {
+                    return new SplitArchipelagoItemData()
+                    {
+                        itemIds = (List<long>)results[0],
+                        locationIds = (List<long>)results[1],
+                        playerIDs = (List<int>)results[2],
+                        itemIndices = (List<int>)results[3]
+                    };
+                }
             }
             return null;
         }
@@ -398,7 +410,7 @@ namespace Raftipelago.Network
             _getPlayerAliasMethodInfo = proxyServerRef.GetMethod("GetPlayerAlias");
             _setGameCompletedMethodInfo = proxyServerRef.GetMethod("SetGameCompleted");
             _requeueAllItemsMethodInfo = proxyServerRef.GetMethod("RequeueAllItems");
-            _getAllItemsMethodInfo = proxyServerRef.GetMethod("GetAllItems");
+            _getAllReceivedItemsMethodInfo = proxyServerRef.GetMethod("GetAllReceivedItems");
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
             _sendDeathLinkIfNecessaryMethodInfo = proxyServerRef.GetMethod("SendDeathLinkIfNecessary");

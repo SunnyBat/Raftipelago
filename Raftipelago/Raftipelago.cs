@@ -4,6 +4,7 @@ using Raftipelago.Data;
 using Raftipelago.Network;
 using Raftipelago.Patches;
 using Raftipelago.UnityScripts;
+using Steamworks;
 using System;
 using System.Collections;
 using System.IO;
@@ -24,11 +25,11 @@ public class RaftipelagoThree : Mod
 
     public void Start()
     {
-        //if (_isInWorld())
-        //{
-        //    base.UnloadMod();
-        //    throw new Exception("Raftipelago must be loaded in main menu.");
-        //}
+        if (_isInWorld())
+        {
+            base.UnloadMod();
+            throw new Exception("Raftipelago must be loaded in main menu.");
+        }
         string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
         // We only need to load assemblies once; Raft needs to be restarted to load new versions, so we just keep the instance around forever
@@ -100,6 +101,15 @@ public class RaftipelagoThree : Mod
         ComponentManager<ItemTracker>.Value.ResetData();
     }
 
+    public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
+    {
+        base.WorldEvent_OnPlayerConnected(steamid, characterSettings);
+        if (Raft_Network.IsHost)
+        {
+            ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData(steamid);
+        }
+    }
+
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
     {
@@ -113,18 +123,17 @@ public class RaftipelagoThree : Mod
         }
         else if (arguments.Length >= 2)
         {
-            Raftipelago.Logger.Debug("Disconnecting");
+            Raftipelago.Logger.Trace("Disconnecting");
             ComponentManager<IArchipelagoLink>.Value.Disconnect();
-            Raftipelago.Logger.Debug("Reading args");
+            Raftipelago.Logger.Trace("Reading args");
             string serverAddress = arguments[0];
             int currentIndex = 1;
             string username = _readNextValue(arguments, ref currentIndex);
             string password = _readNextValue(arguments, ref currentIndex);
             Raftipelago.Logger.Debug("Connecting");
             ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
-            Raftipelago.Logger.Debug("Postconnect");
-            //ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
-            Raftipelago.Logger.Debug("Connect command sent");
+            Raftipelago.Logger.Trace("Postconnect");
+            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
         }
         else
         {
@@ -132,10 +141,17 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/resync", "Resyncs Archipelago data from server host. Generally unnecessary.")]
+    [ConsoleCommand("/resync", "Resyncs Archipelago data as server host. Generally unnecessary.")]
     private static void Command_ResyncData(string[] arguments)
     {
-        ComponentManager<MultiplayerComms>.Value.SendArchipelagoData();
+        if (Raft_Network.IsHost)
+        {
+            ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData();
+        }
+        else
+        {
+            Raftipelago.Logger.Error("Cannot resync data if not server host");
+        }
     }
 
     [ConsoleCommand("/disconnect", "Disconnects from the Archipelago server. You must put \"confirmDisconnect\" in order to confirm that you want to disconnect from the current session.")]

@@ -199,7 +199,7 @@ namespace ArchipelagoProxy
             }
         }
 
-        public object[] GetAllItems()
+        public object[] GetAllReceivedItems()
         {
             List<long> itemIds = new List<long>();
             List<long> locationIds = new List<long>();
