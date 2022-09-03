@@ -335,8 +335,8 @@ namespace Raftipelago.Network
 
         public void PlayerDied(string cause)
         {
-            Logger.Debug("PlayerDied: " + cause);
-            RAPI.GetLocalPlayer().Kill(); // In case of multiplayer
+            Logger.Trace("PlayerDied: " + cause);
+            RAPI.GetLocalPlayer().Kill();
             ComponentManager<MultiplayerComms>.Value.SendDeathLink();
             if (_proxyServer != null)
             {

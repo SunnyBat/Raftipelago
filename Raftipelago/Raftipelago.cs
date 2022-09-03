@@ -84,6 +84,8 @@ public class RaftipelagoThree : Mod
         else
         {
             Raftipelago.Logger.Debug("Not world host");
+            // Now that the world is loaded, we can request a data resync
+            ComponentManager<MultiplayerComms>.Value.RequestArchipelagoDataResync();
         }
     }
 
@@ -101,14 +103,14 @@ public class RaftipelagoThree : Mod
         ComponentManager<ItemTracker>.Value.ResetData();
     }
 
-    public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
-    {
-        base.WorldEvent_OnPlayerConnected(steamid, characterSettings);
-        if (Raft_Network.IsHost)
-        {
-            ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData(steamid);
-        }
-    }
+    //public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
+    //{
+    //    base.WorldEvent_OnPlayerConnected(steamid, characterSettings);
+    //    if (Raft_Network.IsHost)
+    //    {
+    //        ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData(steamid);
+    //    }
+    //}
 
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
@@ -141,16 +143,16 @@ public class RaftipelagoThree : Mod
         }
     }
 
-    [ConsoleCommand("/resync", "Resyncs Archipelago data as server host. Generally unnecessary.")]
+    [ConsoleCommand("/resync", "Resyncs Archipelago data to everyone (if host) or from host (if not host). Generally unnecessary.")]
     private static void Command_ResyncData(string[] arguments)
     {
         if (Raft_Network.IsHost)
         {
-            ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData();
+            ComponentManager<MultiplayerComms>.Value.SendAllArchipelagoData();
         }
         else
         {
-            Raftipelago.Logger.Error("Cannot resync data if not server host");
+            ComponentManager<MultiplayerComms>.Value.RequestArchipelagoDataResync();
         }
     }
 

@@ -8,6 +8,7 @@ namespace RaftipelagoTypes
         public const Messages ARCHIPELAGO_DATA = (Messages)471;
         public const Messages ITEM_RECEIVED = (Messages)472;
         public const Messages DEATHLINK_RECEIVED = (Messages)473;
+        public const Messages REQUEST_RESYNC = (Messages)474;
     }
 
     [Serializable]
@@ -45,6 +46,14 @@ namespace RaftipelagoTypes
             LocationIds = locationIds;
             PlayerIds = playerIds;
             CurrentItemIndexes = currentItemIndexes;
+        }
+    }
+
+    [Serializable]
+    public class Message_ArchipelagoRequestResync : Message
+    {
+        public Message_ArchipelagoRequestResync() : base(RaftipelagoMessageTypes.REQUEST_RESYNC)
+        {
         }
     }
 

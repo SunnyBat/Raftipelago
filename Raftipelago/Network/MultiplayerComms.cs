@@ -16,10 +16,12 @@ namespace Raftipelago.Network
         private Type _Type_RGD_Raftipelago;
         private Type _Type_Message_ArchipelagoData;
         private Type _Type_Message_ArchipelagoItemsReceived;
+        private Type _Type_Message_ArchipelagoRequestResync;
         private Type _Type_Message_ArchipelagoDeathLink;
         private ConstructorInfo _ConstructorInfo_RGD_Raftipelago;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoData;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoItemsReceived;
+        private ConstructorInfo _ConstructorInfo_Message_ArchipelagoRequestResync;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoDeathLink;
         private FieldInfo _FieldInfo_RGD_Raftipelago_playerIndeces;
         private PropertyInfo _PropertyInfo_Message_ArchipelagoData_ItemIdToNameMap;
@@ -37,6 +39,7 @@ namespace Raftipelago.Network
             _Type_RGD_Raftipelago = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.RGD_Raftipelago");
             _Type_Message_ArchipelagoData = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoData");
             _Type_Message_ArchipelagoItemsReceived = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoItemsReceived");
+            _Type_Message_ArchipelagoRequestResync = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoRequestResync");
             _Type_Message_ArchipelagoDeathLink = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoDeathLink");
             _ConstructorInfo_RGD_Raftipelago = _Type_RGD_Raftipelago.GetConstructor(new Type[] { typeof(Dictionary<long, int>) });
             _ConstructorInfo_Message_ArchipelagoData = _Type_Message_ArchipelagoData.GetConstructor(new Type[] {
@@ -45,6 +48,7 @@ namespace Raftipelago.Network
             _ConstructorInfo_Message_ArchipelagoItemsReceived = _Type_Message_ArchipelagoItemsReceived.GetConstructor(new Type[] {
                 typeof(List<long>), typeof(List<long>), typeof(List<int>), typeof(List<int>) }
             );
+            _ConstructorInfo_Message_ArchipelagoRequestResync = _Type_Message_ArchipelagoRequestResync.GetConstructor(new Type[0]);
             _ConstructorInfo_Message_ArchipelagoDeathLink = _Type_Message_ArchipelagoDeathLink.GetConstructor(new Type[0]);
             _FieldInfo_RGD_Raftipelago_playerIndeces = _Type_RGD_Raftipelago.GetField("Raftipelago_PlayerCurrentItemIndeces", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
             _PropertyInfo_Message_ArchipelagoData_ItemIdToNameMap = _Type_Message_ArchipelagoData.GetProperty("ItemIdToNameMap");
@@ -73,7 +77,29 @@ namespace Raftipelago.Network
             // Host ignores all AP-related packets, as the host is the one initially receiving them
             if (message == null)
             {
-                Logger.Warn("Null message received");
+                Logger.Warn($"Null message received ({steamID}, {channel})");
+            }
+            else if (channel != ModUtils_Channel)
+            {
+                Logger.Debug($"Invalid message channel received ({steamID}, {channel}, {message})");
+            }
+            else if (Raft_Network.IsHost)
+            {
+                Logger.Debug($"Packet received ({message.Type})");
+                switch (message.Type)
+                {
+                    case RaftipelagoMessageTypes.REQUEST_RESYNC:
+                        SendAllArchipelagoData(steamID);
+                        break;
+                    case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
+                    case RaftipelagoMessageTypes.ITEM_RECEIVED:
+                    case RaftipelagoMessageTypes.DEATHLINK_RECEIVED:
+                        Logger.Trace($"Received packet {message.Type} from {steamID}, ignoring");
+                        break;
+                    default:
+                        Logger.Debug($"Unknown packet received ({steamID}, {message.Type})");
+                        break;
+                }
             }
             else if (!Raft_Network.IsHost && channel == ModUtils_Channel)
             {
@@ -94,7 +120,7 @@ namespace Raftipelago.Network
                             _debugDictionary(currentItemIndeces);
                             if (currentItemIndeces.TryGetValue((long)RAPI.GetLocalPlayer().steamID.m_SteamID, out int currentIndex))
                             {
-                                Logger.Info("Item index set to " + currentIndex);
+                                Logger.Info($"Item index set to {currentIndex}");
                                 ComponentManager<ItemTracker>.Value.CurrentReceivedItemIndex = currentIndex;
                             }
                             else
@@ -123,7 +149,7 @@ namespace Raftipelago.Network
                                 && itemIds.Count == playerIds.Count
                                 && itemIds.Count == currentItemIndexes.Count)
                             {
-                                Logger.Trace("Valid data");
+                                Logger.Trace("Item data received");
                                 for (int i = 0; i < itemIds.Count; i++)
                                 {
                                     ComponentManager<ItemTracker>.Value.RaftItemUnlockedForCurrentWorld(itemIds[i],
@@ -153,11 +179,13 @@ namespace Raftipelago.Network
                             Logger.Error($"AP DeathLink received, but invalid message given ({message.GetType()})");
                         }
                         break;
+                    case RaftipelagoMessageTypes.REQUEST_RESYNC:
+                        Logger.Trace($"Ignoring resync request (not host)");
+                        break;
+                    default:
+                        Logger.Debug($"Unknown packet received ({steamID}, {message.Type})");
+                        break;
                 }
-            }
-            else
-            {
-                Logger.Debug($"Packet received but ignoring ({channel})");
             }
             return true;
         }
@@ -175,7 +203,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                Logger.Trace("Save Item index (not present)");
+                Logger.Trace("Save Item index: (not present)");
             }
             var rgdObj = _ConstructorInfo_RGD_Raftipelago.Invoke(new object[] { PlayerItemIndeces });
             return (RGD) rgdObj;
@@ -232,9 +260,15 @@ namespace Raftipelago.Network
         //    ModUtils_MessageRecieved(default(CSteamID), ModUtils_Channel, message);
         //}
 
-        public void ResyncArchipelagoData(CSteamID? playerId = null)
+        public void RequestArchipelagoDataResync()
         {
-            Logger.Debug("Resyncing Archipelago data");
+            Logger.Trace($"Requesting Archipelago data resync");
+            sendMessage((Message)_ConstructorInfo_Message_ArchipelagoRequestResync.Invoke(new object[0]));
+        }
+
+        public void SendAllArchipelagoData(CSteamID? playerId = null)
+        {
+            Logger.Trace($"Resyncing Archipelago data with {playerId?.ToString() ?? "everyone"}");
             sendMessage(_generateArchipelagoDataMessage(), playerId);
             var itemInfo = ComponentManager<IArchipelagoLink>.Value.GetAllItems();
             if (itemInfo != null)
@@ -389,11 +423,12 @@ namespace Raftipelago.Network
             }
         }
 
-        private class RaftipelagoMessageTypes
+        public class RaftipelagoMessageTypes
         {
             public const Messages ARCHIPELAGO_DATA = (Messages)471;
             public const Messages ITEM_RECEIVED = (Messages)472;
             public const Messages DEATHLINK_RECEIVED = (Messages)473;
+            public const Messages REQUEST_RESYNC = (Messages)474;
         }
     }
 }
