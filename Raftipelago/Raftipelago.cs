@@ -4,7 +4,6 @@ using Raftipelago.Data;
 using Raftipelago.Network;
 using Raftipelago.Patches;
 using Raftipelago.UnityScripts;
-using Steamworks;
 using System;
 using System.Collections;
 using System.IO;
@@ -12,7 +11,7 @@ using System.Reflection;
 using System.Text;
 using UnityEngine;
 
-public class RaftipelagoThree : Mod
+public class RaftipelagoMod : Mod
 {
     // Sets ModUtils class to handle sending/receiving data (so everything's not shoved into this one class)
     private static MultiplayerComms ModUtils_Reciever = ComponentManager<MultiplayerComms>.Value = new MultiplayerComms();

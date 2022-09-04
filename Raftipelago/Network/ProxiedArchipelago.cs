@@ -366,7 +366,7 @@ namespace Raftipelago.Network
         private void _initAppDomain()
         {
             string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var proxyServerDirectory = Path.Combine(appDataDirectory, RaftipelagoThree.AppDataFolderName);
+            var proxyServerDirectory = Path.Combine(appDataDirectory, RaftipelagoMod.AppDataFolderName);
             var ads = new AppDomainSetup();
             ads.PrivateBinPath = proxyServerDirectory;
             _appDomain = AppDomain.CreateDomain(Guid.NewGuid().ToString(), new System.Security.Policy.Evidence(), ads);

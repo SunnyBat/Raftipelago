@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using Raftipelago.Data;
-using Raftipelago.Network;
 
 namespace Raftipelago.Patches
 {
