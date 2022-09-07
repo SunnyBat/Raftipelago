@@ -17,11 +17,13 @@ namespace Raftipelago.Network
         private Type _Type_Message_ArchipelagoData;
         private Type _Type_Message_ArchipelagoItemsReceived;
         private Type _Type_Message_ArchipelagoRequestResync;
+        private Type _Type_Message_ArchipelagoDeathWithCause;
         private Type _Type_Message_ArchipelagoDeathLink;
         private ConstructorInfo _ConstructorInfo_RGD_Raftipelago;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoData;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoItemsReceived;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoRequestResync;
+        private ConstructorInfo _ConstructorInfo_Message_ArchipelagoDeathWithCause;
         private ConstructorInfo _ConstructorInfo_Message_ArchipelagoDeathLink;
         private FieldInfo _FieldInfo_RGD_Raftipelago_playerIndeces;
         private PropertyInfo _PropertyInfo_Message_ArchipelagoData_ItemIdToNameMap;
@@ -32,6 +34,7 @@ namespace Raftipelago.Network
         private PropertyInfo _PropertyInfo_Message_ArchipelagoItemsReceived_LocationIds;
         private PropertyInfo _PropertyInfo_Message_ArchipelagoItemsReceived_PlayerIds;
         private PropertyInfo _PropertyInfo_Message_ArchipelagoItemsReceived_CurrentItemIndexes;
+        private PropertyInfo _PropertyInfo_Message_ArchipelagoDeathWithCause_DeathCause;
 
         public void RegisterData()
         {
@@ -40,6 +43,7 @@ namespace Raftipelago.Network
             _Type_Message_ArchipelagoData = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoData");
             _Type_Message_ArchipelagoItemsReceived = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoItemsReceived");
             _Type_Message_ArchipelagoRequestResync = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoRequestResync");
+            _Type_Message_ArchipelagoDeathWithCause = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoDeathWithCause");
             _Type_Message_ArchipelagoDeathLink = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.Message_ArchipelagoDeathLink");
             _ConstructorInfo_RGD_Raftipelago = _Type_RGD_Raftipelago.GetConstructor(new Type[] { typeof(Dictionary<long, int>) });
             _ConstructorInfo_Message_ArchipelagoData = _Type_Message_ArchipelagoData.GetConstructor(new Type[] {
@@ -49,6 +53,7 @@ namespace Raftipelago.Network
                 typeof(List<long>), typeof(List<long>), typeof(List<int>), typeof(List<int>) }
             );
             _ConstructorInfo_Message_ArchipelagoRequestResync = _Type_Message_ArchipelagoRequestResync.GetConstructor(new Type[0]);
+            _ConstructorInfo_Message_ArchipelagoDeathWithCause = _Type_Message_ArchipelagoDeathWithCause.GetConstructor(new Type[] { typeof(string) });
             _ConstructorInfo_Message_ArchipelagoDeathLink = _Type_Message_ArchipelagoDeathLink.GetConstructor(new Type[0]);
             _FieldInfo_RGD_Raftipelago_playerIndeces = _Type_RGD_Raftipelago.GetField("Raftipelago_PlayerCurrentItemIndeces", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
             _PropertyInfo_Message_ArchipelagoData_ItemIdToNameMap = _Type_Message_ArchipelagoData.GetProperty("ItemIdToNameMap");
@@ -59,6 +64,7 @@ namespace Raftipelago.Network
             _PropertyInfo_Message_ArchipelagoItemsReceived_LocationIds = _Type_Message_ArchipelagoItemsReceived.GetProperty("LocationIds");
             _PropertyInfo_Message_ArchipelagoItemsReceived_PlayerIds = _Type_Message_ArchipelagoItemsReceived.GetProperty("PlayerIds");
             _PropertyInfo_Message_ArchipelagoItemsReceived_CurrentItemIndexes = _Type_Message_ArchipelagoItemsReceived.GetProperty("CurrentItemIndexes");
+            _PropertyInfo_Message_ArchipelagoDeathWithCause_DeathCause = _Type_Message_ArchipelagoDeathWithCause.GetProperty("DeathCause");
             ModUtils_RegisterSerializer(typeof(Dictionary<long, int>), SerializeDictionary<long, int>, DeserializeDictionary<long, int>);
             ModUtils_RegisterSerializer(typeof(Dictionary<long, string>), SerializeDictionary<long, string>, DeserializeDictionary<long, string>);
             ModUtils_RegisterSerializer(typeof(Dictionary<int, string>), SerializeDictionary<int, string>, DeserializeDictionary<int, string>);
@@ -91,6 +97,9 @@ namespace Raftipelago.Network
                     case RaftipelagoMessageTypes.REQUEST_RESYNC:
                         SendAllArchipelagoData(steamID);
                         break;
+                    case RaftipelagoMessageTypes.DEATHLINK_REASON: // Local player (not us) died
+                        SendDeathLink((string)_PropertyInfo_Message_ArchipelagoDeathWithCause_DeathCause.GetValue(message));
+                        break;
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
                     case RaftipelagoMessageTypes.ITEM_RECEIVED:
                     case RaftipelagoMessageTypes.DEATHLINK_RECEIVED:
@@ -110,6 +119,7 @@ namespace Raftipelago.Network
                         if (message.GetType() == _Type_Message_ArchipelagoData)
                         {
                             Logger.Trace("AP data received");
+                            ComponentManager<ItemTracker>.Value.ResetProgressives();
                             ComponentManager<ArchipelagoDataManager>.Value.ItemIdToName = (Dictionary<long, string>)_PropertyInfo_Message_ArchipelagoData_ItemIdToNameMap.GetValue(message);
                             ComponentManager<ArchipelagoDataManager>.Value.PlayerIdToName = (Dictionary<int, string>)_PropertyInfo_Message_ArchipelagoData_PlayerIdToNameMap.GetValue(message);
                             ComponentManager<ArchipelagoDataManager>.Value.SlotData = (Dictionary<string, object>)_PropertyInfo_Message_ArchipelagoData_SlotData.GetValue(message);
@@ -171,8 +181,8 @@ namespace Raftipelago.Network
                     case RaftipelagoMessageTypes.DEATHLINK_RECEIVED:
                         if (message.GetType() == _Type_Message_ArchipelagoDeathLink)
                         {
-                            Logger.Trace($"DeathLink received, killing player");
-                            RAPI.GetLocalPlayer().Kill();
+                            Logger.Trace($"DeathLink received, killing local player");
+                            RAPI.GetLocalPlayer().Stats.Damage(99999, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, EntityType.None);
                         }
                         else
                         {
@@ -180,6 +190,7 @@ namespace Raftipelago.Network
                         }
                         break;
                     case RaftipelagoMessageTypes.REQUEST_RESYNC:
+                    case RaftipelagoMessageTypes.DEATHLINK_REASON:
                         Logger.Trace($"Ignoring resync request (not host)");
                         break;
                     default:
@@ -307,10 +318,30 @@ namespace Raftipelago.Network
             }
         }
 
-        public void SendDeathLink()
+        public void SendDeathLink(string message = null)
         {
-            Logger.Debug($"Sending DeathLink");
-            sendMessage((Message)_ConstructorInfo_Message_ArchipelagoDeathLink.Invoke(new object[0]));
+            if (Raft_Network.IsHost)
+            {
+                Logger.Trace($"Sending DeathLink");
+                // DeathLink local player
+                RAPI.GetLocalPlayer().Stats.Damage(99999, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, EntityType.None);
+                // DeathLink other Raft players
+                sendMessage((Message)_ConstructorInfo_Message_ArchipelagoDeathLink.Invoke(new object[0]));
+                if (!string.IsNullOrWhiteSpace(message))
+                {
+                    // And DeathLink Archipelago players
+                    ComponentManager<IArchipelagoLink>.Value.SendDeathLinkPacket(message);
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(message))
+            {
+                Logger.Trace($"Sending DeathLink sync ({message})");
+                sendMessage((Message)_ConstructorInfo_Message_ArchipelagoDeathWithCause.Invoke(new object[] { message }));
+            }
+            else
+            {
+                Logger.Trace($"SendDeathLink -- not host, invalid message");
+            }
         }
 
         private void _debugDictionary<T, U>(Dictionary<T, U> toPrint)
@@ -346,14 +377,16 @@ namespace Raftipelago.Network
         {
             // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
             // this in the constructor; trigger this on mod start
-            throw new NotImplementedException("ModUtils did not replace RegisterSerializer() -- mod likely not loaded.");
+            throw new NotImplementedException("ModUtils did not replace RegisterSerializer() -- ModUtils likely not loaded.");
         }
 
         private void _updateConnectedPlayerItemIndeces(int itemIndex)
         {
+            Logger.Trace("Update player indeces");
             _updatePlayerItemIndex((long)RAPI.GetLocalPlayer().steamID.m_SteamID, itemIndex);
             foreach (var player in ComponentManager<Raft_Network>.Value.remoteUsers)
             {
+                Logger.Trace($"{player.Value.steamID} ({RAPI.GetUsernameFromSteamID(player.Value.steamID)}) => {itemIndex}");
                 _updatePlayerItemIndex((long)player.Value.steamID.m_SteamID, itemIndex);
             }
         }
@@ -364,6 +397,8 @@ namespace Raftipelago.Network
             PlayerItemIndeces[playerId] = Math.Max(itemIndex, currentIndex);
         }
 
+        // NOTE: This currently assumes that all item data is sent IMMEDIATELY after this packet.
+        // Receiving this packet as a non-host will reset progressive data.
         private Message _generateArchipelagoDataMessage()
         {
             Logger.Trace("_generateArchipelagoDataMessage");
@@ -429,6 +464,7 @@ namespace Raftipelago.Network
             public const Messages ITEM_RECEIVED = (Messages)472;
             public const Messages DEATHLINK_RECEIVED = (Messages)473;
             public const Messages REQUEST_RESYNC = (Messages)474;
+            public const Messages DEATHLINK_REASON = (Messages)475;
         }
     }
 }

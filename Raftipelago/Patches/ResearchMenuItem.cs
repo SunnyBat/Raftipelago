@@ -17,6 +17,14 @@ namespace Raftipelago.Patches
             ref Inventory_ResearchTable ___inventoryRef,
             ref ResearchMenuItem.OnLearnedRecipe ___OnLearnedRecipeEvent)
 		{
+			Logger.Trace("LearnButton");
+			// Research Decorations as normal, as they're not part of Raftipelago right now
+			if (SO_MysteryPackageLoot.IsPossibleYieldItem(___item))
+			{
+				Logger.Trace("Learn: Decoration item");
+				return true;
+			}
+
 			if (___localPlayer == null)
 			{
 				___localPlayer = ComponentManager<Network_Player>.Value;
@@ -42,7 +50,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_ResearchMenuItem_Learn
 	{
 		[HarmonyPrefix]
-		public static bool AlwaysReplace(
+		public static bool SometimesReplace(
 			ref Item_Base ___item,
 			ref bool ___learned,
 			ref CanvasGroup ___canvasgroup,
@@ -51,16 +59,20 @@ namespace Raftipelago.Patches
 			ref List<BingoMenuItem> ___bingoMenuItems,
 			Inventory_ResearchTable ___inventoryRef)
 		{
+			Logger.Trace("Learn");
+
+			// Research Decorations as normal, as they're not part of Raftipelago right now
+			if (SO_MysteryPackageLoot.IsPossibleYieldItem(___item))
+			{
+				Logger.Trace("Learn: Decoration item");
+				return true;
+			}
+
 			// We still want to mark as learned, but we don't want to actually set the item to craftable
 			___learned = true;
 			___canvasgroup.alpha = 0.5f;
 			___learnButton.gameObject.SetActive(false);
 			___learnedText.gameObject.SetActive(true);
-			// Research Decorations as normal, as they're not part of Raftipelago right now
-			if (___item.settings_recipe.CraftingCategory == CraftingCategory.Decorations)
-            {
-				___item.settings_recipe.Learned = true;
-            }
 
 			// Addition by Raftipelago
 			if (ComponentManager<ArchipelagoDataManager>.Value.TryGetSlotData("ExpensiveResearch", out bool isExpensiveResearchEnabled) && isExpensiveResearchEnabled)

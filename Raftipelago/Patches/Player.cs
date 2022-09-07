@@ -12,29 +12,30 @@ namespace Raftipelago.Patches
 			Player __instance,
 			PlayerStats ___playerStats)
 		{
+			Logger.Trace("Kill called (Player)");
 			// Kill() sets IsDead to true, if it's already true, it skips everything (since we're already dead)
 			// We specifically single out PlayerStats::void Update() to determine if we died due to oxygen/hunger/thirst.
 			// If it was, we know to trigger these death types. Otherwise, the death came from some other source of
 			// damage, and we'll trigger that instead using PlayerStats.Damage().
-			if (!Raft_Network.InMenuScene && Raft_Network.IsHost && !__instance.IsDead && _isDeathDueToPlayerStatsUpdate())
+			if (!Raft_Network.InMenuScene && !__instance.IsDead && _isDeathDueToPlayerStatsUpdate())
 			{
 				Logger.Trace("PlayerStats death");
 				if (___playerStats.stat_oxygen.IsZero)
 				{
-					ComponentManager<IArchipelagoLink>.Value.PlayerDied("Suffocated to death");
+					ComponentManager<MultiplayerComms>.Value.SendDeathLink("Suffocated to death");
 				}
 				else if (___playerStats.stat_thirst.Normal.IsZero)
 				{
-					ComponentManager<IArchipelagoLink>.Value.PlayerDied("Died of thirst");
+					ComponentManager<MultiplayerComms>.Value.SendDeathLink("Died of thirst");
 				}
 				else if (___playerStats.stat_hunger.Normal.IsZero)
 				{
-					ComponentManager<IArchipelagoLink>.Value.PlayerDied("Starved to death");
+					ComponentManager<MultiplayerComms>.Value.SendDeathLink("Starved to death");
 				}
 				else
 				{
 					Logger.Warn("Unknown PlayerStats.Update() death");
-					ComponentManager<IArchipelagoLink>.Value.PlayerDied("Unknown causes");
+					ComponentManager<MultiplayerComms>.Value.SendDeathLink("Unknown causes");
 				}
 			}
 		}

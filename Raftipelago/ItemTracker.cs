@@ -23,13 +23,14 @@ namespace Raftipelago
 
         public void ResetData()
         {
-            Logger.Debug("Resetting item data");
+            Logger.Trace("Resetting item data");
             ResetProgressives();
             CurrentReceivedItemIndex = 0;
         }
 
         public void ResetProgressives()
         {
+            Logger.Trace("Resetting progressives");
             foreach (var progressiveName in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.Keys)
             {
                 _progressiveLevels[progressiveName] = -1; // None unlocked = -1
@@ -40,6 +41,7 @@ namespace Raftipelago
         {
             var sentItemName = ComponentManager<ArchipelagoDataManager>.Value.GetItemName(itemId);
             bool unlockingForFirstTime = CurrentReceivedItemIndex < itemIndex;
+            Logger.Trace($"RaftItemUnlockedForCurrentWorld: {itemId} ({sentItemName}) | {locationId} | {player} | {itemIndex} ({CurrentReceivedItemIndex}) | {unlockingForFirstTime}");
             if (!_unlockResourcePack(itemId, locationId, sentItemName, player, unlockingForFirstTime)
                 && !_unlockProgressive(itemId, locationId, sentItemName, player, unlockingForFirstTime)
                 && _unlockItem(itemId, sentItemName, locationId, player, unlockingForFirstTime) == UnlockResult.NotFound)
@@ -48,15 +50,17 @@ namespace Raftipelago
             }
             else
             {
-                Logger.Trace($"Unlocked {itemId}::{locationId}::{player} ({itemIndex})");
+                Logger.Trace($"Processed {itemId}::{locationId}::{player} ({itemIndex})");
             }
-            if (Raft_Network.IsHost)
-            {
-                ComponentManager<MultiplayerComms>.Value.SendItem(itemId, locationId, player, itemIndex);
-            }
+
             if (unlockingForFirstTime)
             {
                 CurrentReceivedItemIndex = itemIndex;
+            }
+
+            if (Raft_Network.IsHost)
+            {
+                ComponentManager<MultiplayerComms>.Value.SendItem(itemId, locationId, player, itemIndex);
             }
         }
 
@@ -94,40 +98,54 @@ namespace Raftipelago
         {
             if (progressiveName != null && _progressiveLevels.ContainsKey(progressiveName) && ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings.ContainsKey(progressiveName))
             {
+                Logger.Trace($"Progressive found ({progressiveName})");
+                // Only run through progressive if we have data for it, otherwise we've received too many (likely duplicates)
                 if (++_progressiveLevels[progressiveName] < ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName].Length)
                 {
-                    bool unlockedAnyItem = false;
+                    bool? unlockedAnyItem = false;
                     foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
                         var itemResult = _unlockItem(itemId, item, locationId, fromPlayerId, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
-                            Logger.Error($"Unable to unlock {item} from {progressiveName}");
+                            Logger.Error($"Unable to unlock {item} from {progressiveName} (not found)");
                         }
                         else if (itemResult == UnlockResult.NewlyUnlocked)
                         {
-                            Logger.Info($"Unlocking {item} from {progressiveName}");
+                            Logger.Debug($"Unlocked {item} from {progressiveName}");
+                            if (unlockedAnyItem == false)
+                            {
+                                // This can happen with server item sends OR preconfigured items
+                                Logger.Debug($"Item {item} unlocked from {progressiveName} for first time, but previous item in progressive was already unlocked");
+                            }
                             unlockedAnyItem = true;
                         }
                         else if (itemResult == UnlockResult.AlreadyUnlocked)
                         {
-                            Logger.Info($"{item} already unlocked from {progressiveName}");
+                            Logger.Debug($"{item} already unlocked from {progressiveName}");
+                            if (unlockedAnyItem == true)
+                            {
+                                // This can happen with server item sends OR preconfigured items
+                                Logger.Debug($"Item {item} already unlocked from {progressiveName}, but previous item in progressive was unlocked for first time");
+                            }
                         }
                     }
 
-                    if (unlockedAnyItem)
+                    if (unlockedAnyItem == true)
                     {
                         _sendResearchNotification(progressiveName, fromPlayerId);
                     }
                 }
-                // else duplicate, ignore
-                Logger.Info($"{progressiveName} is duplicate, swallowing");
+                else // duplicate, ignore
+                {
+                    Logger.Debug($"{progressiveName} ran over progressive info -- likely duplicate, swallowing ({unlockingForFirstTime})");
+                }
                 return true;
             }
             else
             {
                 // Item is likely not progressive, ignore
-                Logger.Trace($"Progressive unable to be unlocked. ItemID {itemId} | LocationID {locationId} | progressiveName {progressiveName} | fromPlayerId {fromPlayerId}");
+                Logger.Trace($"Progressive unable to be unlocked (likely not progressive item). ItemID {itemId} | LocationID {locationId} | progressiveName {progressiveName} | fromPlayerId {fromPlayerId}");
                 return false;
             }
         }
@@ -170,6 +188,7 @@ namespace Raftipelago
                     return UnlockResult.AlreadyUnlocked;
                 }
             }
+            Logger.Trace($"Item not found: {itemId}");
             return UnlockResult.NotFound;
         }
 

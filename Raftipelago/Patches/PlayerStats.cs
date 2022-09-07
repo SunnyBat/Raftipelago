@@ -8,24 +8,26 @@ namespace Raftipelago.Patches
 	{
 		[HarmonyPostfix]
 		public static void NeverReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, SO_Buff buffAsset,
-			PlayerStats __instance)
+			PlayerStats __instance,
+			Network_Player ___playerNetwork)
 		{
-			if (!Raft_Network.InMenuScene && Raft_Network.IsHost && __instance.IsDead)
+			Logger.Debug($"Player hurt by damage {damage} | {hitPoint.magnitude} | {hitNormal.magnitude} | {damageInflictorEntityType} | {buffAsset}");
+			if (___playerNetwork.IsLocalPlayer && !Raft_Network.InMenuScene && __instance.IsDead)
 			{
-				Logger.Debug("Player killed by damage");
+				Logger.Debug($"Player killed by damage {damage} | {hitPoint.magnitude} | {hitNormal.magnitude} | {damageInflictorEntityType} | {buffAsset}");
 				switch (damageInflictorEntityType)
 				{
 					case EntityType.Player:
-						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Another player");
+						ComponentManager<MultiplayerComms>.Value.SendDeathLink("Another player");
 						break;
 					case EntityType.Enemy:
-						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Lost too much health");
+						ComponentManager<MultiplayerComms>.Value.SendDeathLink("Lost too much health");
 						break;
 					case EntityType.FallDamage:
-						ComponentManager<IArchipelagoLink>.Value.PlayerDied("Fell too hard");
+						ComponentManager<MultiplayerComms>.Value.SendDeathLink("Fell too hard");
 						break;
 					case EntityType.Environment:
-						ComponentManager<IArchipelagoLink>.Value.PlayerDied("The environment");
+						ComponentManager<MultiplayerComms>.Value.SendDeathLink("The environment");
 						break;
 						// Do NOT specify default, as we don't want to re-send a DeathLink immediately after receiving one
 				}

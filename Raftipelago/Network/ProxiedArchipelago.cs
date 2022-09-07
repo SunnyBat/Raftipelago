@@ -333,11 +333,9 @@ namespace Raftipelago.Network
             return ret;
         }
 
-        public void PlayerDied(string cause)
+        public void SendDeathLinkPacket(string cause)
         {
-            Logger.Trace("PlayerDied: " + cause);
-            RAPI.GetLocalPlayer().Kill();
-            ComponentManager<MultiplayerComms>.Value.SendDeathLink();
+            Logger.Trace("SendDeathLinkPacket: " + cause);
             if (_proxyServer != null)
             {
                 _sendDeathLinkIfNecessaryMethodInfo.Invoke(_proxyServer, new object[] { cause });
@@ -452,7 +450,6 @@ namespace Raftipelago.Network
         private void _deathLinkReceived()
         {
             Logger.Trace("_deathLinkReceived");
-            RAPI.GetLocalPlayer().Kill();
             ComponentManager<MultiplayerComms>.Value.SendDeathLink();
         }
 

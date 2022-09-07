@@ -19,29 +19,33 @@ public class RaftipelagoMod : Mod
     private const string EmbeddedFileDirectory = "Data";
     public const string AppDataFolderName = "Raftipelago";
 
+    private static string appDataDirectory;
     private Harmony patcher;
     private IEnumerator serverHeartbeat;
+
+    private bool _multiplayerCommsFailed = false;
 
     public void Start()
     {
         if (_isInWorld())
         {
-            base.UnloadMod();
-            throw new Exception("Raftipelago must be loaded in main menu.");
+            //base.UnloadMod();
+            //throw new Exception("Raftipelago must be loaded in main menu.");
         }
-        string appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         var proxyServerDirectory = Path.Combine(appDataDirectory, AppDataFolderName);
         // We only need to load assemblies once; Raft needs to be restarted to load new versions, so we just keep the instance around forever
         ComponentManager<EmbeddedFileUtils>.Value = ComponentManager<EmbeddedFileUtils>.Value ?? new EmbeddedFileUtils(GetEmbeddedFileBytes);
         ComponentManager<AssemblyManager>.Value = ComponentManager<AssemblyManager>.Value ?? new AssemblyManager(EmbeddedFileDirectory, proxyServerDirectory);
         try
         {
+            _multiplayerCommsFailed = false;
             ModUtils_Reciever.RegisterData();
         }
         catch (Exception e)
         {
-            Raftipelago.Logger.Trace("ERROR");
-            //base.UnloadMod();
+            _multiplayerCommsFailed = true;
+            base.UnloadMod();
             throw e;
         }
         ComponentManager<ExternalData>.Value = ComponentManager<ExternalData>.Value ?? new ExternalData(ComponentManager<EmbeddedFileUtils>.Value);
@@ -58,15 +62,23 @@ public class RaftipelagoMod : Mod
 
     public void OnModUnload()
     {
-        StopCoroutine(serverHeartbeat);
-        ComponentManager<IArchipelagoLink>.Value?.Disconnect();
-        if (_isInWorld())
+        if (!_multiplayerCommsFailed) // No need to do anything if this fails, we haven't initialized anything resettable yet
         {
-            ComponentManager<ItemTracker>.Value.ResetData();
+            if (serverHeartbeat != null)
+            {
+                StopCoroutine(serverHeartbeat);
+                serverHeartbeat = null;
+            }
+            ComponentManager<IArchipelagoLink>.Value?.Disconnect();
+            if (_isInWorld())
+            {
+                ComponentManager<ItemTracker>.Value?.ResetData();
+            }
+            ComponentManager<IArchipelagoLink>.Value?.onUnload();
+            ComponentManager<IArchipelagoLink>.Value = null;
+            patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
         }
-        ComponentManager<IArchipelagoLink>.Value?.onUnload();
-        ComponentManager<IArchipelagoLink>.Value = null;
-        patcher?.UnpatchAll("com.github.sunnybat.raftipelago");
+        Raftipelago.Logger.CloseLogFile();
     }
 
     // This should ONLY be used for Archipelago-related setup; this is called even after
@@ -142,10 +154,27 @@ public class RaftipelagoMod : Mod
         }
     }
 
+    [ConsoleCommand("/setLogFile", "Sets file to write logger output to. Useful for recording output to send to devs.")]
+    private static void Command_SetLogFile(string[] arguments)
+    {
+        if (arguments.Length == 1)
+        {
+            Raftipelago.Logger.SetLogFile(Path.Combine(appDataDirectory, AppDataFolderName, arguments[0]));
+        }
+        else
+        {
+            Debug.LogError("Usage: <i>/setLogFile (FILENAME)</i> -- Must specify file name as only argument. No spaces.");
+        }
+    }
+
     [ConsoleCommand("/resync", "Resyncs Archipelago data to everyone (if host) or from host (if not host). Generally unnecessary.")]
     private static void Command_ResyncData(string[] arguments)
     {
-        if (Raft_Network.IsHost)
+        if (!_isInWorld())
+        {
+            Debug.LogError("Must be in world to resync data");
+        }
+        else if (Raft_Network.IsHost)
         {
             ComponentManager<MultiplayerComms>.Value.SendAllArchipelagoData();
         }
@@ -193,6 +222,36 @@ public class RaftipelagoMod : Mod
         else
         {
             Debug.LogError("Usage: <i>setRaftipelagoLogLevel #</i> where # is between 1 (Full) and 5 (None)");
+        }
+    }
+
+    [ConsoleCommand("/simulateDeathLink", "Lazy description here.")]
+    private static void Command_SimulateDeathLink(string[] arguments)
+    {
+        if (!_isInWorld())
+        {
+            Debug.LogError("Must be in world to simulate DeathLink");
+        }
+        else if (Raft_Network.IsHost)
+        {
+            typeof(ProxiedArchipelago).GetMethod("_deathLinkReceived", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(ComponentManager<IArchipelagoLink>.Value, new object[0]);
+        }
+        else
+        {
+            Debug.LogError("Host-only command");
+        }
+    }
+
+    [ConsoleCommand("/printHealth", "Lazy description here.")]
+    private static void Command_PrintHealth(string[] arguments)
+    {
+        if (!_isInWorld())
+        {
+            Debug.LogError("Must be in world to simulate DeathLink");
+        }
+        foreach (var plyr in ComponentManager<Raft_Network>.Value.remoteUsers)
+        {
+            Debug.Log($"{plyr.Value.name}: {plyr.Value.Stats.stat_health.NormalValue} | {plyr.Value.Stats.stat_BonusHealth.NormalValue}");
         }
     }
 

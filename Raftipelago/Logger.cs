@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -12,82 +14,125 @@ namespace Raftipelago
     {
         private static readonly string[] KnownRaftipelagoAssemblies = new string[] { "RaftipelagoTypes", "ArchipelagoProxy", Assembly.GetExecutingAssembly().GetName().Name };
 
-        private static LogLevel currentLogLevel = LogLevel.TRACE;
-        private static StackLevel currentStackLevel = StackLevel.NONE;
+        private static LogLevel _currentLogLevel = LogLevel.TRACE;
+        private static StackLevel _currentStackLevel = StackLevel.NONE;
+        private static FileStream _currentOutputFileStream;
 
         public static void SetLogLevel(LogLevel logLevel)
         {
-            currentLogLevel = logLevel;
+            _currentLogLevel = logLevel;
         }
 
         public static void SetStackLevel(StackLevel stackLevel)
         {
-            currentStackLevel = stackLevel;
+            _currentStackLevel = stackLevel;
         }
 
         public static void Trace(object message)
         {
-            if (currentLogLevel <= LogLevel.TRACE)
+            if (_currentLogLevel <= LogLevel.TRACE)
             {
-                UnityEngine.Debug.Log(_getLogString(message, "TRC"));
+                var strToWrite = _getLogString(message, "TRC");
+                UnityEngine.Debug.Log(strToWrite);
+                _writeToFileStream(strToWrite);
             }
         }
 
         public static void Debug(object message)
         {
-            if (currentLogLevel <= LogLevel.DEBUG)
+            if (_currentLogLevel <= LogLevel.DEBUG)
             {
-                UnityEngine.Debug.Log(_getLogString(message, "DBG"));
+                var strToWrite = _getLogString(message, "DBG");
+                UnityEngine.Debug.Log(strToWrite);
+                _writeToFileStream(strToWrite);
             }
         }
 
         public static void Info(object message)
         {
-            if (currentLogLevel <= LogLevel.INFO)
+            if (_currentLogLevel <= LogLevel.INFO)
             {
-                UnityEngine.Debug.Log(_getLogString(message, "IFO"));
+                var strToWrite = _getLogString(message, "IFO");
+                UnityEngine.Debug.Log(strToWrite);
+                _writeToFileStream(strToWrite);
             }
         }
 
         public static void Warn(object message)
         {
-            if (currentLogLevel <= LogLevel.WARN)
+            if (_currentLogLevel <= LogLevel.WARN)
             {
-                UnityEngine.Debug.LogWarning(_getLogString(message, "WRN"));
+                var strToWrite = _getLogString(message, "WRN");
+                UnityEngine.Debug.LogWarning(strToWrite);
+                _writeToFileStream(strToWrite);
             }
         }
 
         public static void Error(object message)
         {
-            if (currentLogLevel <= LogLevel.ERROR)
+            if (_currentLogLevel <= LogLevel.ERROR)
             {
-                UnityEngine.Debug.LogError(_getLogString(message, "ERR"));
+                var strToWrite = _getLogString(message, "ERR");
+                UnityEngine.Debug.LogError(strToWrite);
+                _writeToFileStream(strToWrite);
             }
         }
 
         public static void Fatal(object message)
         {
-            if (currentLogLevel <= LogLevel.FATAL)
+            if (_currentLogLevel <= LogLevel.FATAL)
             {
-                UnityEngine.Debug.LogError(_getLogString(message, "FTL"));
+                var strToWrite = _getLogString(message, "FTL");
+                UnityEngine.Debug.LogError(strToWrite);
+                _writeToFileStream(strToWrite);
+            }
+        }
+
+        public static void SetLogFile(string filePath)
+        {
+            CloseLogFile();
+            if (!File.Exists(filePath))
+            {
+                UnityEngine.Debug.Log("Creating log file: " + filePath);
+                File.Create(filePath).Close();
+            }
+
+            UnityEngine.Debug.Log("Opening log file: " + filePath);
+            _currentOutputFileStream = File.Open(filePath, FileMode.Append, FileAccess.Write);
+            UnityEngine.Debug.Log("File opened");
+        }
+
+        public static void CloseLogFile()
+        {
+            if (_currentOutputFileStream != null)
+            {
+                try
+                {
+                    _currentOutputFileStream.Flush();
+                    _currentOutputFileStream.Dispose();
+                    _currentOutputFileStream = null;
+                }
+                catch
+                {
+                }
             }
         }
 
         private static string _getLogString(object message, string level)
         {
-            if (currentStackLevel == StackLevel.FULL)
+            if (_currentStackLevel == StackLevel.FULL)
             {
                 return $"{level}: {_getFullExternalStack()}: {message}";
             }
-            if (currentStackLevel == StackLevel.RAFTIPELAGO)
+            if (_currentStackLevel == StackLevel.RAFTIPELAGO)
             {
                 return $"{level}: {_getRaftipelagoStack()}: {message}";
             }
-            else if (currentStackLevel == StackLevel.SHALLOW)
+            else if (_currentStackLevel == StackLevel.SHALLOW)
             {
                 return $"{level}: {_getCallingMethod()}: {message}";
             }
-            else if (currentStackLevel == StackLevel.LOGLEVEL)
+            else if (_currentStackLevel == StackLevel.LOGLEVEL)
             {
                 return $"{level}: {message}";
             }
@@ -166,6 +211,17 @@ namespace Raftipelago
             else
             {
                 return "<Unknown>.<Unknown>";
+            }
+        }
+
+        private static void _writeToFileStream(string output)
+        {
+            if (output != null && _currentOutputFileStream != null)
+            {
+                var outputBytes = Encoding.UTF8.GetBytes(output);
+                _currentOutputFileStream.Write(outputBytes, 0, outputBytes.Length);
+                var newLineBytes = Encoding.UTF8.GetBytes("\r\n");
+                _currentOutputFileStream.Write(newLineBytes, 0, newLineBytes.Length);
             }
         }
 

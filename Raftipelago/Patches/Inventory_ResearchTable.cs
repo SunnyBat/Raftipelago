@@ -18,6 +18,14 @@ namespace Raftipelago.Patches
 			Inventory_ResearchTable __instance,
 			ref List<ResearchMenuItem> ___menuItems)
 		{
+			Logger.Trace("LearnItem");
+			// Research Decorations as normal, as they're not part of Raftipelago right now
+			if (SO_MysteryPackageLoot.IsPossibleYieldItem(item))
+			{
+				Logger.Trace("LearnItem: Decoration item");
+				return true;
+			}
+
 			for (int i = 0; i < ___menuItems.Count; i++)
 			{
 				var menuItemBase = ___menuItems[i].GetItem();
@@ -54,7 +62,7 @@ namespace Raftipelago.Patches
 	public class HarmonyPatch_Inventory_ResearchTable_Research
 	{
 		[HarmonyPrefix]
-		public static bool AlwaysReplace(Item_Base item, bool autoLearnRecipe,
+		public static bool SometimesReplace(Item_Base item, bool autoLearnRecipe,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			List<Item_Base> ___researchedItems,
@@ -62,6 +70,14 @@ namespace Raftipelago.Patches
 			ref List<ResearchMenuItem> ___menuItems,
 			Dictionary<Item_Base, AvaialableResearchItem> ___availableResearchItems)
 		{
+			Logger.Trace("Research");
+			// Research Decorations as normal, as they're not part of Raftipelago right now
+			if (SO_MysteryPackageLoot.IsPossibleYieldItem(item))
+			{
+				Logger.Trace("Research: Decoration item");
+				return true;
+			}
+
 			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
 				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
@@ -113,6 +129,7 @@ namespace Raftipelago.Patches
 		public static bool AlwaysReplace(Item_Base blueprintItem,
 			ref bool __result)
 		{
+			Logger.Trace("ResearchBlueprint: Suppressing");
 			__result = false;
 			return false;
 		}

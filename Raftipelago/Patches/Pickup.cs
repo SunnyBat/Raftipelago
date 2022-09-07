@@ -12,28 +12,33 @@ namespace Raftipelago.Patches
 			SoundManager ___soundManager,
 			Network_Player ___playerNetwork)
 		{
-			if (triggerHandAnimation)
-			{
-				___playerAnimator.SetAnimation(PlayerAnimation.Trigger_GrabItem, false);
-			}
-			___soundManager.PlayUI_MoveItem();
-			// RemovePickupItem*() will queue notification as necessary
-			if (note.networkID != null)
-			{
-				if (note.networkID.stopTrackUseRPC)
-				{
-					PickupObjectManager.RemovePickupItemNetwork(note.networkID, ___playerNetwork.steamID);
-				}
-				else
-				{
-					PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
-				}
-			}
+			Logger.Debug("PickupNoteBookNote: " + note.name);
 			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(note.name, out string friendlyName)
 				&& ComponentManager<ExternalData>.Value.LocationsToSuppress.Contains(friendlyName))
 			{
+				Logger.Debug("Suppressing note");
+				if (triggerHandAnimation)
+				{
+					___playerAnimator.SetAnimation(PlayerAnimation.Trigger_GrabItem, false);
+				}
+				___soundManager.PlayUI_MoveItem();
+				// RemovePickupItem*() will queue notification as necessary
+				if (note.networkID != null)
+				{
+					if (note.networkID.stopTrackUseRPC)
+					{
+						Logger.Debug("PickupNoteBookNote stopTrackUseRPC");
+						PickupObjectManager.RemovePickupItemNetwork(note.networkID, ___playerNetwork.steamID);
+					}
+					else
+					{
+						Logger.Debug("PickupNoteBookNote vanilla");
+						PickupObjectManager.RemovePickupItem(note.networkID, ___playerNetwork.steamID);
+					}
+				}
 				return false;
 			}
+			Logger.Debug("Not suppressing note");
 			return true;
 		}
 	}
@@ -49,7 +54,7 @@ namespace Raftipelago.Patches
 			DisplayTextManager ___displayTextManager)
 		{
 			if (ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickup.name, out string pickupName))
-            {
+			{
 				if (!forcePickup && !pickup.canBePickedUp)
 				{
 					return true;

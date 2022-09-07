@@ -9,6 +9,7 @@ namespace RaftipelagoTypes
         public const Messages ITEM_RECEIVED = (Messages)472;
         public const Messages DEATHLINK_RECEIVED = (Messages)473;
         public const Messages REQUEST_RESYNC = (Messages)474;
+        public const Messages DEATHLINK_REASON = (Messages)475;
     }
 
     [Serializable]
@@ -54,6 +55,16 @@ namespace RaftipelagoTypes
     {
         public Message_ArchipelagoRequestResync() : base(RaftipelagoMessageTypes.REQUEST_RESYNC)
         {
+        }
+    }
+
+    [Serializable]
+    public class Message_ArchipelagoDeathWithCause : Message
+    {
+        public string DeathCause { get; private set; }
+        public Message_ArchipelagoDeathWithCause(string deathCause) : base(RaftipelagoMessageTypes.DEATHLINK_REASON)
+        {
+            this.DeathCause = deathCause;
         }
     }
 
