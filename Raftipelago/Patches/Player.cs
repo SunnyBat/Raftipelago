@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using Raftipelago.Network;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Raftipelago.Patches
 {
@@ -42,16 +43,15 @@ namespace Raftipelago.Patches
 
 		private static bool _isDeathDueToPlayerStatsUpdate()
         {
-			StackTrace stackTrace = new StackTrace();
-			StackFrame[] stackFrames = stackTrace.GetFrames();
+			StackFrame[] stackFrames = new StackTrace()?.GetFrames() ?? new StackFrame[0];
 			foreach (var frame in stackFrames)
-            {
-				// TODO Better detection than this, namely don't ToString() the method...
-				if (frame.GetMethod().ReflectedType.FullName == "PlayerStats" && frame.GetMethod().ToString() == "Void Update()")
-                {
+			{
+				var methodInfo = frame?.GetMethod() as MethodInfo;
+                if (methodInfo?.ReturnType == typeof(void) && methodInfo?.Name == "Update" && methodInfo?.ReflectedType?.FullName == "PlayerStats")
+				{
 					Logger.Trace("Death from PlayerStats update");
 					return true;
-                }
+				}
 			}
 			Logger.Trace("Death NOT from PlayerStats update");
 			return false;

@@ -14,7 +14,7 @@ namespace Raftipelago
     {
         private static readonly string[] KnownRaftipelagoAssemblies = new string[] { "RaftipelagoTypes", "ArchipelagoProxy", Assembly.GetExecutingAssembly().GetName().Name };
 
-        private static LogLevel _currentLogLevel = LogLevel.TRACE;
+        private static LogLevel _currentLogLevel = LogLevel.WARN;
         private static StackLevel _currentStackLevel = StackLevel.NONE;
         private static FileStream _currentOutputFileStream;
 

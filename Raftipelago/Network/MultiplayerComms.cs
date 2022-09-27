@@ -256,20 +256,20 @@ namespace Raftipelago.Network
 
         // Occurs on the host when a client joins. If a Message is returned (not null), it will be included the
         // world load messages sent to the client.
-        //Message ModUtils_SaveRemoteData()
-        //{
-        //    return _generateArchipelagoDataMessage();
-        //}
+        Message ModUtils_SaveRemoteData()
+        {
+            return _generateArchipelagoDataMessage();
+        }
 
         // Occurs on the client when the host sends the world load data (only occurs if the sent data contains
         // a message provided by the ModUtils_SaveRemoteData method). The message given to this method will be
         // the one this mod sent with the world load data. Note: This will be run before any of the other world
         // data is recieved.
-        //void ModUtils_LoadRemoteData(Message message)
-        //{
-        //    Logger.Debug("Received ModUtils remote message");
-        //    ModUtils_MessageRecieved(default(CSteamID), ModUtils_Channel, message);
-        //}
+        void ModUtils_LoadRemoteData(Message message)
+        {
+            Logger.Debug("Received ModUtils remote message");
+            ModUtils_MessageRecieved(default(CSteamID), ModUtils_Channel, message);
+        }
 
         public void RequestArchipelagoDataResync()
         {
