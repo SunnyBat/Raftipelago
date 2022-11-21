@@ -1,9 +1,11 @@
 ﻿using HarmonyLib;
+using HMLLibrary;
 using Raftipelago;
 using Raftipelago.Data;
 using Raftipelago.Network;
 using Raftipelago.Patches;
 using Raftipelago.UnityScripts;
+using RaftModLoader;
 using System;
 using System.Collections;
 using System.IO;
