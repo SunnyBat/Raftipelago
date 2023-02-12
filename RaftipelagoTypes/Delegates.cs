@@ -5,75 +5,97 @@ namespace RaftipelagoTypes
 {
     public class MarshalByRefObjectWithAggressiveLifetimeService : MarshalByRefObject
     {
+        private bool _shouldDispose = true;
+
+        protected internal MarshalByRefObjectWithAggressiveLifetimeService(bool shouldDispose)
+        {
+            _shouldDispose = shouldDispose;
+        }
+
         public override object InitializeLifetimeService()
         {
-            ILease lease = (ILease)base.InitializeLifetimeService();
-            if (lease.CurrentState == LeaseState.Initial)
+            if (_shouldDispose)
             {
-                lease.InitialLeaseTime = TimeSpan.FromSeconds(4);
-                lease.RenewOnCallTime = TimeSpan.FromSeconds(2);
+                ILease lease = (ILease)base.InitializeLifetimeService();
+                if (lease.CurrentState == LeaseState.Initial)
+                {
+                    lease.InitialLeaseTime = TimeSpan.FromSeconds(10);
+                    lease.RenewOnCallTime = TimeSpan.FromSeconds(5);
+                }
+                return lease;
             }
-            return lease;
+            else
+            {
+                return null;
+            }
         }
     }
 
     public sealed class ActionHandler : MarshalByRefObjectWithAggressiveLifetimeService
     {
+        private Action _delegate;
+
+        public ActionHandler(Action dlgt) : this(dlgt, false) { }
+
+        public ActionHandler(Action dlgt, bool keepForever) : base(!keepForever)
+        {
+            _delegate = dlgt;
+        }
+
         public void Invoke()
         {
             _delegate();
-        }
-
-        private Action _delegate;
-
-        public ActionHandler(Action dlgt)
-        {
-            _delegate = dlgt;
         }
     }
 
     public sealed class SingleArgumentActionHandler<T> : MarshalByRefObjectWithAggressiveLifetimeService
     {
+        private Action<T> _delegate;
+
+        public SingleArgumentActionHandler(Action<T> dlgt) : this(dlgt, false) { }
+
+        public SingleArgumentActionHandler(Action<T> dlgt, bool keepForever) : base(!keepForever)
+        {
+            _delegate = dlgt;
+        }
+
         public void Invoke(T arg1)
         {
             _delegate(arg1);
-        }
-
-        private Action<T> _delegate;
-
-        public SingleArgumentActionHandler(Action<T> dlgt)
-        {
-            _delegate = dlgt;
         }
     }
 
     public sealed class TripleArgumentActionHandler<T, U, V> : MarshalByRefObjectWithAggressiveLifetimeService
     {
+        private Action<T, U, V> _delegate;
+
+        public TripleArgumentActionHandler(Action<T, U, V> dlgt) : this(dlgt, false) { }
+
+        public TripleArgumentActionHandler(Action<T, U, V> dlgt, bool keepForever) : base(!keepForever)
+        {
+            _delegate = dlgt;
+        }
+
         public void Invoke(T arg1, U arg2, V arg3)
         {
             _delegate(arg1, arg2, arg3);
-        }
-
-        private Action<T, U, V> _delegate;
-
-        public TripleArgumentActionHandler(Action<T, U, V> dlgt)
-        {
-            _delegate = dlgt;
         }
     }
 
     public sealed class QuadroupleArgumentActionHandler<T, U, V, W> : MarshalByRefObjectWithAggressiveLifetimeService
     {
+        private Action<T, U, V, W> _delegate;
+
+        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt) : this(dlgt, false) { }
+
+        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt, bool keepForever) : base(!keepForever)
+        {
+            _delegate = dlgt;
+        }
+
         public void Invoke(T arg1, U arg2, V arg3, W arg4)
         {
             _delegate(arg1, arg2, arg3, arg4);
-        }
-
-        private Action<T, U, V, W> _delegate;
-
-        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt)
-        {
-            _delegate = dlgt;
         }
     }
 }
