@@ -1,8 +1,23 @@
 ﻿using System;
+using System.Runtime.Remoting.Lifetime;
 
 namespace RaftipelagoTypes
 {
-    public sealed class ActionHandler : MarshalByRefObject
+    public class MarshalByRefObjectWithAggressiveLifetimeService : MarshalByRefObject
+    {
+        public override object InitializeLifetimeService()
+        {
+            ILease lease = (ILease)base.InitializeLifetimeService();
+            if (lease.CurrentState == LeaseState.Initial)
+            {
+                lease.InitialLeaseTime = TimeSpan.FromSeconds(4);
+                lease.RenewOnCallTime = TimeSpan.FromSeconds(2);
+            }
+            return lease;
+        }
+    }
+
+    public sealed class ActionHandler : MarshalByRefObjectWithAggressiveLifetimeService
     {
         public void Invoke()
         {
@@ -15,14 +30,9 @@ namespace RaftipelagoTypes
         {
             _delegate = dlgt;
         }
-
-        public override object InitializeLifetimeService()
-        {
-            return null;
-        }
     }
 
-    public sealed class SingleArgumentActionHandler<T> : MarshalByRefObject
+    public sealed class SingleArgumentActionHandler<T> : MarshalByRefObjectWithAggressiveLifetimeService
     {
         public void Invoke(T arg1)
         {
@@ -35,14 +45,9 @@ namespace RaftipelagoTypes
         {
             _delegate = dlgt;
         }
-
-        public override object InitializeLifetimeService()
-        {
-            return null;
-        }
     }
 
-    public sealed class TripleArgumentActionHandler<T, U, V> : MarshalByRefObject
+    public sealed class TripleArgumentActionHandler<T, U, V> : MarshalByRefObjectWithAggressiveLifetimeService
     {
         public void Invoke(T arg1, U arg2, V arg3)
         {
@@ -55,14 +60,9 @@ namespace RaftipelagoTypes
         {
             _delegate = dlgt;
         }
-
-        public override object InitializeLifetimeService()
-        {
-            return null;
-        }
     }
 
-    public sealed class QuadroupleArgumentActionHandler<T, U, V, W> : MarshalByRefObject
+    public sealed class QuadroupleArgumentActionHandler<T, U, V, W> : MarshalByRefObjectWithAggressiveLifetimeService
     {
         public void Invoke(T arg1, U arg2, V arg3, W arg4)
         {
@@ -74,11 +74,6 @@ namespace RaftipelagoTypes
         public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt)
         {
             _delegate = dlgt;
-        }
-
-        public override object InitializeLifetimeService()
-        {
-            return null;
         }
     }
 }
