@@ -257,6 +257,12 @@ public class RaftipelagoMod : Mod
         }
     }
 
+    [ConsoleCommand("/forcegc", "Forces garbage collector to run.")]
+    private static void Command_ForceGC(string[] arguments)
+    {
+        GC.Collect();
+    }
+
 #if false
     [ConsoleCommand("/generateItemsForRaftipelago", "Development-related command. Generates the JSON for Raft's friendly name mappings. Must be generated using the English locale.")]
     private static void Command_GenerateFriendlyItems(string[] arguments)
