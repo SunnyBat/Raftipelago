@@ -24,6 +24,7 @@ public class RaftipelagoMod : Mod
     private static string appDataDirectory;
     private Harmony patcher;
     private IEnumerator serverHeartbeat;
+    private IEnumerator rmlChatHack;
 
     private bool _multiplayerCommsFailed = false;
 
@@ -60,6 +61,8 @@ public class RaftipelagoMod : Mod
         ComponentManager<IArchipelagoLink>.Value = ComponentManager<IArchipelagoLink>.Value ?? new ProxiedArchipelago();
         serverHeartbeat = ArchipelagoLinkHeartbeat.CreateNewHeartbeat(ComponentManager<IArchipelagoLink>.Value, 0.1f); // Trigger every 100ms
         StartCoroutine(serverHeartbeat);
+        rmlChatHack = RMLClearChat.CreateNewRMLClearChat();
+        StartCoroutine(rmlChatHack);
     }
 
     public void OnModUnload()
@@ -70,6 +73,11 @@ public class RaftipelagoMod : Mod
             {
                 StopCoroutine(serverHeartbeat);
                 serverHeartbeat = null;
+            }
+            if (rmlChatHack != null)
+            {
+                StopCoroutine(rmlChatHack);
+                rmlChatHack = null;
             }
             ComponentManager<IArchipelagoLink>.Value?.Disconnect();
             if (_isInWorld())

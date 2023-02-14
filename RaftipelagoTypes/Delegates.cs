@@ -35,7 +35,7 @@ namespace RaftipelagoTypes
     {
         private Action _delegate;
 
-        public ActionHandler(Action dlgt) : this(dlgt, false) { }
+        public ActionHandler(Action dlgt) : this(dlgt, true) { }
 
         public ActionHandler(Action dlgt, bool keepForever) : base(!keepForever)
         {
@@ -52,7 +52,7 @@ namespace RaftipelagoTypes
     {
         private Action<T> _delegate;
 
-        public SingleArgumentActionHandler(Action<T> dlgt) : this(dlgt, false) { }
+        public SingleArgumentActionHandler(Action<T> dlgt) : this(dlgt, true) { }
 
         public SingleArgumentActionHandler(Action<T> dlgt, bool keepForever) : base(!keepForever)
         {
@@ -69,7 +69,7 @@ namespace RaftipelagoTypes
     {
         private Action<T, U, V> _delegate;
 
-        public TripleArgumentActionHandler(Action<T, U, V> dlgt) : this(dlgt, false) { }
+        public TripleArgumentActionHandler(Action<T, U, V> dlgt) : this(dlgt, true) { }
 
         public TripleArgumentActionHandler(Action<T, U, V> dlgt, bool keepForever) : base(!keepForever)
         {
@@ -86,7 +86,7 @@ namespace RaftipelagoTypes
     {
         private Action<T, U, V, W> _delegate;
 
-        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt) : this(dlgt, false) { }
+        public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt) : this(dlgt, true) { }
 
         public QuadroupleArgumentActionHandler(Action<T, U, V, W> dlgt, bool keepForever) : base(!keepForever)
         {

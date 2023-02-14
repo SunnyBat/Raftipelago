@@ -68,6 +68,7 @@
     <Compile Include="Patches\TradingPost.cs" />
     <Compile Include="Raftipelago.cs" />
     <Compile Include="UnityScripts\ArchipelagoLinkHeartbeat.cs" />
+    <Compile Include="UnityScripts\RMLClearChat.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
