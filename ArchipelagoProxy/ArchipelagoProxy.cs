@@ -667,9 +667,6 @@ namespace ArchipelagoProxy
                 case ArchipelagoPacketType.Say:
                     _messageQueue.Enqueue(((SayPacket)packet).Text);
                     break;
-                case ArchipelagoPacketType.Print:
-                    _messageQueue.Enqueue(((PrintPacket)packet).Text);
-                    break;
                 case ArchipelagoPacketType.PrintJSON:
                     StringBuilder build = new StringBuilder();
                     foreach (var messagePart in ((PrintJsonPacket)packet).Data)
