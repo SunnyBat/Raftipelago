@@ -495,6 +495,11 @@ namespace ArchipelagoProxy
             {
                 _session.Socket.Disconnect();
                 _messageQueue.Enqueue("Disconnected from server.");
+                lock (LockForClass)
+                {
+                    _isSuccessfullyConnected = false;
+                    _triggeredConnectedAction = false;
+                }
                 return false;
             }
             else if (!isConnected)
