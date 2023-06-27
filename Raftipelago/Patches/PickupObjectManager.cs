@@ -12,7 +12,7 @@ namespace Raftipelago.Patches
 		public static bool SometimesReplace(PickupItem_Networked pickupNetwork, CSteamID pickupPlayerID,
 			ref bool __result)
 		{
-			Logger.Debug($"RemovePickupItem: {pickupNetwork.name} | {pickupPlayerID} | {pickupNetwork.CanBePickedUp()}");
+			Logger.Trace($"RemovePickupItem: {pickupNetwork.name} | {pickupPlayerID} | {pickupNetwork.CanBePickedUp()}");
 			if (pickupNetwork != null
 				&& (!Raft_Network.IsHost || pickupNetwork.CanBePickedUp())
 				&& ComponentManager<ExternalData>.Value.UniqueLocationNameToFriendlyNameMappings.TryGetValue(pickupNetwork.name, out string pickupName))
@@ -25,7 +25,7 @@ namespace Raftipelago.Patches
 					return false;
 				}
 			}
-			Logger.Debug("RemovePickupItem not suppressing event");
+			Logger.Trace("RemovePickupItem not suppressing event");
 			return true;
 		}
 	}
@@ -43,7 +43,7 @@ namespace Raftipelago.Patches
 			{
 				ComponentManager<IArchipelagoLink>.Value.LocationUnlocked(pickupName);
 			}
-			Logger.Debug($"RemovePickupItem: {pickupNetwork.CanBePickedUp()} | {pickupNetwork.stopTrackingOnPickup} | {pickupNetwork.name}");
+			Logger.Trace($"RemovePickupItem: {pickupNetwork.CanBePickedUp()} | {pickupNetwork.stopTrackingOnPickup} | {pickupNetwork.name}");
 		}
 	}
 }
