@@ -490,7 +490,15 @@ namespace ArchipelagoProxy
                 shouldDisconnect = _shouldDisconnect;
             }
 
-            bool isConnected = _session.Socket.Connected;
+            bool isConnected = false;
+            try
+            {
+                isConnected = _session.Socket.Connected;
+            }
+            catch
+            {
+                // Not sure why it's still doing this, I've verified the DLL has the correct code... Default to false =/
+            }
             if (isConnected && shouldDisconnect)
             {
                 _session.Socket.Disconnect();
