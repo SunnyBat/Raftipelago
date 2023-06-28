@@ -44,7 +44,7 @@ namespace Raftipelago.Network
             else if (Raft_Network.IsHost)
             {
                 Logger.Debug($"Packet received ({message.Type})");
-                var messageValues = GetGenericMessageValues(message);
+                var messageValues = ModUtils_GetGenericMessageValues(message);
                 switch (message.Type)
                 {
                     case RaftipelagoMessageTypes.REQUEST_RESYNC:
@@ -54,7 +54,7 @@ namespace Raftipelago.Network
                     case RaftipelagoMessageTypes.DEATHLINK_REASON: // Local player (not us) died
                         _validateObjectArrayAndRun(messageValues, 1, () =>
                         {
-                            SendDeathLink((string)GetGenericMessageValues(message)[0]);
+                            SendDeathLink((string)ModUtils_GetGenericMessageValues(message)[0]);
                         }, $"Received DEATHLINK_REASON but had invalid amount of values ({messageValues?.Length})");
                         break;
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
@@ -70,7 +70,7 @@ namespace Raftipelago.Network
             else if (!Raft_Network.IsHost && channel == ModUtils_Channel)
             {
                 Logger.Debug($"Packet received ({message.Type})");
-                var messageValues = GetGenericMessageValues(message);
+                var messageValues = ModUtils_GetGenericMessageValues(message);
                 switch (message.Type)
                 {
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
@@ -88,12 +88,12 @@ namespace Raftipelago.Network
                             _debugDictionary(currentItemIndeces);
                             if (currentItemIndeces.TryGetValue((long)RAPI.GetLocalPlayer().steamID.m_SteamID, out int currentIndex))
                             {
-                                Logger.Info($"Item index set to {currentIndex}");
+                                Logger.Debug($"Item index set to {currentIndex}");
                                 ComponentManager<ItemTracker>.Value.CurrentReceivedItemIndex = currentIndex;
                             }
                             else
                             {
-                                Logger.Info("No item index received for local player; assuming no items previously received");
+                                Logger.Debug("No item index received for local player; assuming no items previously received");
                             }
                         }, $"AP data received, but invalid message values given ({messageValues?.Length})");
                         break;
@@ -336,21 +336,21 @@ namespace Raftipelago.Network
         // Not implemented by ModUtils, just a wrapper
         private static Message CreateGenericMessage(Messages messageType, object[] values)
         {
-            return CreateGenericMessage(messageType, GenericMessageID, values);
+            return ModUtils_CreateGenericMessage(messageType, GenericMessageID, values);
         }
 
-        private static Message CreateGenericMessage(Messages messageType, int genericId, object[] values)
+        private static Message ModUtils_CreateGenericMessage(Messages messageType, int genericId, object[] values)
         {
             // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
             // this in the constructor; trigger this on mod start
-            throw new NotImplementedException("ModUtils did not replace CreateGenericMessage() -- ModUtils likely not loaded.");
+            throw new NotImplementedException("ModUtils did not replace ModUtils_CreateGenericMessage() -- ModUtils likely not loaded.");
         }
 
-        private static object[] GetGenericMessageValues(Message message)
+        private static object[] ModUtils_GetGenericMessageValues(Message message)
         {
             // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
             // this in the constructor; trigger this on mod start
-            throw new NotImplementedException("ModUtils did not replace GetGenericMessageValues() -- ModUtils likely not loaded.");
+            throw new NotImplementedException("ModUtils did not replace ModUtils_GetGenericMessageValues() -- ModUtils likely not loaded.");
         }
 
         private void _updateConnectedPlayerItemIndeces(int itemIndex)
