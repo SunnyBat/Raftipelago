@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Raftipelago.Network
 {
@@ -23,6 +24,12 @@ namespace Raftipelago.Network
             _Type_RGD_Raftipelago = raftipelagoTypesAssembly.GetType("RaftipelagoTypes.RGD_Raftipelago");
             _ConstructorInfo_RGD_Raftipelago = _Type_RGD_Raftipelago.GetConstructor(new Type[] { typeof(Dictionary<long, int>) });
             _FieldInfo_RGD_Raftipelago_playerIndeces = _Type_RGD_Raftipelago.GetField("Raftipelago_PlayerCurrentItemIndeces", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.Instance);
+            ModUtils_RegisterSerializer(typeof(Dictionary<long, int>), SerializeDictionary<long, int>, DeserializeDictionary<long, int>);
+            ModUtils_RegisterSerializer(typeof(Dictionary<long, string>), SerializeDictionary<long, string>, DeserializeDictionary<long, string>);
+            ModUtils_RegisterSerializer(typeof(Dictionary<int, string>), SerializeDictionary<int, string>, DeserializeDictionary<int, string>);
+            ModUtils_RegisterSerializer(typeof(Dictionary<string, object>), SerializeDictionary<string, object>, DeserializeDictionary<string, object>);
+            ModUtils_RegisterSerializer(typeof(List<long>), SerializeList<long>, DeserializeList<long>);
+            ModUtils_RegisterSerializer(typeof(List<int>), SerializeList<int>, DeserializeList<int>);
         }
 
         // Occurs when a network message is recieved on one of the network channels your mod is set to listen to.
@@ -353,6 +360,13 @@ namespace Raftipelago.Network
             throw new NotImplementedException("ModUtils did not replace ModUtils_GetGenericMessageValues() -- ModUtils likely not loaded.");
         }
 
+        private static void ModUtils_RegisterSerializer(Type type, Func<object, byte[]> toBytes, Func<byte[], object> fromBytes)
+        {
+            // Stub method will be replaced with ModUtils implementation once this object has been created. Do not call
+            // this in the constructor; trigger this on mod start
+            throw new NotImplementedException("ModUtils did not replace RegisterSerializer() -- ModUtils likely not loaded.");
+        }
+
         private void _updateConnectedPlayerItemIndeces(int itemIndex)
         {
             Logger.Trace("Update player indeces");
@@ -368,6 +382,50 @@ namespace Raftipelago.Network
         {
             PlayerItemIndeces.TryGetValue(playerId, out int currentIndex);
             PlayerItemIndeces[playerId] = Math.Max(itemIndex, currentIndex);
+        }
+
+        private static byte[] SerializeDictionary<T, U>(object toSerialize)
+        {
+            var serializedObject = Newtonsoft.Json.JsonConvert.SerializeObject(toSerialize);
+            Logger.Debug("Serialized dictionary to " + serializedObject);
+            return Encoding.UTF8.GetBytes(serializedObject);
+        }
+
+        private static Dictionary<T, U> DeserializeDictionary<T, U>(byte[] toDeserialize)
+        {
+            try
+            {
+                var serializedString = Encoding.UTF8.GetString(toDeserialize);
+                Logger.Debug("Deserializing " + serializedString);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<T, U>>(serializedString);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to deserialize Dictionary: {ex.Message}");
+                return new Dictionary<T, U>();
+            }
+        }
+
+        private static byte[] SerializeList<T>(object toSerialize)
+        {
+            var serializedObject = Newtonsoft.Json.JsonConvert.SerializeObject(toSerialize);
+            Logger.Debug("Serialized list to " + serializedObject);
+            return Encoding.UTF8.GetBytes(serializedObject);
+        }
+
+        private static List<T> DeserializeList<T>(byte[] toDeserialize)
+        {
+            try
+            {
+                var serializedString = Encoding.UTF8.GetString(toDeserialize);
+                Logger.Debug("Deserializing " + serializedString);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<List<T>>(serializedString);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"Failed to deserialize List: {ex.Message}");
+                return new List<T>();
+            }
         }
 
         // NOTE: This currently assumes that all item data is sent IMMEDIATELY after this packet.
