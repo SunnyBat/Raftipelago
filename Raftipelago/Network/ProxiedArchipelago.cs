@@ -289,7 +289,7 @@ namespace Raftipelago.Network
                     var itemName = GetItemNameFromId(currentIndex);
                     if (!string.IsNullOrWhiteSpace(itemName))
                     {
-                        ret.Add(currentIndex, GetItemNameFromId(currentIndex));
+                        ret.Add(currentIndex, itemName);
                     }
                     else
                     {

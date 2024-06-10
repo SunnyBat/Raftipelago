@@ -433,15 +433,18 @@ namespace Raftipelago.Network
         private Message _generateArchipelagoDataMessage()
         {
             Logger.Trace("_generateArchipelagoDataMessage");
-            _debugDictionary(ComponentManager<IArchipelagoLink>.Value.GetAllItemIds());
-            _debugDictionary(ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds());
-            _debugDictionary(ComponentManager<IArchipelagoLink>.Value.GetLastLoadedSlotData());
+            var allItemIds = ComponentManager<IArchipelagoLink>.Value.GetAllItemIds();
+            var allPlayerIds = ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds();
+            var lastLoadedSlotData = ComponentManager<IArchipelagoLink>.Value.GetLastLoadedSlotData();
+            _debugDictionary(allItemIds);
+            _debugDictionary(allPlayerIds);
+            _debugDictionary(lastLoadedSlotData);
             _debugDictionary(PlayerItemIndeces);
             return CreateGenericMessage(RaftipelagoMessageTypes.ARCHIPELAGO_DATA, new object[]
             {
-                ComponentManager<IArchipelagoLink>.Value.GetAllItemIds(),
-                ComponentManager<IArchipelagoLink>.Value.GetAllPlayerIds(),
-                ComponentManager<IArchipelagoLink>.Value.GetLastLoadedSlotData(),
+                allItemIds,
+                allPlayerIds,
+                lastLoadedSlotData,
                 PlayerItemIndeces
             });
         }

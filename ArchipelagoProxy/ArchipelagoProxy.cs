@@ -9,7 +9,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -61,7 +60,7 @@ namespace ArchipelagoProxy
         // Events should be run on the main Unity thread. Thus, we queue up a heartbeat that runs on the
         // main Unity thread that will dequeue these objects and trigger the appropriate events. Because
         // of this, these queues need to be thread-safe.
-        private ConcurrentQueue<NetworkItem> _itemReceivedQueue = new ConcurrentQueue<NetworkItem>();
+        private ConcurrentQueue<ItemInfo> _itemReceivedQueue = new ConcurrentQueue<ItemInfo>();
         private ConcurrentQueue<string> _errorQueue = new ConcurrentQueue<string>();
         private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
         private ConcurrentQueue<string> _debugQueue = new ConcurrentQueue<string>();
@@ -132,6 +131,10 @@ namespace ArchipelagoProxy
                 {
                     _errorQueue.Enqueue(e.Message);
                 }
+            };
+            _session.MessageLog.OnMessageReceived += receivedMessage =>
+            {
+                _messageQueue.Enqueue(receivedMessage.ToString());
             };
             _session.Socket.PacketReceived += packet =>
             {
@@ -208,8 +211,8 @@ namespace ArchipelagoProxy
             for (int i = 0; i < _session.Items.AllItemsReceived.Count; i++)
             {
                 var item = _session.Items.AllItemsReceived[i];
-                itemIds.Add(item.Item);
-                locationIds.Add(item.Location);
+                itemIds.Add(item.ItemId);
+                locationIds.Add(item.LocationId);
                 playerIds.Add(item.Player);
                 itemIndeces.Add(i);
             }
@@ -246,9 +249,9 @@ namespace ArchipelagoProxy
             {
                 if (isWorldLoaded) // Only run these once we've successfully loaded a world
                 {
-                    while (_itemReceivedQueue.TryDequeue(out NetworkItem res))
+                    while (_itemReceivedQueue.TryDequeue(out ItemInfo res))
                     {
-                        RaftItemUnlockedForCurrentWorld(res.Item, res.Location, res.Player, ++_receivedItemCount);
+                        RaftItemUnlockedForCurrentWorld(res.ItemId, res.LocationId, res.Player, ++_receivedItemCount);
                     }
                 }
                 if (!triggeredConnectedAction)
@@ -680,14 +683,6 @@ namespace ArchipelagoProxy
                 case ArchipelagoPacketType.Say:
                     _messageQueue.Enqueue(((SayPacket)packet).Text);
                     break;
-                case ArchipelagoPacketType.PrintJSON:
-                    StringBuilder build = new StringBuilder();
-                    foreach (var messagePart in ((PrintJsonPacket)packet).Data)
-                    {
-                        build.Append(GetStringForJsonPartData(messagePart));
-                    }
-                    _messageQueue.Enqueue(build.ToString());
-                    break;
                 case ArchipelagoPacketType.Connected:
                     lock (LockForClass)
                     {
@@ -727,6 +722,7 @@ namespace ArchipelagoProxy
                         }
                     }
                     break;
+                case ArchipelagoPacketType.PrintJSON:
                 case ArchipelagoPacketType.RoomInfo:
                 case ArchipelagoPacketType.RoomUpdate:
                 case ArchipelagoPacketType.ReceivedItems:
@@ -743,27 +739,6 @@ namespace ArchipelagoProxy
                 default:
                     _debugQueue.Enqueue($"Unknown packet: {JsonConvert.SerializeObject(packet)}");
                     break;
-            }
-        }
-
-        private string GetStringForJsonPartData(JsonMessagePart data)
-        {
-            switch (data.Type)
-            {
-                case JsonMessagePartType.PlayerId:
-                    return _session.Players.GetPlayerName(int.Parse(data.Text)); // TODO Error handling
-                case JsonMessagePartType.ItemId:
-                    return _session.Items.GetItemName(long.Parse(data.Text)); // TODO Error handling
-                case JsonMessagePartType.LocationId:
-                    return _session.Locations.GetLocationNameFromId(long.Parse(data.Text));
-                case JsonMessagePartType.Color:
-                    return ""; // TODO Color? Ignoring for now
-                case JsonMessagePartType.PlayerName: // Explicitly calling out expected strings to just return data for
-                case JsonMessagePartType.ItemName:
-                case JsonMessagePartType.LocationName:
-                case JsonMessagePartType.EntranceName:
-                default:
-                    return data.Text;
             }
         }
     }
