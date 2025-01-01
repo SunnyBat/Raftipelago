@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using UnityEngine;
 
 namespace Raftipelago.Network
 {
@@ -62,6 +63,7 @@ namespace Raftipelago.Network
                         _validateObjectArrayAndRun(messageValues, 1, () =>
                         {
                             SendDeathLink((string)ModUtils_GetGenericMessageValues(message)[0]);
+                            RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
                         }, $"Received DEATHLINK_REASON but had invalid amount of values ({messageValues?.Length})");
                         break;
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
@@ -137,7 +139,7 @@ namespace Raftipelago.Network
                         break;
                     case RaftipelagoMessageTypes.DEATHLINK_RECEIVED:
                         Logger.Debug($"DeathLink received, killing local player");
-                        RAPI.GetLocalPlayer().Stats.Damage(99999, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, EntityType.None);
+                        RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
                         break;
                     case RaftipelagoMessageTypes.REQUEST_RESYNC:
                     case RaftipelagoMessageTypes.DEATHLINK_REASON:
@@ -279,18 +281,14 @@ namespace Raftipelago.Network
             }
         }
 
-        public void SendDeathLink(string message = null)
+        public void SendDeathLink(string message)
         {
             if (Raft_Network.IsHost)
             {
                 Logger.Debug($"Sending DeathLink");
-                // DeathLink local player
-                RAPI.GetLocalPlayer().Stats.Damage(99999, UnityEngine.Vector3.zero, UnityEngine.Vector3.zero, EntityType.None);
-                // DeathLink other Raft players
                 sendMessage(CreateGenericMessage(RaftipelagoMessageTypes.DEATHLINK_RECEIVED));
                 if (!string.IsNullOrWhiteSpace(message))
                 {
-                    // And DeathLink Archipelago players
                     Logger.Debug($"And DeathLinking Archipelago ({message})");
                     ComponentManager<IArchipelagoLink>.Value.SendDeathLinkPacket(message);
                 }
@@ -302,7 +300,7 @@ namespace Raftipelago.Network
             }
             else
             {
-                Logger.Debug($"SendDeathLink -- not host, invalid message");
+                Logger.Warn($"SendDeathLink -- not host, invalid message");
             }
         }
 

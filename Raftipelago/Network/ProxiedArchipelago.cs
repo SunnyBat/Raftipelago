@@ -450,7 +450,8 @@ namespace Raftipelago.Network
         private void _deathLinkReceived()
         {
             Logger.Trace("_deathLinkReceived");
-            ComponentManager<MultiplayerComms>.Value.SendDeathLink();
+            ComponentManager<MultiplayerComms>.Value.SendDeathLink(null);
+            RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
         }
 
         private void _connectToArchipelago(string username, string password)

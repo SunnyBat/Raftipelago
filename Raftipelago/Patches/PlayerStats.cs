@@ -6,21 +6,6 @@ namespace Raftipelago.Patches
 	[HarmonyPatch(typeof(PlayerStats), "Damage", typeof(float), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector3), typeof(EntityType), typeof(SO_Buff))]
 	public class HarmonyPatch_PlayerStats_Damage
     {
-        [HarmonyPrefix]
-        public static bool SometimesReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, SO_Buff buffAsset)
-        {
-            if (damage < 99999)
-            {
-                Logger.Trace("Doing damage");
-                return true;
-            }
-            else
-            {
-                Logger.Trace("Damage heuristically identified as DeathLink damage, skipping PlayerStats damage");
-                return false;
-            }
-        }
-
         [HarmonyPostfix]
         public static void NeverReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, SO_Buff buffAsset,
 			PlayerStats __instance,

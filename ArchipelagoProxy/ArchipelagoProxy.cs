@@ -92,6 +92,7 @@ namespace ArchipelagoProxy
         private bool _isUserIssuedConnect = false;
         private bool _shouldDisconnect = false;
         private bool _shouldKeepRunning = true;
+        private bool _deathLinkReceived = false;
         private Dictionary<string, object> _slotData;
         private int _receivedItemCount = 0;
 
@@ -239,11 +240,13 @@ namespace ArchipelagoProxy
             bool successfullyConnected;
             bool isWorldLoaded;
             bool triggeredConnectedAction;
+            bool deathLinkReceived;
             lock (LockForClass)
             {
                 successfullyConnected = IsSuccessfullyConnected(); // Call in lock to prevent releasing then immediately reclaiming lock
                 isWorldLoaded = _isRaftWorldLoaded;
                 triggeredConnectedAction = _triggeredConnectedAction;
+                deathLinkReceived = _deathLinkReceived;
             }
             if (successfullyConnected) // Don't process most things if we're not properly connected -- we don't want to accidentally send invalid data
             {
@@ -252,6 +255,15 @@ namespace ArchipelagoProxy
                     while (_itemReceivedQueue.TryDequeue(out ItemInfo res))
                     {
                         RaftItemUnlockedForCurrentWorld(res.ItemId, res.LocationId, res.Player, ++_receivedItemCount);
+                    }
+                    if (deathLinkReceived && _deathLinkHandlerFromClient != null)
+                    {
+                        _deathLinkHandlerFromClient.Invoke();
+                        lock (LockForClass)
+                        {
+
+                            _deathLinkReceived = false;
+                        }
                     }
                 }
                 if (!triggeredConnectedAction)
@@ -657,8 +669,11 @@ namespace ArchipelagoProxy
             {
                 if (_deathLinkHandlerFromClient != null && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled))
                 {
+                    lock (LockForClass)
+                    {
+                        _deathLinkReceived = true;
+                    }
                     _chatQueue.Enqueue($"{deathLinkObject.Source} died to {deathLinkObject.Cause}");
-                    _deathLinkHandlerFromClient.Invoke();
                 }
             }
             catch (Exception e)
