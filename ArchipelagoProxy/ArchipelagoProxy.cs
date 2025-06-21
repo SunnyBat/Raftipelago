@@ -615,7 +615,7 @@ namespace ArchipelagoProxy
                 _lastUsedUsername = username;
                 _lastUsedPassword = password;
             }
-            var loginResult = _session.TryConnectAndLogin("Raft", username, ItemsHandlingFlags.AllItems, version: new Version(0, 3, 4), password: password);
+            var loginResult = _session.TryConnectAndLogin("Raft", username, ItemsHandlingFlags.AllItems, password: password);
             if (loginResult.Successful)
             {
                 _messageQueue.Enqueue("Successfully connected to Archipelago");
