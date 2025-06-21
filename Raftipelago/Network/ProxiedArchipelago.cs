@@ -34,6 +34,7 @@ namespace Raftipelago.Network
         private MethodInfo _heartbeatMethodInfo;
         private MethodInfo _disconnectMethodInfo;
         private MethodInfo _sendDeathLinkIfNecessaryMethodInfo;
+        private MethodInfo _isDeathLinkEnabledMethodInfo;
 
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
@@ -333,6 +334,11 @@ namespace Raftipelago.Network
             return ret;
         }
 
+        public bool IsDeathLinkEnabled()
+        {
+            return (bool) _isDeathLinkEnabledMethodInfo.Invoke(_proxyServer, new object[] { });
+        }
+
         public void SendDeathLinkPacket(string cause)
         {
             Logger.Trace("SendDeathLinkPacket: " + cause);
@@ -412,6 +418,7 @@ namespace Raftipelago.Network
             _heartbeatMethodInfo = proxyServerRef.GetMethod("Heartbeat");
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
             _sendDeathLinkIfNecessaryMethodInfo = proxyServerRef.GetMethod("SendDeathLinkIfNecessary");
+            _isDeathLinkEnabledMethodInfo = proxyServerRef.GetMethod("IsDeathLinkEnabled");
         }
 
         private void _hookUpEvents()

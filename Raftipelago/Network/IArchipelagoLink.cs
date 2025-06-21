@@ -34,6 +34,8 @@ namespace Raftipelago.Network
 
         Dictionary<long, string> GetAllItemIds();
 
+        bool IsDeathLinkEnabled();
+
         void SendDeathLinkPacket(string cause);
 
         SplitArchipelagoItemData GetAllItems();

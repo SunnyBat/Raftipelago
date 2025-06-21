@@ -62,8 +62,15 @@ namespace Raftipelago.Network
                     case RaftipelagoMessageTypes.DEATHLINK_REASON: // Local player (not us) died
                         _validateObjectArrayAndRun(messageValues, 1, () =>
                         {
-                            SendDeathLink((string)ModUtils_GetGenericMessageValues(message)[0]);
-                            RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
+                            if (ComponentManager<IArchipelagoLink>.Value.IsDeathLinkEnabled())
+                            {
+                                SendDeathLink((string)ModUtils_GetGenericMessageValues(message)[0]);
+                                RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
+                            }
+                            else
+                            {
+                                Logger.Debug("Received DeathLink from other player, but DeathLink is not enabled. Ignoring.");
+                            }
                         }, $"Received DEATHLINK_REASON but had invalid amount of values ({messageValues?.Length})");
                         break;
                     case RaftipelagoMessageTypes.ARCHIPELAGO_DATA:
@@ -285,12 +292,19 @@ namespace Raftipelago.Network
         {
             if (Raft_Network.IsHost)
             {
-                Logger.Debug($"Sending DeathLink");
-                sendMessage(CreateGenericMessage(RaftipelagoMessageTypes.DEATHLINK_RECEIVED));
-                if (!string.IsNullOrWhiteSpace(message))
+                if (ComponentManager<IArchipelagoLink>.Value.IsDeathLinkEnabled())
                 {
-                    Logger.Debug($"And DeathLinking Archipelago ({message})");
-                    ComponentManager<IArchipelagoLink>.Value.SendDeathLinkPacket(message);
+                    Logger.Debug($"Sending DeathLink");
+                    sendMessage(CreateGenericMessage(RaftipelagoMessageTypes.DEATHLINK_RECEIVED));
+                    if (!string.IsNullOrWhiteSpace(message))
+                    {
+                        Logger.Debug($"And DeathLinking Archipelago ({message})");
+                        ComponentManager<IArchipelagoLink>.Value.SendDeathLinkPacket(message);
+                    }
+                }
+                else
+                {
+                    Logger.Debug("DeathLink requested by local host, but DeathLink is not enabled. Ignoring.");
                 }
             }
             else if (!string.IsNullOrWhiteSpace(message))
