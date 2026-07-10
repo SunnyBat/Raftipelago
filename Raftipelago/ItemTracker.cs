@@ -87,7 +87,10 @@ namespace Raftipelago
                         Logger.Error("Could not parse resource command " + itemCommand);
                     }
                 }
-                Logger.Debug($"Resource Pack {sentItemName} already received, swallowing");
+                else
+                {
+                    Logger.Debug($"Resource Pack {sentItemName} already received, swallowing");
+                }
                 return true;
             }
             return false;
@@ -105,7 +108,7 @@ namespace Raftipelago
                     bool? unlockedAnyItem = false;
                     foreach (var item in ComponentManager<ExternalData>.Value.ProgressiveTechnologyMappings[progressiveName][_progressiveLevels[progressiveName]])
                     {
-                        var itemResult = _unlockItem(itemId, item, locationId, fromPlayerId, false);
+                        var itemResult = _unlockItem(itemId, item, locationId, fromPlayerId, unlockingForFirstTime, false);
                         if (itemResult == UnlockResult.NotFound)
                         {
                             Logger.Error($"Unable to unlock {item} from {progressiveName} (not found)");

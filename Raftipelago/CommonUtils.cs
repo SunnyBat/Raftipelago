@@ -10,7 +10,8 @@ namespace Raftipelago
     {
         private const ulong ArchipelagoIdentifierBitMask = 0x10000;
         private const ulong ArchipelagoPlayerIdBitsMask = 0xFFFF;
-        private const ulong AllArchipelagoBitsMask = ArchipelagoIdentifierBitMask | ArchipelagoPlayerIdBitsMask;
+        private const ulong ArchipelagoSlotRelatedBitMask = 0x20000;
+        private const ulong AllArchipelagoBitsMask = ArchipelagoIdentifierBitMask | ArchipelagoPlayerIdBitsMask | ArchipelagoSlotRelatedBitMask;
 
         public static bool IsNote(LandmarkItem item)
         {
@@ -90,9 +91,39 @@ namespace Raftipelago
         /// </summary>
         /// <param name="playerId"></param>
         /// <returns></returns>
-        public static CSteamID GetFakeSteamIDForArchipelagoPlayerId(int playerId)
+        public static Network_UserId GetFakeSteamIDForArchipelagoPlayerId(int playerId)
         {
-            return new CSteamID((ulong)(0x10000 | playerId));
+            return GetFakeSteamIDForArchipelagoPlayerId(playerId, false);
+        }
+
+        /// <summary>
+        /// Generates an invalid SteamID for an Archipelago ID, optionally tagging the message as related
+        /// to the current slot (used by the per-player Archipelago message filter). This should only be
+        /// used within the context of Raftipelago.
+        /// </summary>
+        public static Network_UserId GetFakeSteamIDForArchipelagoPlayerId(int playerId, bool slotRelated)
+        {
+            // Being very safe to avoid something like -1 flipping all bits
+            if (playerId < 0)
+            {
+                playerId = 0;
+            }
+
+            ulong id = ArchipelagoIdentifierBitMask | ((ulong)playerId & ArchipelagoPlayerIdBitsMask);
+            if (slotRelated)
+            {
+                id |= ArchipelagoSlotRelatedBitMask;
+            }
+            return new Network_UserId(id);
+        }
+
+        /// <summary>
+        /// Whether the given Raftipelago-generated SteamID was tagged as an Archipelago message related to
+        /// the current slot. This should only be used within the context of Raftipelgo
+        /// </summary>
+        public static bool IsMessageSlotRelated(ulong steamId)
+        {
+            return (steamId & ArchipelagoSlotRelatedBitMask) == ArchipelagoSlotRelatedBitMask;
         }
 
         public static T TryGetOrKey<T>(IDictionary<T, T> dict, T key)

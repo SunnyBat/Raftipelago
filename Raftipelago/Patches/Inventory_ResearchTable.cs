@@ -9,11 +9,11 @@ using UnityEngine;
 
 namespace Raftipelago.Patches
 {
-	[HarmonyPatch(typeof(Inventory_ResearchTable), "LearnItem", typeof(Item_Base), typeof(CSteamID))]
+	[HarmonyPatch(typeof(Inventory_ResearchTable), "LearnItem", typeof(Item_Base), typeof(Network_UserId))]
 	public class HarmonyPatch_Inventory_ResearchTable_LearnItem
 	{
 		[HarmonyPrefix]
-		public static bool AlwaysReplace(Item_Base item, CSteamID researcherID,
+		public static bool AlwaysReplace(Item_Base item, Network_UserId researcherID,
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			ref List<ResearchMenuItem> ___menuItems)
@@ -66,7 +66,6 @@ namespace Raftipelago.Patches
 			ref bool __result,
 			Inventory_ResearchTable __instance,
 			List<Item_Base> ___researchedItems,
-			string ___eventRef_Research,
 			ref List<ResearchMenuItem> ___menuItems,
 			Dictionary<Item_Base, AvaialableResearchItem> ___availableResearchItems)
 		{
@@ -80,7 +79,7 @@ namespace Raftipelago.Patches
 
 			if (__instance.CanResearchItem(item)) // Checks for not already researched AND that at least one not-researched item accepts the item being researched
 			{
-				RuntimeManager.PlayOneShot(___eventRef_Research, default(Vector3));
+				RuntimeManager.PlayOneShot(__instance.er_research);
 				if (item.settings_recipe.IsBlueprint)
 				{
 					for (int i = 0; i < ___menuItems.Count; i++)

@@ -8,15 +8,17 @@ using Raftipelago.UnityScripts;
 using RaftModLoader;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
 public class RaftipelagoMod : Mod
 {
     // Sets ModUtils class to handle sending/receiving data (so everything's not shoved into this one class)
-    private static MultiplayerComms ModUtils_Reciever = ComponentManager<MultiplayerComms>.Value = new MultiplayerComms();
+    private static MultiplayerComms _multiplayerComms = ComponentManager<MultiplayerComms>.Value = new MultiplayerComms();
 
     private const string EmbeddedFileDirectory = "Data";
     public const string AppDataFolderName = "Raftipelago";
@@ -30,6 +32,7 @@ public class RaftipelagoMod : Mod
 
     public void Start()
     {
+        ComponentManager<RaftipelagoMod>.Value = this;
         if (_isInWorld())
         {
             //base.UnloadMod();
@@ -43,13 +46,13 @@ public class RaftipelagoMod : Mod
         try
         {
             _multiplayerCommsFailed = false;
-            ModUtils_Reciever.RegisterData();
+            SubscribeToNetworkChannel(slug);
         }
-        catch (Exception e)
+        catch (Exception)
         {
             _multiplayerCommsFailed = true;
             base.UnloadMod();
-            throw e;
+            throw;
         }
         ComponentManager<ExternalData>.Value = ComponentManager<ExternalData>.Value ?? new ExternalData(ComponentManager<EmbeddedFileUtils>.Value);
         ComponentManager<SpriteManager>.Value = ComponentManager<SpriteManager>.Value ?? new SpriteManager();
@@ -69,6 +72,7 @@ public class RaftipelagoMod : Mod
     {
         if (!_multiplayerCommsFailed) // No need to do anything if this fails, we haven't initialized anything resettable yet
         {
+            UnsubscribeFromNetworkChannel(slug);
             if (serverHeartbeat != null)
             {
                 StopCoroutine(serverHeartbeat);
@@ -91,6 +95,143 @@ public class RaftipelagoMod : Mod
         Raftipelago.Logger.CloseLogFile();
     }
 
+    private const string WorldDataSettingName = "raftipelagoItemIndeces";
+    private const string DeathLinkSettingName = "deathLink";
+    private const string MessageFilterSettingName = "messageFilter";
+
+    public enum MessageFilterMode
+    {
+        All = 0,
+        MineOnly = 1,
+        None = 2
+    }
+
+    public bool ExtraSettingsAPI_Loaded = false;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public string[] ExtraSettingsAPI_GetDataNames(string settingName) => null;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public string ExtraSettingsAPI_GetDataValue(string settingName, string key) => null;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void ExtraSettingsAPI_SetDataValues(string settingName, Dictionary<string, string> values) { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public bool ExtraSettingsAPI_GetCheckboxState(string settingName) => false;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public void ExtraSettingsAPI_SetCheckboxState(string settingName, bool value) { }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int ExtraSettingsAPI_GetComboboxSelectedIndex(string settingName) => 0;
+
+    public void ExtraSettingsAPI_SettingsClose()
+    {
+        _applyDeathLinkSettingToArchipelago();
+    }
+
+    public bool ExtraSettingsAPI_HandleSettingVisible(string settingName, bool isInWorld)
+    {
+        if (settingName == DeathLinkSettingName)
+        {
+            return !isInWorld || Raft_Network.IsHost;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    public void SyncDeathLinkSettingFromArchipelago()
+    {
+        var link = ComponentManager<IArchipelagoLink>.Value;
+        if (link == null)
+        {
+            return;
+        }
+
+        bool archipelagoDefault = link.GetArchipelagoDeathLinkDefault();
+        if (ExtraSettingsAPI_Loaded)
+        {
+            ExtraSettingsAPI_SetCheckboxState(DeathLinkSettingName, archipelagoDefault);
+        }
+
+        link.SetDeathLinkEnabled(archipelagoDefault);
+        Raftipelago.Logger.Debug($"DeathLink set to {archipelagoDefault}");
+    }
+
+    private void _applyDeathLinkSettingToArchipelago()
+    {
+        if (!ExtraSettingsAPI_Loaded || ComponentManager<IArchipelagoLink>.Value == null)
+        {
+            return;
+        }
+
+        bool enabled = ExtraSettingsAPI_GetCheckboxState(DeathLinkSettingName);
+        ComponentManager<IArchipelagoLink>.Value.SetDeathLinkEnabled(enabled);
+        Raftipelago.Logger.Debug($"DeathLink setting applied from Extra Settings menu: {enabled}");
+    }
+
+    public MessageFilterMode GetMessageFilterMode()
+    {
+        if (!ExtraSettingsAPI_Loaded)
+        {
+            return MessageFilterMode.All;
+        }
+
+        int index = ExtraSettingsAPI_GetComboboxSelectedIndex(MessageFilterSettingName);
+        if (index < (int)MessageFilterMode.All || index > (int)MessageFilterMode.None)
+        {
+            return MessageFilterMode.All;
+        }
+        return (MessageFilterMode)index;
+    }
+
+    public bool IsExtraSettingsLoaded()
+    {
+        return ExtraSettingsAPI_Loaded;
+    }
+
+    public void SaveWorldItemData(Dictionary<string, string> values)
+    {
+        if (!ExtraSettingsAPI_Loaded)
+        {
+            return;
+        }
+        ExtraSettingsAPI_SetDataValues(WorldDataSettingName, values);
+    }
+
+    public Dictionary<string, string> LoadWorldItemData()
+    {
+        var result = new Dictionary<string, string>();
+        if (!ExtraSettingsAPI_Loaded)
+        {
+            return result;
+        }
+        var keys = ExtraSettingsAPI_GetDataNames(WorldDataSettingName);
+        if (keys == null)
+        {
+            return result;
+        }
+        foreach (var key in keys)
+        {
+            result[key] = ExtraSettingsAPI_GetDataValue(WorldDataSettingName, key);
+        }
+        return result;
+    }
+
+    public override Message RemoteSave
+    {
+        get => _multiplayerComms.SaveRemoteData();
+        set => _multiplayerComms.LoadRemoteData(value);
+    }
+
+    public override bool OnNetworkMessage(object message, Network_UserId from, string modslug)
+    {
+        return _multiplayerComms.HandleMessage(message, from);
+    }
+
     // This should ONLY be used for Archipelago-related setup; this is called even after
     // the world has been loaded for a while.
     public override void WorldEvent_WorldLoaded()
@@ -100,6 +241,7 @@ public class RaftipelagoMod : Mod
         if (Raft_Network.IsHost)
         {
             Raftipelago.Logger.Debug("Is world host");
+            ComponentManager<MultiplayerComms>.Value.LoadWorldData();
             ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(true);
         }
         else
@@ -110,7 +252,7 @@ public class RaftipelagoMod : Mod
         }
     }
 
-    public override void WorldEvent_WorldUnloaded()
+    public override void Event_ReturnToMainMenu()
     {
         Raftipelago.Logger.Trace("World unloaded");
         // *Sync objects are automatically cleared from NetworkUpdateManager
@@ -123,15 +265,6 @@ public class RaftipelagoMod : Mod
         // Rreset ItemTracker unlocks so we don't trigger on reload into a different world
         ComponentManager<ItemTracker>.Value.ResetData();
     }
-
-    //public override void WorldEvent_OnPlayerConnected(CSteamID steamid, RGD_Settings_Character characterSettings)
-    //{
-    //    base.WorldEvent_OnPlayerConnected(steamid, characterSettings);
-    //    if (Raft_Network.IsHost)
-    //    {
-    //        ComponentManager<MultiplayerComms>.Value.ResyncArchipelagoData(steamid);
-    //    }
-    //}
 
     [ConsoleCommand("/connect", "Connect to the Archipelago server. It's recommended to use a full address, eg \"/connect http://archipelago.gg:38281 UsernameGoesHere OptionalPassword\".")]
     private static void Command_Connect(string[] arguments)
@@ -156,7 +289,6 @@ public class RaftipelagoMod : Mod
             Raftipelago.Logger.Debug("Connecting");
             ComponentManager<IArchipelagoLink>.Value.Connect(serverAddress, username, string.IsNullOrEmpty(password) ? null : password);
             Raftipelago.Logger.Trace("Postconnect");
-            ComponentManager<IArchipelagoLink>.Value.SetIsInWorld(_isInWorld());
         }
         else
         {

@@ -36,6 +36,10 @@ namespace Raftipelago.Network
 
         bool IsDeathLinkEnabled();
 
+        bool GetArchipelagoDeathLinkDefault();
+
+        void SetDeathLinkEnabled(bool enabled);
+
         void SendDeathLinkPacket(string cause);
 
         SplitArchipelagoItemData GetAllItems();

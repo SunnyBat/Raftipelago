@@ -3,6 +3,7 @@ using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.Models;
 using Archipelago.MultiClient.Net.Packets;
 using Archipelago.MultiClient.Net.BounceFeatures.DeathLink;
+using Archipelago.MultiClient.Net.MessageLog.Messages;
 using Newtonsoft.Json;
 using RaftipelagoTypes;
 using System;
@@ -32,6 +33,8 @@ namespace ArchipelagoProxy
 
         private DeathLinkService _deathLink;
         private ActionHandler _deathLinkHandlerFromClient;
+        private bool _deathLinkEnabled;
+        private bool _archipelagoDeathLinkDefault;
 
         // === Server -> Client Events ===
 
@@ -48,9 +51,11 @@ namespace ArchipelagoProxy
         /// </summary>
         private event Action<string> ErrorMessage;
         /// <summary>
-        /// Called when a message is received. This can be a chat message, an item received message, etc. Must only be called from main Unity thread.
+        /// Called when a message is received. This can be a chat message, an item received message, etc.
+        /// The bool indicates whether the message is related to the current slot (item send/receive/hints
+        /// involving us). Must only be called from main Unity thread.
         /// </summary>
-        private event Action<string> PrintMessage;
+        private event Action<string, bool> PrintMessage;
         /// <summary>
         /// Called for debug events. Not for general user consumption. Must only be called from main Unity thread.
         /// </summary>
@@ -62,10 +67,27 @@ namespace ArchipelagoProxy
         // of this, these queues need to be thread-safe.
         private ConcurrentQueue<ItemInfo> _itemReceivedQueue = new ConcurrentQueue<ItemInfo>();
         private ConcurrentQueue<string> _errorQueue = new ConcurrentQueue<string>();
-        private ConcurrentQueue<string> _messageQueue = new ConcurrentQueue<string>();
+        private ConcurrentQueue<QueuedMessage> _messageQueue = new ConcurrentQueue<QueuedMessage>();
         private ConcurrentQueue<string> _debugQueue = new ConcurrentQueue<string>();
 
         private bool _triggeredConnectedAction = false;
+
+        /// <summary>
+        /// A representation of a message from Archipelago. Used to track both content and whether or not
+        /// the message is directly related to the current slot, which is communicated to clients and
+        /// allows them to show/hide the message as appropriate.
+        /// </summary>
+        private struct QueuedMessage
+        {
+            public string Text;
+            public bool SlotRelated;
+
+            public QueuedMessage(string text, bool slotRelated)
+            {
+                Text = text;
+                SlotRelated = slotRelated;
+            }
+        }
 
         // === Client -> Server Events ===
         // We use these so the main Unity thread doesn't block while we're sending packets.
@@ -135,7 +157,7 @@ namespace ArchipelagoProxy
             };
             _session.MessageLog.OnMessageReceived += receivedMessage =>
             {
-                _messageQueue.Enqueue(receivedMessage.ToString());
+                _messageQueue.Enqueue(new QueuedMessage(receivedMessage.ToString(), _isMessageSlotRelated(receivedMessage)));
             };
             _session.Socket.PacketReceived += packet =>
             {
@@ -157,7 +179,7 @@ namespace ArchipelagoProxy
                 }
                 if (!string.IsNullOrWhiteSpace(closedReason))
                 {
-                    _messageQueue.Enqueue($"Disconnected from server with reason \"{closedReason}\"");
+                    _messageQueue.Enqueue(new QueuedMessage($"Disconnected from server with reason \"{closedReason}\"", true));
                 }
             };
             _commsThread = new Thread(new ThreadStart(_runCommsThread));
@@ -226,9 +248,9 @@ namespace ArchipelagoProxy
             {
                 ErrorMessage(nextMessage);
             }
-            while (_messageQueue.TryDequeue(out string nextMessage))
+            while (_messageQueue.TryDequeue(out QueuedMessage nextMessage))
             {
-                PrintMessage(nextMessage);
+                PrintMessage(nextMessage.Text, nextMessage.SlotRelated);
             }
             if (DebugMessage != null) // Not required to run
             {
@@ -312,14 +334,30 @@ namespace ArchipelagoProxy
             }
         }
 
-        public void AddPrintMessageEvent(SingleArgumentActionHandler<string> newEvent)
+        public void AddPrintMessageEvent(DoubleArgumentActionHandler<string, bool> newEvent)
         {
             if (newEvent != null)
             {
                 lock (LockForClass)
                 {
-                    PrintMessage += (string arg1) => newEvent.Invoke(arg1);
+                    PrintMessage += (string arg1, bool arg2) => newEvent.Invoke(arg1, arg2);
                 }
+            }
+        }
+
+        private bool _isMessageSlotRelated(LogMessage message)
+        {
+            if (message is ItemSendLogMessage itemSend)
+            {
+                return itemSend.IsRelatedToActivePlayer;
+            }
+            else if (message is PlayerSpecificLogMessage playerSpecific)
+            {
+                return playerSpecific.IsRelatedToActivePlayer;
+            }
+            else
+            {
+                return true;
             }
         }
 
@@ -424,7 +462,7 @@ namespace ArchipelagoProxy
             }
             catch (Exception)
             {
-                _messageQueue.Enqueue("Error occurred while disconnecting from server. You may have already been disconnected.");
+                _messageQueue.Enqueue(new QueuedMessage("Error occurred while disconnecting from server. You may have already been disconnected.", true));
             }
         }
 
@@ -447,7 +485,43 @@ namespace ArchipelagoProxy
         {
             lock (LockForClass)
             {
-                return _deathLink != null && IsSuccessfullyConnected() && _slotData != null && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled);
+                return _deathLink != null && IsSuccessfullyConnected() && _deathLinkEnabled;
+            }
+        }
+
+        public bool GetArchipelagoDeathLinkDefault()
+        {
+            lock (LockForClass)
+            {
+                return _archipelagoDeathLinkDefault;
+            }
+        }
+
+        public void SetDeathLinkEnabled(bool enabled)
+        {
+            try
+            {
+                lock (LockForClass)
+                {
+                    if (_deathLink == null || !IsSuccessfullyConnected())
+                    {
+                        return;
+                    }
+
+                    _deathLinkEnabled = enabled;
+                    if (enabled)
+                    {
+                        _deathLink.EnableDeathLink();
+                    }
+                    else
+                    {
+                        _deathLink.DisableDeathLink();
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _errorQueue.Enqueue("Could not change DeathLink state: " + e.Message);
             }
         }
 
@@ -529,7 +603,7 @@ namespace ArchipelagoProxy
             if (isConnected && shouldDisconnect)
             {
                 _session.Socket.Disconnect();
-                _messageQueue.Enqueue("Disconnected from server.");
+                _messageQueue.Enqueue(new QueuedMessage("Disconnected from server.", true));
                 lock (LockForClass)
                 {
                     _isSuccessfullyConnected = false;
@@ -544,7 +618,7 @@ namespace ArchipelagoProxy
                     var startTime = DateTime.Now;
                     if (!isUserIssued)
                     {
-                        _messageQueue.Enqueue($"Attempting to reconnect from server (#" + successiveFailures + ")");
+                        _messageQueue.Enqueue(new QueuedMessage($"Attempting to reconnect from server (#" + successiveFailures + ")", true));
                     }
                     isConnected = _connectInternal(username, password, isUserIssued);
                     lock (LockForClass)
@@ -630,22 +704,32 @@ namespace ArchipelagoProxy
             var loginResult = _session.TryConnectAndLogin("Raft", username, ItemsHandlingFlags.AllItems, password: password);
             if (loginResult.Successful)
             {
-                _messageQueue.Enqueue("Successfully connected to Archipelago");
+                _messageQueue.Enqueue(new QueuedMessage("Successfully connected to Archipelago", true));
                 _slotData = ((LoginSuccessful)loginResult).SlotData;
                 try
                 {
-                    if (_slotData != null && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled) && ((bool)isDeathLinkEnabled))
+                    bool archipelagoDeathLinkDefault = _slotData != null
+                        && _slotData.TryGetValue(DEATH_LINK_TAG, out object isDeathLinkEnabled)
+                        && ((bool)isDeathLinkEnabled);
+                    // Always create DeathLinkService, since the user can toggle it on or off at any time
+                    var deathLinkService = _session.CreateDeathLinkService();
+                    lock (LockForClass)
                     {
-                        var deathLinkService = _session.CreateDeathLinkService();
-                        lock (LockForClass)
+                        _deathLink = deathLinkService;
+                        if (_deathLinkHandlerFromClient != null)
                         {
-                            _deathLink = deathLinkService;
-                            if (_deathLinkHandlerFromClient != null)
-                            {
-                                _deathLink.OnDeathLinkReceived += _handleDeathLink;
-                            }
+                            _deathLink.OnDeathLinkReceived += _handleDeathLink;
                         }
+                        _archipelagoDeathLinkDefault = archipelagoDeathLinkDefault;
+                        _deathLinkEnabled = archipelagoDeathLinkDefault;
+                    }
+                    if (archipelagoDeathLinkDefault)
+                    {
                         _deathLink.EnableDeathLink();
+                    }
+                    else
+                    {
+                        _deathLink.DisableDeathLink();
                     }
                 }
                 catch (Exception ex)
@@ -708,7 +792,7 @@ namespace ArchipelagoProxy
             switch (packet.PacketType)
             {
                 case ArchipelagoPacketType.Say:
-                    _messageQueue.Enqueue(((SayPacket)packet).Text);
+                    _messageQueue.Enqueue(new QueuedMessage(((SayPacket)packet).Text, true));
                     break;
                 case ArchipelagoPacketType.Connected:
                     lock (LockForClass)

@@ -11,7 +11,7 @@ namespace Raftipelago.Patches
 			ref string __result)
 		{
 			if (parameter == "RemoteSteamID"
-				&& CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(LocalizationParameters.remoteSteamID.m_SteamID, out int playerId))
+				&& CommonUtils.TryGetArchipelagoPlayerIdFromSteamId(LocalizationParameters.remoteSteamID.Id, out int playerId))
 			{
 				__result = ComponentManager<ArchipelagoDataManager>.Value.GetPlayerName(playerId);
 				if (__result == null && playerId == 0)

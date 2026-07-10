@@ -2,7 +2,7 @@
   "name": "Raftipelago",
   "author": "SunnyBat",
   "description": "A Raft randomizer that uses Archipelago, a multi-world randomizer.",
-  "version": "2.3.2",
+  "version": "3.0.0-BETA.1",
   "license": "GNU AGPLv3",
   "icon": "Data/Archipelago.png",
   "banner": "Banner.png",
@@ -10,5 +10,28 @@
   "requiredByAllPlayers": true,
   "updateUrl": "https://www.raftmodding.com/api/v1/mods/raftipelago/version.txt",
   "isModPermanent": false,
-  "excludedFiles": []
+  "excludedFiles": [],
+  "modSettings": [
+    {
+      "name": "raftipelagoItemIndeces",
+      "type": "data",
+      "access": "world"
+    },
+    {
+      "name": "deathLink",
+      "text": "DeathLink",
+      "type": "checkbox",
+      "default": false,
+      "access": "globalcustom"
+    },
+    {
+      "name": "messageFilter",
+      "text": "Archipelago messages",
+      "type": "combobox",
+      "values": [ "All", "Mine only", "None" ],
+      "default": 0,
+      "access": "world",
+      "tooltip": "Which Archipelago chat messages to show. \"Mine only\" hides item send/receive messages that don't involve your slot."
+    }
+  ]
 }

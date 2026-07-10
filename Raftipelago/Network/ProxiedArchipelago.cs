@@ -35,6 +35,8 @@ namespace Raftipelago.Network
         private MethodInfo _disconnectMethodInfo;
         private MethodInfo _sendDeathLinkIfNecessaryMethodInfo;
         private MethodInfo _isDeathLinkEnabledMethodInfo;
+        private MethodInfo _getArchipelagoDeathLinkDefaultMethodInfo;
+        private MethodInfo _setDeathLinkEnabledMethodInfo;
 
         private bool hasLoadedRaftWorldBefore = false;
         public ProxiedArchipelago()
@@ -339,6 +341,23 @@ namespace Raftipelago.Network
             return (bool) _isDeathLinkEnabledMethodInfo.Invoke(_proxyServer, new object[] { });
         }
 
+        public bool GetArchipelagoDeathLinkDefault()
+        {
+            if (_proxyServer != null && _getArchipelagoDeathLinkDefaultMethodInfo != null && IsSuccessfullyConnected())
+            {
+                return (bool) _getArchipelagoDeathLinkDefaultMethodInfo.Invoke(_proxyServer, new object[0]);
+            }
+            return false;
+        }
+
+        public void SetDeathLinkEnabled(bool enabled)
+        {
+            if (_proxyServer != null && _setDeathLinkEnabledMethodInfo != null)
+            {
+                _setDeathLinkEnabledMethodInfo.Invoke(_proxyServer, new object[] { enabled });
+            }
+        }
+
         public void SendDeathLinkPacket(string cause)
         {
             Logger.Trace("SendDeathLinkPacket: " + cause);
@@ -419,6 +438,8 @@ namespace Raftipelago.Network
             _disconnectMethodInfo = proxyServerRef.GetMethod("Disconnect");
             _sendDeathLinkIfNecessaryMethodInfo = proxyServerRef.GetMethod("SendDeathLinkIfNecessary");
             _isDeathLinkEnabledMethodInfo = proxyServerRef.GetMethod("IsDeathLinkEnabled");
+            _getArchipelagoDeathLinkDefaultMethodInfo = proxyServerRef.GetMethod("GetArchipelagoDeathLinkDefault");
+            _setDeathLinkEnabledMethodInfo = proxyServerRef.GetMethod("SetDeathLinkEnabled");
         }
 
         private void _hookUpEvents()
@@ -432,7 +453,7 @@ namespace Raftipelago.Network
             _proxyServerType.GetMethod("AddErrorMessageEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(Logger.Error, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddPrintMessageEvent")
-                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(PrintMessage, "SingleArgumentActionHandler`1", typeof(string)) });
+                .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string, bool>>(PrintMessage, "DoubleArgumentActionHandler`2", typeof(string), typeof(bool)) });
             _proxyServerType.GetMethod("AddDebugMessageEvent")
                 .Invoke(_proxyServer, new object[] { GetNewEventObject<Action<string>>(Logger.Debug, "SingleArgumentActionHandler`1", typeof(string)) });
             _proxyServerType.GetMethod("AddDeathLinkHandler")
@@ -458,7 +479,7 @@ namespace Raftipelago.Network
         {
             Logger.Trace("_deathLinkReceived");
             ComponentManager<MultiplayerComms>.Value.SendDeathLink(null);
-            RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None);
+            RAPI.GetLocalPlayer().Stats.Damage(99999, Vector3.zero, Vector3.zero, EntityType.None, true);
         }
 
         private void _connectToArchipelago(string username, string password)
@@ -470,23 +491,28 @@ namespace Raftipelago.Network
             }
             catch (Exception e)
             {
-                PrintMessage("Error while connecting to server.");
+                PrintMessage("Error while connecting to server.", true);
                 Debug.LogError(e);
-                throw e;
+                throw;
             }
         }
 
         private void ConnnectedToServer()
         {
+            if (!Raft_Network.InMenuScene)
+            {
+                SetIsInWorld(true);
+            }
+            ComponentManager<RaftipelagoMod>.Value?.SyncDeathLinkSettingFromArchipelago();
         }
 
-        private void PrintMessage(string msg)
+        private void PrintMessage(string msg, bool slotRelated)
         {
             if (!Raft_Network.InMenuScene)
             {
                 try
                 {
-                    ComponentManager<ChatManager>.Value.HandleChatMessageInput(msg, CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0));
+                    ComponentManager<ChatManager>.Value.HandleChatMessageInput(msg, CommonUtils.GetFakeSteamIDForArchipelagoPlayerId(0, slotRelated));
                 }
                 catch (Exception)
                 {

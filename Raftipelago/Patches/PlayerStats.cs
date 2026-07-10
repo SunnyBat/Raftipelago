@@ -3,11 +3,11 @@ using Raftipelago.Network;
 
 namespace Raftipelago.Patches
 {
-	[HarmonyPatch(typeof(PlayerStats), "Damage", typeof(float), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector3), typeof(EntityType), typeof(SO_Buff))]
+	[HarmonyPatch(typeof(PlayerStats), "Damage", typeof(float), typeof(UnityEngine.Vector3), typeof(UnityEngine.Vector3), typeof(EntityType), typeof(bool), typeof(SO_Buff))]
 	public class HarmonyPatch_PlayerStats_Damage
     {
         [HarmonyPostfix]
-        public static void NeverReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, SO_Buff buffAsset,
+        public static void NeverReplace(float damage, UnityEngine.Vector3 hitPoint, UnityEngine.Vector3 hitNormal, EntityType damageInflictorEntityType, bool isLocal, SO_Buff buffAsset,
 			PlayerStats __instance,
 			Network_Player ___playerNetwork)
         {

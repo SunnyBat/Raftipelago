@@ -5,11 +5,11 @@ using Steamworks;
 
 namespace Raftipelago.Patches
 {
-	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked), typeof(CSteamID))]
+	[HarmonyPatch(typeof(PickupObjectManager), "RemovePickupItem", typeof(PickupItem_Networked), typeof(Network_UserId))]
 	public class HarmonyPatch_PickupObjectManager_RemovePickupItem
 	{
 		[HarmonyPrefix]
-		public static bool SometimesReplace(PickupItem_Networked pickupNetwork, CSteamID pickupPlayerID,
+		public static bool SometimesReplace(PickupItem_Networked pickupNetwork, Network_UserId pickupPlayerID,
 			ref bool __result)
 		{
 			Logger.Trace($"RemovePickupItem: {pickupNetwork.name} | {pickupPlayerID} | {pickupNetwork.CanBePickedUp()}");

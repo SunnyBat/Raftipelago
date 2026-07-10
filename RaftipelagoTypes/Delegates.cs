@@ -65,6 +65,23 @@ namespace RaftipelagoTypes
         }
     }
 
+    public sealed class DoubleArgumentActionHandler<T, U> : MarshalByRefObjectWithAggressiveLifetimeService
+    {
+        private Action<T, U> _delegate;
+
+        public DoubleArgumentActionHandler(Action<T, U> dlgt) : this(dlgt, true) { }
+
+        public DoubleArgumentActionHandler(Action<T, U> dlgt, bool keepForever) : base(!keepForever)
+        {
+            _delegate = dlgt;
+        }
+
+        public void Invoke(T arg1, U arg2)
+        {
+            _delegate(arg1, arg2);
+        }
+    }
+
     public sealed class TripleArgumentActionHandler<T, U, V> : MarshalByRefObjectWithAggressiveLifetimeService
     {
         private Action<T, U, V> _delegate;
